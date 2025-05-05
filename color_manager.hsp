@@ -1,0 +1,41 @@
+#ifndef color_manager
+#module color_manager
+#defcfunc 色を薄くする int col, double p, int flag
+	色を分ける col, r, g, b
+
+	f = flag
+	if f == 0: f = 0b111
+
+	if f&4:	r = limit((-p + 1) * r + p * 255, 0, 255)
+	if f&2: g = limit((-p + 1) * g + p * 255, 0, 255)
+	if f&1: b = limit((-p + 1) * b + p * 255, 0, 255)
+
+	return 色をまとめる(r,g,b)
+
+#defcfunc 色を加算する int col, int p, int flag
+色を分ける col, r, g, b
+
+f = flag
+if f == 0: f = 0b111
+
+if f&4:	r = limit(r + p, 0, 255)
+if f&2: g = limit(g + p, 0, 255)
+if f&1: b = limit(b + p, 0, 255)
+
+return 色をまとめる(r,g,b)
+
+#defcfunc 色をまとめる int p1, int p2, int p3
+	return (p1 & 255) << 16  | (p2 & 255) << 8  | (p3 & 255)
+
+#deffunc 色を分ける int p1, var _r, var _g, var _b
+	_r = p1 >> 16 & 255
+	_g = p1 >> 8 & 255
+	_b = p1 & 255
+	return 
+
+#deffunc 色を設定 int col
+	色を分ける col, r, g, b
+	color r,g,b
+	return
+#global
+#endif

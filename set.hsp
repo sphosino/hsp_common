@@ -1,0 +1,470 @@
+#ifndef set_str
+#module set_str data, data_num, hashcount, hashtable, data_deleted_list, data_deleted_list_num, valid_buckets, valid_buckets_num
+
+#const MAX_KEYS 666667
+#const FNV_PRIME 73091
+#const SEED 72889
+
+#const DEFAULT_SET_SIZE 128
+    
+#defcfunc local get_hash str s1
+
+    s = SEED
+    t = s1
+    repeat strlen(t)
+        s ^= peek(t, cnt) 
+        s *= FNV_PRIME 
+    loop
+    return (s & 0x7FFFFFFF) \ MAX_KEYS
+    
+#modinit int num_maxdata , local thismod_ID
+
+	n = DEFAULT_SET_SIZE
+	if num_maxdata > 0{
+		n = limit(num_maxdata, 2)
+	}
+	sdim data,,n
+	dim hashcount, MAX_KEYS
+	dim hashtable, MAX_KEYS, 3
+	dim data_deleted_list, n
+	dim data_deleted_list_num
+	dim valid_buckets, n
+	dim valid_buckets_num
+
+	mref thismod_ID, 2
+	return thismod_ID
+
+#modfunc set_push str s1
+
+	hash = get_hash(s1)
+
+	for i,, hashcount(hash)
+		if data(hashtable(hash, i)) == s1{
+			return 1
+		}
+	next
+
+	if data_deleted_list_num{
+		data_deleted_list_num--
+		newid = data_deleted_list(data_deleted_list_num)
+	}else{
+		newid = data_num
+		//２倍の拡張処理
+		if newid >= length(data){
+			data(newid * 2) = ""
+		}
+	}
+
+	if hashcount(hash) == 0{
+		valid_buckets(valid_buckets_num) = hash
+		valid_buckets_num++
+	}
+		
+	data(newid) = s1
+	hashtable(hash, hashcount(hash)) = newid
+	hashcount(hash)++
+	
+	data_num++
+
+	return 1
+
+#modcfunc is_in_set str s1
+
+	hash = get_hash(s1)
+	
+	for i,,hashcount(hash)
+		if data(hashtable(hash, i)) == s1{
+			return 1
+		}
+	next
+
+	return 0
+
+#modfunc set_del str s1
+
+	hash = get_hash(s1)
+	
+	for i,, hashcount(hash)
+	
+		dup id, hashtable(hash, i)
+		
+		if data(id) == s1{
+			
+			data_deleted_list(data_deleted_list_num) = id
+			data_deleted_list_num++
+
+			hashcount(hash)--
+			id = hashtable(hash, hashcount(hash))
+
+			if hashcount(hash) == 0{
+				repeat valid_buckets_num
+					if valid_buckets(cnt) == hash{
+						valid_buckets_num--
+						valid_buckets(cnt) = valid_buckets(valid_buckets_num)
+						break
+					}
+				loop
+			}
+
+			data_num--
+			
+			return
+		}
+	next
+
+#modcfunc set_get_all array result
+
+	sdim result
+	rn = 0
+	repeat valid_buckets_num
+		m = cnt
+		repeat hashcount(valid_buckets(m))
+			result(rn) = data(hashtable(valid_buckets(m), cnt))
+			rn++
+		loop
+	loop
+
+	return rn
+
+#modcfunc _get_cardinality
+	return data_num
+#global
+
+
+/////////////////////////////////////////////////////////////////////////////
+
+#module set_manager
+
+//新たな空のセットを作成
+#defcfunc make_new_set int max ;初期確保容量
+	newmod data, set_str, max
+	return stat ;セットのIDを返す。
+
+//セットに要素追加
+#deffunc push_data int setID, str key
+
+	set_push data(setID), key
+
+	return
+
+//セットの要素削除
+#deffunc del_data int setID, str key
+
+	set_del data(setID), key
+	return
+
+//セットの要素数取得
+#defcfunc get_cardinality int setID
+	return _get_cardinality(data(setID))
+
+#defcfunc is_inset int setID, str s1
+	return is_in_set(data(setID),s1)
+
+#deffunc del_set int setID
+	delmod data(setID)
+	return
+
+//util-->
+
+//セットの全データ取得
+#defcfunc set_to_array int setID, array a
+	return set_get_all(data(setID), a)
+
+// セット同士の足し算
+#defcfunc set_plus_set int setID, int setID2
+
+    // 新しいセットを作成
+    newSetID = make_new_set(get_cardinality(setID) + get_cardinality(setID2))
+
+    // 1つ目のセットのデータを取得して追加
+    
+    repeat set_to_array(setID, tmp)
+        push_data newSetID, tmp(cnt)
+    loop
+
+    // 2つ目のセットのデータを取得して追加
+    
+    repeat set_to_array(setID2, tmp)
+        push_data newSetID, tmp(cnt)
+    loop
+
+    return newSetID ; 新しいセットIDを返す
+    
+#defcfunc set_minus_set int setID, int setID2
+
+    // 新しいセットを作成
+    newSetID = make_new_set(get_cardinality(setID))
+
+    // 1つ目のセットのデータを取得
+    // `setB` に存在しない要素だけを新セットに追加
+    repeat set_to_array(setID, tmp)
+        if is_in_set(data(setID2), tmp(cnt)) == 0{
+	        push_data newSetID, tmp(cnt)
+        }
+    loop
+
+    return newSetID ; 新しいセットIDを返す
+
+#defcfunc set_and_set int setID, int setID2
+
+    // 新しいセットを作成
+    newSetID = make_new_set(limit(get_cardinality(setID),, get_cardinality(setID2)))
+
+    // `setA` のデータを取得
+    // `setB` にも存在するデータのみ追加
+    repeat set_to_array(setID, tmp)
+        if is_in_set(data(setID2), tmp(cnt)){
+            push_data newSetID, tmp(cnt)
+       	}
+    loop
+
+    return newSetID ; 新しいセットIDを返す
+
+#defcfunc set_sym_diff int setID, int setID2
+
+    newSetID = make_new_set(get_cardinality(setID) + get_cardinality(setID2))
+
+    // `setA - setB`
+
+    repeat set_to_array(setID, tmpA)
+        if is_in_set(data(setID2), tmpA(cnt)) == 0{
+            push_data newSetID, tmpA(cnt)
+        }
+    loop
+
+    // `setB - setA`
+    
+    repeat set_to_array(setID2, tmpB)
+        if is_in_set(data(setID), tmpB(cnt)) == 0{
+            push_data newSetID, tmpB(cnt)
+        }
+    loop
+
+    return newSetID
+
+#defcfunc is_subset int setID, int setID2
+
+    n = set_to_array(setID, tmp)
+    for i,, n
+        if is_in_set(data(setID2), tmp(i)) == 0{
+	        return 0
+        }
+    next
+	return 1
+
+#defcfunc is_proper_subset int setID, int setID2
+	if get_cardinality(setID) >= get_cardinality(setID2): return 0
+	return is_subset(setID, setID2)
+
+
+#defcfunc notepad_minus_notepad var s, str s2
+	if s2 == "": return s
+	newSetID = notepad_to_set(s2)
+	
+	notesel s
+		result = ""
+	    repeat notemax
+	    	noteget tmp, cnt
+	        if is_in_set(data(newSetID), tmp) == 0{
+		        result += tmp + "\n"
+	        }
+	    loop
+	noteunsel
+	del_set newSetID
+    return strmid(result, 0, strlen(result) - 2)
+    
+//---------------------------
+
+#defcfunc array_to_set array a
+	newSetId = make_new_set(length(a))
+	repeat length(a)
+		push_data newSetId, a(cnt)
+	loop
+	return newSetId
+
+#defcfunc notepad_to_set str s1
+	tmp_notepad = s1
+	notesel tmp_notepad
+		newSetId = make_new_set(notemax)
+		repeat notemax
+			noteget tmp, cnt
+			push_data newSetId, tmp
+		loop
+	noteunsel
+	return newSetId
+
+#defcfunc set_to_notepad int setID
+	s = ""
+	repeat set_to_array(setID,tmp)
+		s += tmp(cnt) + "\n" 
+	loop
+	return strmid(s,0,strlen(s)-2)
+	
+#global
+
+
+#module
+#defcfunc array_to_notepad array a
+
+	s = ""
+	repeat length(a)
+		s += a.cnt
+		if cnt < length(a) -1: s += "\n"
+	loop
+	
+	return s
+#defcfunc notepad_to_array str s1, array a
+	s = s1
+	notesel s
+		sdim a
+		repeat notemax
+			noteget tmp, cnt
+			a(cnt) = tmp
+		loop
+	noteunsel
+	return length(a)
+#global
+#endif
+
+
+#if 0
+#undef mes
+#define mes(%1 = "") mes@hsp %1: logmes %1
+// set_strモジュールのテスト
+title "set_strモジュールテスト"
+
+// テスト結果表示用の変数
+test_count = 0
+pass_count = 0
+
+goto *@f
+// テスト結果表示用関数
+#deffunc test_result str test_name, int result
+    test_count++
+    if result{
+        pass_count++
+        mes "[PASS] " + test_name
+    } else {
+        mes "[FAIL] " + test_name
+    }
+    return
+*@
+
+// 基本的なセット操作のテスト
+// -------------------------------
+
+// 新規セット作成テスト
+s1 = make_new_set(10)
+test_result "セット作成", (s1 >= 0)
+
+// 要素追加テスト
+push_data s1, "apple"
+push_data s1, "banana"
+push_data s1, "cherry"
+test_result "要素追加", (get_cardinality(s1) == 3)
+
+// 重複要素追加テスト
+push_data s1, "apple"
+test_result "重複要素（追加されないはず）", (get_cardinality(s1) == 3)
+
+// 存在確認テスト
+test_result "要素存在確認 (存在する)", (is_inset(s1, "banana") == 1)
+test_result "要素存在確認 (存在しない)", (is_inset(s1, "grape") == 0)
+
+// 要素削除テスト
+del_data s1, "banana"
+test_result "要素削除", (get_cardinality(s1) == 2 && is_inset(s1, "banana") == 0)
+
+// 全要素取得テスト
+sdim arr
+n = set_to_array(s1, arr)
+test_result "全要素取得", (n == 2 && (arr(0) == "apple" || arr(1) == "apple") && (arr(0) == "cherry" || arr(1) == "cherry"))
+
+// セット演算のテスト
+// -------------------------------
+
+// 2つ目のセット作成
+s2 = make_new_set(10)
+push_data s2, "apple"
+push_data s2, "grape"
+push_data s2, "orange"
+
+// 和集合テスト
+s_union = set_plus_set(s1, s2)
+test_result "和集合サイズ", (get_cardinality(s_union) == 4)
+test_result "和集合要素確認", (is_inset(s_union, "apple") && is_inset(s_union, "cherry") && is_inset(s_union, "grape") && is_inset(s_union, "orange"))
+
+// 差集合テスト
+s_diff = set_minus_set(s1, s2)
+test_result "差集合サイズ", (get_cardinality(s_diff) == 1)
+test_result "差集合要素確認", (is_inset(s_diff, "cherry") && 0=is_inset(s_diff, "apple"))
+
+// 積集合テスト
+s_inter = set_and_set(s1, s2)
+test_result "積集合サイズ", (get_cardinality(s_inter) == 1)
+test_result "積集合要素確認", (is_inset(s_inter, "apple") && 0=is_inset(s_inter, "cherry"))
+
+// 対称差テスト
+s_symdiff = set_sym_diff(s1, s2)
+test_result "対称差サイズ", (get_cardinality(s_symdiff) == 3)
+test_result "対称差要素確認", (is_inset(s_symdiff, "cherry") && is_inset(s_symdiff, "grape") && is_inset(s_symdiff, "orange") && 0=is_inset(s_symdiff, "apple"))
+
+// 部分集合テスト
+s3 = make_new_set(5)
+push_data s3, "apple"
+test_result "部分集合判定", (is_subset(s3, s1) == 1)
+test_result "真部分集合判定", (is_proper_subset(s3, s1) == 1)
+push_data s3, "banana" // s1にはbananaがないので部分集合ではなくなる
+test_result "非部分集合判定", (is_subset(s3, s1) == 0)
+
+// ノートパッド関連テスト
+// -------------------------------
+
+// セットからノートパッドへの変換テスト
+np = set_to_notepad(s1)
+test_result "セット→ノートパッド変換", (instr(np, 0, "apple") >= 0 && instr(np, 0, "cherry") >= 0)
+
+// ノートパッドからセットへの変換テスト
+s4 = notepad_to_set("line1\nline2\nline3")
+test_result "ノートパッド→セット変換", (get_cardinality(s4) == 3 && is_inset(s4, "line2"))
+
+// ノートパッド差分テスト
+tmpnotepad = "line1\nline2\nline3"
+np_result = notepad_minus_notepad(tmpnotepad, "line2")
+test_result "ノートパッド差分", (instr(np_result, 0, "line1") >= 0 && instr(np_result, 0, "line2") < 0 && instr(np_result, 0, "line3") >= 0)
+
+// 配列関連テスト
+// -------------------------------
+
+// 配列からセットへの変換テスト
+dim test_array, 3
+test_array(0) = "item1"
+test_array(1) = "item2"
+test_array(2) = "item3"
+s5 = array_to_set(test_array)
+test_result "配列→セット変換", (get_cardinality(s5) == 3 && is_inset(s5, "item2"))
+
+// 配列・ノートパッド間の変換テスト
+test_notepad = array_to_notepad(test_array)
+test_result "配列→ノートパッド変換", (instr(test_notepad, 0, "item1") >= 0 && instr(test_notepad, 0, "item3") >= 0)
+
+sdim result_array
+n = notepad_to_array(test_notepad, result_array)
+test_result "ノートパッド→配列変換", (n == 3 && result_array(1) == "item2")
+
+// リソース解放
+del_set s1
+del_set s2
+del_set s3
+del_set s4
+del_set s5
+del_set s_union
+del_set s_diff
+del_set s_inter
+del_set s_symdiff
+
+// テスト結果表示
+mes ""
+mes "テスト完了: " + pass_count + "/" + test_count + " 成功"
+
+#endif

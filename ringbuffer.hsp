@@ -1,0 +1,75 @@
+#ifndef ringbuffer
+#module ringbuffer
+
+#deffunc init_ringbuffer int _size, int _max_num
+	max_num = limit(_max_num, 1)
+	size = limit(_size, 64)
+	sdim data, size, max_num
+	reset_ringbuffer
+	return
+	
+#deffunc reset_ringbuffer
+	write_index = 0
+	read_index = 0
+	count = 0
+	return
+
+#define plus1(%1) %1 = (%1 + 1) \ max_num
+
+#deffunc r_push var values
+
+	if count == max_num{
+		resize
+	}
+
+	memcpy data(write_index), values, size
+	
+	plus1 write_index
+	
+	count++
+
+	return
+
+#deffunc r_push2 var values
+
+	memcpy data(write_index), values, size
+	
+	plus1 write_index
+	
+	count += count < max_num
+
+	return
+
+#deffunc r_shift var values
+
+	count--
+
+	memcpy values, data(read_index), size
+
+	plus1 read_index
+	
+	return
+
+
+#deffunc local resize
+	logmes "キューのリサイズが発生しました"
+	sdim tmp, size, max_num
+	repeat max_num
+		r_shift tmp(cnt)
+	loop
+
+	max_num *= 2
+	init_ringbuffer max_num, size
+	
+	repeat max_num / 2
+		r_push tmp(cnt)
+	loop
+	
+	return
+
+#global
+init_ringbuffer
+
+#define global ringbuffer_count count@ringbuffer
+
+#endif

@@ -1,0 +1,82 @@
+#ifndef rboxf
+#module
+#deffunc aboxf array a
+	boxf a, a.1, a.2, a.3
+	return
+#deffunc acircle array a, int p1
+	circle a, a.1, a.2, a.3, p1^1
+	return
+//ŠpŠÛ‹éŒ`
+#deffunc arboxf array a, int _r, int flags
+	rboxf a, a.1, a.2, a.3, _r, flags
+    return
+#deffunc rboxf int _x1, int _y1, int _x2, int _y2, int _r, int flags ;‚Ç‚ÌŠp‚ð‚Ü‚é‚É‚·‚é‚©
+#const DEFAULT_R 5
+#define ctype max( %1, %2 ) limit(%1, %2)
+#define ctype min( %1, %2 ) limit(%1,,%2)
+    x1 = min(_x1, _x2) : x2 = max(_x1, _x2)
+    y1 = min(_y1, _y2) : y2 = max(_y1, _y2)
+    box_width = x2 - x1 : box_height = y2 - y1
+
+    if ( _r <= 0 ) {
+        r = DEFAULT_R
+    } else {
+        r = _r
+    }
+    r = min( r, min( box_width / 2, box_height / 2 ) )
+
+    boxf x1, y1+r, x2, y2-r
+    boxf x1+r, y1, x2-r, y2
+    repeat 4
+        x = x1 + ( cnt \ 2 ) * ( box_width - r * 2 + 1)
+        y = y1 + ( cnt / 2 ) * ( box_height - r * 2 + 1)
+        if flags & 1<<cnt{
+	         boxf x, y, x + r * 2 - 1, y + r * 2 -1
+	    }else{
+		    circle x, y, x + r * 2, y + r * 2
+		}
+    loop
+    return
+
+//“§‰ßboxf
+#deffunc aboxfa array a, int alpha
+	boxfa a,a.1,a.2,a.3, alpha
+	return
+#deffunc boxfa int ax, int ay, int bx, int by, int alpha
+	al = alpha
+	if al == 0: al = 128
+	gmode 3,,,al
+	pdx = ax, bx, bx, ax
+	pdy = ay, ay, by, by
+	gsquare -1, pdx, pdy
+	return
+	
+//‰Žæ‚èboxf
+#deffunc aboxfl array a, int w
+	boxfl a,a.1,a.2,a.3, w
+	return
+#deffunc boxfl int ax, int ay, int bx, int by, int w
+	boxf ax, ay, ax + w, by
+	boxf ax, ay, bx, ay + w
+	boxf bx -w, ay, bx, by
+	boxf ax, by-w, bx, by
+	return
+
+//“§‰ß‰Žæ‚èboxf
+#deffunc aboxfal array a, int alpha, int w
+	boxfal a,a.1,a.2,a.3, alpha, w
+	return
+#deffunc boxfal int ax, int ay, int bx, int by, int alpha, int w
+	boxfa ax, ay, ax + w, by, alpha
+	boxfa ax, ay, bx, ay + w, alpha
+	boxfa bx -w, ay, bx, by, alpha
+	boxfa ax, by-w, bx, by, alpha
+	return
+
+#global
+#endif
+
+#if 0;1
+	rboxf 20,20,200,200
+	rboxf 300,300, 370,370,10, 4 | 8
+#endif
