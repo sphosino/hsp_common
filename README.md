@@ -38,14 +38,14 @@
     - ├── main.hsp //basic.hspをインクルード。
     - ├── basic.hsp 
     -  └── modules/
-  - common/
+  - hsp_common/
     - ├── basic_mod1.hsp
     - ├── basic_mod2.hsp
     - └── basic_mod3.hsp　#addition "basic_mod1.hsp" //includeではなくadditionで依存関係を明示
    
 basic.hspに相対パスでまとめて記述  
-#include "../common/basic_mod1.hsp"  
-#include "../common/basic_mod3.hsp"  
+#include "../hsp_common/basic_mod1.hsp"  
+#include "../hsp_common/basic_mod3.hsp"  
 
 
 🛠 開発者向けメモ
