@@ -1,5 +1,12 @@
 #ifndef list_id_manager
-#include "id_manager.hsp"
+
+//hspの仕様との闘い（汎用モジュールは内部でインクルードできない）
+#addition "common/id_manager.hsp"
+#addition "id_manager.hsp"
+#addition "../common/id_manager.hsp"
+#addition "../../common/id_manager.hsp"
+#addition "../../../common/id_manager.hsp"
+
 #module list_id_manager id_to_listnum, listnum_to_id, listnum, id_list_manager, len
 
 #const DEFAULT_SIZE 200
@@ -63,16 +70,16 @@
 	delete_by_listnum thismod, id_to_listnum(p1)
 	return
 
-#modcfunc get_list_ids array a
-	a(listnum - (listnum != 0)) = 0
-	memcpy a, listnum_to_id, listnum << 2
-    return listnum
-    
 #modcfunc get_list_count
 	return listnum
 
 #modcfunc get_list_id_length
 	return len
+
+#modcfunc get_list_ids array a
+	a(listnum - (listnum != 0)) = 0
+	memcpy a, listnum_to_id, listnum << 2
+    return listnum
     
 #modcfunc get_list_ids_range array a, int start_index, int end_index
 	if start_index > end_index : return 0
