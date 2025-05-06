@@ -2,11 +2,10 @@
 
 #addition "id_manager.hsp"
 
-//Œ©‚Â‚©‚ç‚È‚¢ê‡‚ÌŒó•âŒQ
-#addition "common/id_manager.hsp"
-#addition "../common/id_manager.hsp"
-#addition "../../common/id_manager.hsp"
-#addition "../../../common/id_manager.hsp"
+//è¦‹ã¤ã‹ã‚‰ãªã„å ´åˆã®å€™è£œç¾¤
+#addition "hsp_common/id_manager.hsp"
+#addition "../hsp_common/id_manager.hsp"
+#addition "../../hsp_common/id_manager.hsp"
 
 #module list_id_manager id_to_listnum, listnum_to_id, listnum, id_list_manager, len
 
@@ -16,17 +15,17 @@
 
 #modinit int p1
 	if p1 == 0{
-		//id_manager‘¤‚ÅŠm•Û‚µ‚½‰ŠúƒTƒCƒY‚É‡‚í‚¹‚éB
+		//id_managerå´ã§ç¢ºä¿ã—ãŸåˆæœŸã‚µã‚¤ã‚ºã«åˆã‚ã›ã‚‹ã€‚
 		newmod id_list_manager, id_manager
-		dim id_to_listnum, get_id_length(id_list_manager) //Šm•Û‚µ‚½ƒTƒCƒY‚ğæ“¾‚µ‚Äİ’è
+		dim id_to_listnum, get_id_length(id_list_manager) //ç¢ºä¿ã—ãŸã‚µã‚¤ã‚ºã‚’å–å¾—ã—ã¦è¨­å®š
 		dim listnum_to_id, get_id_length(id_list_manager)
 	}else: if p1 < 0 {
-		//ƒ}ƒCƒiƒX‚È‚çlist_id_manager‚Ì‰Šú’l
+		//ãƒã‚¤ãƒŠã‚¹ãªã‚‰list_id_managerã®åˆæœŸå€¤
 		newmod id_list_manager, id_manager, DEFAULT_SIZE
 		dim id_to_listnum, DEFAULT_SIZE
 		dim listnum_to_id, DEFAULT_SIZE
 	}else{
-		//w’è’l‚ÅŠm•Û
+		//æŒ‡å®šå€¤ã§ç¢ºä¿
 		newmod id_list_manager, id_manager, p1
 		dim id_to_listnum, p1
 		dim listnum_to_id, p1
