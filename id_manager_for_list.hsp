@@ -87,7 +87,7 @@
 	start_idx = limit(start_index, 0, list_num - 1)
 	end_idx = limit(end_index, 0, list_num - 1)
 	n = end_idx - start_idx + 1
-	a(listnum - (listnum != 0)) = 0
+	a(n - 1) = 0
 	memcpy a, listnum_to_id + start_idx, n << 2
 	return n
     
