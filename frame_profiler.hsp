@@ -1,0 +1,34 @@
+#ifndef frame_profiler
+#module frame_profiler
+#deffunc init_
+	#ifdef _debug
+	sdim titles
+	#endif
+	return	
+#deffunc Œv‘ª str time_str
+	#ifdef _debug
+		if time_num == 0 : pre_time = keyfpstime
+		if time_num >= 1 : times(time_num - 1) = keyfpstime - pre_time : pre_time = keyfpstime
+		titles(time_num) = time_str
+		time_num++
+	#endif
+	return
+
+#deffunc Œv‘ª•`‰æ
+	#ifdef _debug
+		Œv‘ª "" ; ÅŒã‚Ì‹æŠÔ‚Ì‹L˜^
+	
+		s = "fps = " + getrealfps() + " -> "
+		repeat time_num - 1
+			s += titles(cnt) + " -> " + strf("%03d", times(cnt)) + "ms :: "
+		loop
+		time_num = 0
+	
+		pos 0,0
+		color 0,0,0
+		font "",20
+		mes s
+	#endif
+	return
+#global
+#endif
