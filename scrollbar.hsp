@@ -1,0 +1,202 @@
+
+#ifndef scroll
+#addition "keyfps.hsp"
+
+#module scroll px, py, size, tickness, value, value_min, value_max, min_handle_size, direction, col, bar_area
+
+#const DEFAULT_BACK_COLOR  $000000
+#const DEFAULT_HANDLE_COLOR  $FF0000
+
+#modinit int x, int y, int 長さ, int 太さ, int 下限, int 上限, local i
+	// 基準点
+	px = x
+	py = y
+	
+	size = 長さ
+	tickness = 太さ
+
+	set_value_minmax thismod, 下限, 上限
+
+	min_handlesize = 5
+
+	direction = 1 | 2
+
+	col = DEFAULT_BACK_COLOR, DEFAULT_HANDLE_COLOR
+
+	dim bar_area,4
+
+	mref i, 2
+
+	return i
+	
+#modfunc draw_scroll_bar int draw_value_flag, int out_of_area_flag
+
+	horizontal = ((direction & 1)!=0) // 縦か横か
+	normal = ((direction & 2)!=0) * 2 - 1 // xy座標進行方向と同じ向きか
+	frip = ((direction & 4)!=0) * 2 - 1 // 裏返し（幅に適用)
+	reverse = ((direction & 8)!=0) // 基準点の値が、大きいほうなのか、小さいほうなのか
+
+	scroll_range = value_max - value_min
+	handlesize = limit(size / (scroll_range + 1), min_handlesize, size)
+	track_usable_space = size - handlesize
+	
+	if out_of_area_flag == 0{
+		if in_rect(bar_area){
+			if _getkey(1) >= 1{
+			//エリア内でクリックされていたら値を同期
+				if horizontal{
+					基準点からの距離_X = mousex - px
+					if reverse{
+						value = value_max - 基準点からの距離_X * scroll_range * normal / track_usable_space
+					}else{
+						value = value_min + 基準点からの距離_X * scroll_range * normal / track_usable_space
+					}
+				}else{
+					基準点からの距離_Y = mousey - py
+					if reverse{
+						value = value_max - 基準点からの距離_Y * scroll_range * normal / track_usable_space
+					}else{
+						value = value_min + 基準点からの距離_Y * scroll_range * normal / track_usable_space
+					}		
+				}
+				value = limit(value, value_min, value_max)
+			}
+		}
+	}
+
+	//基準点からつまみまでの距離
+	if reverse{
+		bar_position = (value_max - value) * track_usable_space / scroll_range
+	}else{
+		bar_position = (value - value_min) * track_usable_space / scroll_range
+	}
+	
+	if horizontal{
+		色を設定 col
+		bar_area = px , py, px + size * normal, py + tickness * frip
+		aboxf bar_area
+		色を設定 col.1
+		boxf px + bar_position * normal, py, px + (bar_position + handlesize) * normal, py + tickness * frip
+	}else{
+		色を設定 col
+		bar_area = px , py, px + tickness * frip, py + size * normal
+		aboxf bar_area
+		色を設定 col.1
+		boxf px, py + bar_position * normal, px + tickness * frip, py + (bar_position + handlesize) * normal
+	}
+
+	//基準点に値を描画	
+	if draw_value_flag{
+		pos px, py
+		mes value
+	}	
+		
+	return
+#defcfunc local in_rect array a
+	if a(0) > a(2) : swap a(0), a(2)
+	if a(1) > a(3) : swap a(1), a(3)
+	return a(0) <= mousex && a(1) <= mousey && a(2) >= mousex && a(3) >= mousey
+
+	
+#modfunc get_scroll_bar_area array a
+	a = bar_area,bar_area.1,bar_area.2,bar_area.3
+	return
+
+#modfunc set_color_scroll_bar int p1, int p2
+	col = p1, p2
+	return
+
+#modfunc set_position_scroll_bar int p1, int p2
+	px = p1
+	py = p2
+	return
+	
+#modfunc set_value_scroll_bar int p1
+	value = limit(p1, value_min, value_max)
+	return
+	
+#modfunc set_value_minmax int p1, int p2
+	value_min = p1
+	value_max = p2
+	if value_min > value_max{
+		swap value_min, value_max
+	}
+	return
+	
+#modfunc set_direction int p1
+	direction = p1
+	return
+	
+#modcfunc get_direction
+	return direction
+	
+#modfunc set_size_scroll_bar int p1
+	size = p1
+	return
+	
+#modfunc set_tickness_scroll_bar int p1
+	tickness = p1
+	return
+	
+#modcfunc get_value_scroll_bar
+	return value
+	
+#deffunc local swap var a, var b
+	tmp = a
+	a = b
+	b = tmp
+	return
+#modcfunc get_scroll_bar_width
+	return tickness
+
+#modfunc scroll_to_bottom
+	value = value_max
+	return
+#modfunc scroll_to_top
+	value = value_min
+	return
+#modfunc refresh_scroll_bar int minv, int maxv
+	set_value_minmax thismod, minv, maxv
+
+	value = limit(value, value_min, value_max)
+
+	return
+#modfunc add_value_scroll_bar int p1
+	value = limit(value + p1, value_min, value_max)
+	return
+#global
+#endif
+
+#if 0;1
+
+newmod b, scroll, 200,200, 80,20, 12,1200
+newmod b, scroll, 100,200, 180,20, 10,0: id = stat: set_direction b.id , 8
+
+set_value_scroll_bar b, 300
+
+*main
+		manage_keyfps
+	color 250,250,250:boxf:color
+	
+
+	mw = mousew
+
+	foreach b
+		draw_scroll_bar b.cnt,1
+		if mw > 0{
+			set_value_scroll_bar b.cnt, get_v(b) + 1
+		}
+		if mw < 0{
+			set_value_scroll_bar b.cnt, get_v(b) - 1
+		}
+	
+		stick key
+		if key & 512{
+			//キー入力されたら
+			set_direction b, (get_direction(b.cnt) + 1) \ 16
+		}
+	loop
+
+	redraw: redraw 2
+	goto*main
+#endif
