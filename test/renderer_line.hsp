@@ -1,0 +1,28 @@
+#include "../renderer.hsp"
+#include "../keyfps.hsp"
+randomize
+
+*main
+    manage_keyfps
+
+    redraw 0
+    color 0,0,0 : boxf
+
+    // ランダムに線を追加！
+    if rnd(10) == 0 {
+        cx = rnd(640)
+        cy = rnd(480)
+        angle = double(rnd(360)) ; 角度ランダム
+        len = 50 + rnd(100)   ; 長さもランダム
+
+        dx = cos(deg2rad(angle)) * len
+        dy = sin(deg2rad(angle)) * len
+
+        make_draw_object TYPE_LINE, 30, cx, cy, dx, dy, 0, 0, strf("%d", $00FFFF) ; 水色
+    }
+
+    update_draw_objects
+    draw_objects
+
+    redraw 1
+goto *main
