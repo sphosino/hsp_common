@@ -1,0 +1,189 @@
+#ifndef hash_manager
+#addition "../../hsp_common/id_manager.hsp"
+#module hash_manager data, hashcount, hashtable, hash_id_manager, valid_hash_manager, valid_hash, valid_tableid_to_hash
+
+#enum KEY = 0
+#enum VALUE
+#enum ENUM_MAX
+
+#define global NOT_DEFINED_HASH "__undefined__"
+
+#const MAX_KEYS 666667
+#const FNV_PRIME 73091
+#const SEED 72889
+
+#const DEFAULT_DATA_SIZE 100
+#const EXPECTED_NUMBER_COLLISIONS 3
+    
+#defcfunc local get_hash str s1
+
+    s = SEED
+    t = s1
+    repeat strlen(t)
+        s ^= peek(t, cnt) 
+        s *= FNV_PRIME 
+    loop
+    return (s & 0x7FFFFFFF) \ MAX_KEYS
+    
+#modinit
+
+	sdim data,, ENUM_MAX, DEFAULT_DATA_SIZE
+	dim hashcount, MAX_KEYS
+	dim hashtable, MAX_KEYS, EXPECTED_NUMBER_COLLISIONS
+	dim valid_hash, MAX_KEYS
+	
+	newmod hash_id_manager, id_manager
+	newmod valid_hash_manager, id_manager
+
+	dim valid_tableid_to_hash, DEFAULT_DATA_SIZE
+	
+	return
+
+#modfunc new_value str s1, str s2
+
+	hash = get_hash(s1)
+
+	for i,, hashcount(hash)
+		if data( KEY, hashtable(hash, i)) == s1{
+			data( VALUE, hashtable(hash ,i)) = s2
+			return 1
+		}
+	next
+
+	newid = get_new_id(hash_id_manager)
+	;if newid >= length2(data): data(0, newid * 2) = ""
+	
+	
+	data(KEY, newid) = s1
+	data(VALUE, newid) = s2
+	
+	hashtable(hash, hashcount(hash)) = newid
+	hashcount(hash)++
+
+	if hashcount(hash) == 1{
+		valid_hash(hash) = get_new_id(valid_hash_manager)
+		valid_tableid_to_hash(stat) = hash
+	}
+		
+	if hashcount(hash) >= EXPECTED_NUMBER_COLLISIONS{
+		logmes "hash -> 想定より多いハッシュ衝突"
+	}
+
+	return 1
+
+#modcfunc get_value str s1
+
+	hash = get_hash(s1)
+	
+	for i,,hashcount(hash)
+		if data( KEY, hashtable(hash, i)) == s1{
+			return data(VALUE, hashtable(hash, i))
+		}
+	next
+
+	return NOT_DEFINED_HASH
+
+#modfunc del_value str s1
+
+	hash = get_hash(s1)
+	
+	for i,, hashcount(hash)
+		
+		if data(KEY, hashtable(hash, i)) == s1{
+
+			release_id hash_id_manager, hashtable(hash, i)
+
+			hashcount(hash)--
+			hashtable(hash, i) = hashtable(hash, hashcount(hash))
+
+			if hashcount(hash) == 0{
+				release_id valid_hash_manager, valid_hash(hash)
+			}
+			
+			return
+		}
+	next
+	
+	return
+#modcfunc exists_value str s1
+	hash = get_hash(s1)
+	for i,,hashcount(hash)
+		if data(KEY, hashtable(hash, i)) == s1 : return 1
+	next
+	return 0
+	
+#modcfunc get_keys array result
+	foreach_id hash_id_manager, id
+		result(cnt) = data(KEY, id)
+	foreach_end
+	return get_using_count(hash_id_manager)
+	
+#modfunc clear_all_hash
+	foreach_id valid_hash_manager, id
+		hash = valid_tableid_to_hash(id)
+		repeat hashcount(hash)
+			release_id hash_id_manager, hashtable(hash, cnt)
+		loop
+		hashcount(hash) = 0
+		release_id valid_hash_manager, id
+	foreach_end
+	return
+
+#modcfunc get_entry_count
+	return get_using_count(hash_id_manager)
+	
+#modfunc debug_dump
+
+	#define debug_mes(%1) mes %1:logmes %1
+
+	foreach_id valid_hash_manager, id
+		hash = valid_tableid_to_hash(id)
+		debug_mes "--- hash=" + hash + " ---"
+		repeat hashcount(hash)
+			id = hashtable(hash, cnt)
+			debug_mes "  " + data(KEY, id) + " => " + data(VALUE, id)
+		loop
+	foreach_end
+	
+	return
+
+#modfunc debug_summary
+	logmes "HashManager Summary"
+	logmes "登録数: " + get_entry_count(thismod)
+	logmes "使用中のハッシュ空間数: " + get_using_count(valid_hash_manager)
+	return
+#global
+
+#endif
+//-----------------------------------
+
+#if 0
+	newmod a, hash_manager
+	
+	new_value a,"A","B"
+	new_value a,"C","D"
+	
+	del_value a,"C"
+	del_value a,"not exist"
+	
+	new_value a,"E","F"
+	new_value a,"z","T"
+
+	repeat get_keys(a,n)
+		mes n.cnt
+	loop
+
+	debug_dump a
+	debug_summary a
+
+#endif
+
+/*
+--- hash=500151 ---
+  A => B
+--- hash=125848 ---
+  E => F
+--- hash=626330 ---
+  z => T
+
+;*/

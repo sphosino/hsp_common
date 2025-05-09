@@ -1,0 +1,88 @@
+#ifndef id_manager
+#module id_manager used_list, used_list_num, open_list, open_list_num, id_position_in_used_list, using_max, len
+
+#const DEFAULT_SIZE 32
+#const EXP_RATE 2.0
+#define ctype ceil(%1) ((%1 > int(%1)) + %1)
+
+#modinit int p1
+
+	if p1 > 0{
+		//指定があればそのサイズで初期化
+		dim id_position_in_used_list, p1
+		dim used_list, p1
+		dim open_list, p1
+	}else{
+		//デフォルトサイズで確保
+		dim id_position_in_used_list, DEFAULT_SIZE
+		dim used_list, DEFAULT_SIZE
+		dim open_list, DEFAULT_SIZE
+	}
+	len = get_id_length(thismod)
+	return
+
+#modcfunc get_new_id
+	if open_list_num {
+		open_list_num--
+		new_id = open_list(open_list_num)
+	} else {
+		new_id = using_max
+		if new_id >= len{ //確保済みサイズを超えたら
+			//自動拡張を利用して２倍に
+			new_len = ceil(EXP_RATE * len)
+			id_position_in_used_list(new_len - 1) = 0 
+			used_list(new_len - 1) = 0
+			open_list(new_len - 1) = 0
+			len = new_len
+		}
+		using_max++
+	}
+
+	used_list(used_list_num) = new_id
+	id_position_in_used_list(new_id) = used_list_num + 1 ; 1スタート
+	used_list_num++
+
+	return new_id
+
+#modfunc release_id int id
+	if is_id_alive(thismod, id){
+		dup idx, id_position_in_used_list(id)
+		if idx {
+			open_list(open_list_num) = id
+			open_list_num++
+			used_list_num--
+			used_list(idx - 1) = used_list(used_list_num)
+			id_position_in_used_list(used_list(used_list_num)) = idx
+			idx = 0
+		}
+	}
+	return
+
+#modfunc clear_id_manager
+	dim id_position_in_used_list, len
+	used_list_num = 0
+	open_list_num = 0
+	using_max = 0
+	return
+
+#modcfunc is_id_alive int id
+	if id < 0 || id >= using_max: return 0
+	return id_position_in_used_list(id)
+
+#modcfunc get_used_ids array a
+	a(used_list_num - (used_list_num != 0)) = 0
+	memcpy a, used_list, used_list_num << 2
+	return used_list_num
+
+#modcfunc get_using_count
+	return used_list_num
+	
+#modcfunc get_id_length
+	return length(id_position_in_used_list)
+	
+#global
+
+#define global foreach_id(%1, %2)%tforeach_id repeat get_used_ids(%1, %i): %2 = %o(cnt)
+#define global foreach_end %tforeach_id loop
+
+#endif
