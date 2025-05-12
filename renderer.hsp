@@ -25,7 +25,7 @@
 #enum global MOVE_TYPE_EASE
 #enum global MOVE_TYPE_STATIC
 
-#const global LIFE_INSTANCE 0.0000001
+#const global LIFE_INSTANT 0.000001
 #const global LIFE_FOREVER 99999999.0
 
 #deffunc init_draw_objects
@@ -47,7 +47,7 @@
 #defcfunc make_draw_object int _move_type, int _draw_type, double life, double x, double y, double w, double h, str parameters
 	if life <= 0.0{
 		logmes "ライフ０以下の描画オブジェクトを作成しようとしました"
-		return
+		return -1
 	}
 	if life == LIFE_FOREVER{
 		logmes "永続オブジェクトを作成にゃ!"
@@ -79,7 +79,7 @@
     return newid
     
 #deffunc destroy_draw_object int id
-    draw_object_life(id) = LIFE_INSTANCE
+    draw_object_life(id) = LIFE_INSTANT
     return
     
 #deffunc destroy_draw_object_immediately int id
@@ -258,6 +258,11 @@
         draw_object_life(id) = limitf(draw_object_life(id), 0.0, draw_object_max_life(id))
     }
 	return
+
+//以下生成のラッパー関数！！！
+#deffunc spawn_static_instance int _type, double _x, double _y, double _w, double _h, str parametors
+	return make_draw_object(MOVE_TYPE_STATIC, _type, LIFE_INSTANT, _x, _y, _w, _h, parametors)
+
 
 
 #global
