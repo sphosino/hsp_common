@@ -3,9 +3,9 @@
 #addition "id_manager.hsp"
 #addition "color_manager.hsp"
 #addition "rboxf.hsp"
-#addition "physis.hsp"
-#addition "ease.hsp"
-#addition "static.hsp"
+#addition "draw_obj/physis.hsp"
+#addition "draw_obj/ease.hsp"
+#addition "draw_obj/static.hsp"
 
 #module
 
