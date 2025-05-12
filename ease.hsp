@@ -1,0 +1,157 @@
+#ifndef ease
+//最小単位easeオブジェクト
+#module ease from, to, type, easetime
+
+#modinit double _from, double _to, int _type, local thismod_ID
+	set_ease_obj thismod, _from, _to, _type
+	easetime = 1.0
+	mref thismod_ID, 2
+	return thismod_ID
+	
+#modfunc set_ease_time double t
+	easetime = t
+	return
+
+#modfunc set_ease_obj double _from, double _to, int _type
+	from = _from
+	to = _to
+	type = _type 
+	return
+
+#modfunc reverse_ease 
+	tmp = from
+	from = to
+	to = tmp
+	return
+	
+#modcfunc _get_ease_value double t
+	setease from, to, type
+	return geteasef(t / easetime)
+	
+#modcfunc get_ease_info array a
+	a = from, to, easetime
+	return type
+	
+#global
+
+
+//複数のeaseを束ねたオブジェクト
+#module ease_obj x, y, sx, sy, a, r
+
+#modinit int posx, int posy, int sizex, int sizey, local thismod_ID
+	// 最初はその場に動かないオブジェクトを作成
+	newmod x, ease, posx, posx, ease_linear
+	newmod y, ease, posy, posy, ease_linear
+	newmod sx, ease, sizex, sizex, ease_linear
+	newmod sy, ease, sizey, sizey, ease_linear
+	newmod a, ease, 255, 255, ease_linear
+	newmod r, ease, 0, 0, ease_linear
+	mref thismod_ID, 2
+	return thismod_ID
+	
+#modfunc _set_easetime_all double time
+	set_ease_time x, time
+	set_ease_time y, time
+	set_ease_time sx, time
+	set_ease_time sy, time
+	set_ease_time a, time
+	set_ease_time r, time
+	return
+	
+#modfunc _set_ease_posx double from, double to, int type
+	set_ease_obj x, from, to, type
+	return
+#modfunc _set_ease_posy double from, double to, int type
+	set_ease_obj y, from, to, type
+	return
+#modfunc _set_ease_sizex double from, double to, int type
+	set_ease_obj sx, from, to, type
+	return
+#modfunc _set_ease_sizey double from, double to, int type
+	set_ease_obj sy, from, to, type
+	return
+#modfunc _set_ease_alpha double from, double to, int type
+	set_ease_obj a, from, to, type
+	return
+#modfunc _set_ease_angle double from, double to, int type
+	set_ease_obj r, from, to, type
+	return
+	
+#modcfunc _get_ease_posx double t
+	return _get_ease_value(x, t)
+#modcfunc _get_ease_posy double t
+	return _get_ease_value(y, t)
+#modcfunc _get_ease_sizex double t
+	return _get_ease_value(sx, t)
+#modcfunc _get_ease_sizey double t
+	return _get_ease_value(sy, t)
+#modcfunc _get_ease_alpha double t
+	return _get_ease_value(a, t)
+#modcfunc _get_ease_angle double t
+	return _get_ease_value(r, t)
+	
+#modterm
+	delmod x
+	delmod y
+	delmod sx
+	delmod sy
+	delmod r
+	return
+
+#global
+
+
+//draw_objectがつかうモジュール
+#module ease_obj_manager
+
+#defcfunc make_ease_obj int x, int y, int sx, int sy
+	newmod data,ease_obj, x, y, sx, sy
+	return stat
+
+#deffunc set_easetime_all int id, double time
+	_set_easetime_all data(id), time
+	return
+	
+#deffunc set_ease_posx int id, double from, double to, int type
+	_set_ease_posx data(id), from, to, type
+	return
+	
+#deffunc set_ease_posy int id, double from, double to, int type
+	_set_ease_posy data(id), from, to, type
+	return
+	
+#deffunc set_ease_sizex int id, double from, double to, int type
+	_set_ease_sizex data(id), from, to, type
+	return
+	
+#deffunc set_ease_sizey int id, double from, double to, int type
+	_set_ease_sizey data(id), from, to, type
+	return
+
+#deffunc set_ease_alpha int id, double from, double to, int type
+	_set_ease_alpha data(id), from, to, type
+	return
+
+#deffunc set_ease_angle int id, double from, double to, int type
+	_set_ease_angle data(id), from, to, type
+	return
+
+#defcfunc get_ease_posx int id, double t
+	return _get_ease_posx(data(id), t)
+#defcfunc get_ease_posy int id, double t
+	return _get_ease_posy(data(id), t)
+#defcfunc get_ease_sizex int id, double t
+	return _get_ease_sizex(data(id), t)
+#defcfunc get_ease_sizey int id, double t
+	return _get_ease_sizey(data(id), t)
+#defcfunc get_ease_alpha int id, double t
+	return _get_ease_alpha(data(id), t)
+#defcfunc get_ease_angle int id, double t
+	return _get_ease_angle(data(id), t)
+	
+#deffunc del_ease_obj int id
+	delmod data(id)
+	return
+
+#global
+#endif

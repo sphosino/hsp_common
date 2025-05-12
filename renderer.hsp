@@ -1,14 +1,19 @@
 #ifndef init_draw_objects
-#addition "../../hsp_common/id_manager.hsp"
-#addition "../../hsp_common/color_manager.hsp"
-#addition "../../hsp_common/rboxf.hsp"
+
+#addition "id_manager.hsp"
+#addition "color_manager.hsp"
+#addition "rboxf.hsp"
+#addition "physis.hsp"
+#addition "ease.hsp"
+#addition "static.hsp"
+
 #module
 
 #const DRAW_OBJECTS_MAX 3000
 
-#const global PRIORITY_BACK 50000
-#const global PRIORITY_NORMAL 100000
-#const global PRIORITY_FRONT 150000
+#const global PRIORITY_BACK   100000
+#const global PRIORITY_NORMAL 200000
+#const global PRIORITY_FRONT  300000
 
 #enum global TYPE_RECT = 0
 #enum global TYPE_CIRCLE
@@ -16,170 +21,244 @@
 #enum global TYPE_LINE
 #enum global TYPE_SPRITE
 
+#enum global MOVE_TYPE_PHYSIS 0
+#enum global MOVE_TYPE_EASE
+#enum global MOVE_TYPE_STATIC
+
+#const global LIFE_INSTANCE 0.0000001
+#const global LIFE_FOREVER 99999999.0
 
 #deffunc init_draw_objects
     // オブジェクト基本情報
-    dim draw_object_type, DRAW_OBJECTS_MAX
-    sdim draw_object_params, DRAW_OBJECTS_MAX
-    dim draw_object_life, DRAW_OBJECTS_MAX
-    dim draw_object_priority, DRAW_OBJECTS_MAX
-
-    // オブジェクト位置・速度情報
-    ddim draw_object_posx, DRAW_OBJECTS_MAX
-    ddim draw_object_posy, DRAW_OBJECTS_MAX
-    ddim draw_object_sizex, DRAW_OBJECTS_MAX
-    ddim draw_object_sizey, DRAW_OBJECTS_MAX
-    ddim draw_object_vx, DRAW_OBJECTS_MAX
-    ddim draw_object_vy, DRAW_OBJECTS_MAX
-    ddim draw_object_scale, DRAW_OBJECTS_MAX
-    ddim draw_object_angle, DRAW_OBJECTS_MAX
-    ddim draw_object_v_angle, DRAW_OBJECTS_MAX
-    ddim draw_object_vs, DRAW_OBJECTS_MAX
-    ddim draw_object_alpha, DRAW_OBJECTS_MAX
-    ddim draw_object_va, DRAW_OBJECTS_MAX
-
-	// --- モジュール変数
+    dim draw_object_priority , DRAW_OBJECTS_MAX
+   	ddim draw_object_life_max, DRAW_OBJECTS_MAX 
+	ddim draw_object_life    , DRAW_OBJECTS_MAX
+    dim draw_object_move_type, DRAW_OBJECTS_MAX //動き方の方式 easingで動くか、 物理式で動くかなど。
+    dim draw_object_draw_type, DRAW_OBJECTS_MAX //何をどう描画するか -> TYPE_RECT, TYPE_CIRCLEなど。
+    dim draw_object_entities , DRAW_OBJECTS_MAX
+    sdim draw_object_params  , DRAW_OBJECTS_MAX
+    ddim draw_object_life_elapsed, DRAW_OBJECTS_MAX
+    
 	newmod draw_object_id_manager, id_manager, DRAW_OBJECTS_MAX
+
     return
 
-#deffunc make_draw_object int _type, int life, double x, double y, double w, double h, double vx, double vy, str parameters
-    if life == 0 : return -1
+#deffunc _make_draw_object int _move_type, int _draw_type, double life, double x, double y, double w, double h, str parameters
+#defcfunc make_draw_object int _move_type, int _draw_type, double life, double x, double y, double w, double h, str parameters
+	if life <= 0.0{
+		logmes "ライフ０以下の描画オブジェクトを作成しようとしました"
+		return
+	}
+	if life == LIFE_FOREVER{
+		logmes "永続オブジェクトを作成にゃ!"
+	}
 
-    id = get_new_id(draw_object_id_manager)
-
-    draw_object_priority(id) = PRIORITY_NORMAL
-    draw_object_type(id) = _type
-    draw_object_life(id) = life
-    draw_object_posx(id) = x
-    draw_object_posy(id) = y
-    draw_object_sizex(id) = w
-    draw_object_sizey(id) = h
-    draw_object_vx(id) = vx
-    draw_object_vy(id) = vy
-    draw_object_scale(id) = 1.0
-    draw_object_vs(id) = 0.0
-    draw_object_angle(id) = 0.0
-    draw_object_v_angle(id) = 0.0
-    draw_object_alpha(id) = 256.
-    draw_object_va(id) = 0.0
-    draw_object_params(id) = parameters
-
-    if _type == TYPE_STR {
-        split draw_object_params(id), ",", tmp
-        npos = ginfo_cx,ginfo_cy
-        pos -500, 0
-        font tmp.0, int(tmp.1)
-        mes tmp.2
-        draw_object_sizex(id) = double(ginfo_mesx)
-        draw_object_sizey(id) = double(ginfo_mesy)
-        pos npos, npos.1
-    }
-
-    if _type == TYPE_SPRITE {
-        split draw_object_params(id), ",", tmp
-        draw_object_vs(id) = double(tmp.5)
-        draw_object_va(id) = double(tmp.6)
-        draw_object_v_angle(id) = double(tmp.7)
-    }
-
-    return id
-#deffunc destroy_draw_object int nid
-    draw_object_life(nid) = 1
+    //基本情報
+    
+    newid = get_new_id(draw_object_id_manager)
+    
+    draw_object_priority(newid) = PRIORITY_NORMAL
+    draw_object_life_max(newid) = life
+    draw_object_life(newid) = life
+    draw_object_move_type(newid) = _move_type
+    draw_object_draw_type(newid) = _draw_type
+    draw_object_params(newid) = parameters
+    draw_object_life_elapsed(newid) = 0.0
+   
+	switch draw_object_move_type(newid)
+	case MOVE_TYPE_PHYSIS
+    	draw_object_entities(newid) = make_physis_obj(x, y, w, h)
+   	swbreak
+   	case MOVE_TYPE_EASE
+    	draw_object_entities(newid) = make_ease_obj(x, y, w, h)
+    	set_easetime_all draw_object_entities(newid), life
+    swbreak
+    case MOVE_TYPE_STATIC
+    	draw_object_entities(newid) = make_static_obj(x, y, w, h)
+    swend
+    return newid
+    
+#deffunc destroy_draw_object int id
+    draw_object_life(id) = LIFE_INSTANCE
     return
-#deffunc destroy_draw_object_immediately int nid
-    release_id draw_object_id_manager, nid
-    return
-#deffunc set_priority_draw_object int nid, int priority
-	draw_object_priority(nid) = priority
+    
+#deffunc destroy_draw_object_immediately int id
+	; IDを解放
+    release_id draw_object_id_manager, id
+
+	; エンティティの種類に応じて削除処理
+	switch draw_object_move_type(id)
+	case MOVE_TYPE_PHYSIS
+		del_physis_obj draw_object_entities(id)
+	swbreak
+	case MOVE_TYPE_EASE
+		del_ease_obj draw_object_entities(id)
+	swbreak
+	case MOVE_TYPE_STATIC
+		del_static_obj draw_object_entities(id)
+	swbreak
+	swend
+
 	return
+    
+
 #deffunc draw_objects
     idnum = get_used_ids( draw_object_id_manager, ids)
     sort_list_by_priority_list ids, idnum, draw_object_priority
 
     repeat idnum
-        obj_id = ids(cnt)
+    
+        obj_id = ids(cnt) //固有のID
+        entity_id = draw_object_entities(obj_id) //描画オブジェクトの種類ごとのID
 
-        switch draw_object_type(obj_id)
-        case TYPE_RECT
-            split draw_object_params(obj_id),",",tmp
-            色を設定 int(tmp.0)
-            rect.0 = draw_object_posx(obj_id) - draw_object_sizex(obj_id)/2
-            rect.1 = draw_object_posy(obj_id) - draw_object_sizey(obj_id)/2
-            rect.2 = draw_object_posx(obj_id) + draw_object_sizex(obj_id)/2
-            rect.3 = draw_object_posy(obj_id) + draw_object_sizey(obj_id)/2
-            aboxf rect
-        swbreak
+        //描画情報取得 -> (x, y, w, h, alpha) を取得
+
+		switch draw_object_move_type(obj_id)
+		
+		case MOVE_TYPE_PHYSIS
+			//アップデート処理
+			update_physis_obj entity_id, global_draw_dt
+
+			x = get_physis_posx (entity_id)
+			y = get_physis_posy (entity_id)
+			w = get_physis_sizex(entity_id)
+			h = get_physis_sizey(entity_id)
+			alpha = get_physis_alpha(entity_id)
+			angle = get_physis_angle(entity_id)
+		swbreak
+		
+		case MOVE_TYPE_EASE
+
+			elapsed = draw_object_life_elapsed(obj_id)
+			
+			x = get_ease_posx (entity_id, elapsed)
+			y = get_ease_posy (entity_id, elapsed)
+			w = get_ease_sizex(entity_id, elapsed)
+			h = get_ease_sizey(entity_id, elapsed)
+			alpha = get_ease_alpha(entity_id, elapsed)
+			angle = get_ease_angle(entity_id, elapsed)
+		swbreak
+		
+		case MOVE_TYPE_STATIC
+
+			x = get_static_posx(entity_id)
+			y = get_static_posy(entity_id)
+			w = get_static_sizex(entity_id)
+			h = get_static_sizey(entity_id)
+			alpha = get_static_alpha(entity_id)
+			angle = get_static_angle(entity_id)
+		swbreak
+		swend
+
+		split draw_object_params(obj_id), ",", tmp
+
+		//描画開始
+		
+		switch draw_object_draw_type(obj_id)
+		case TYPE_RECT
+		    色を設定 int(tmp.0)
+		    rect.0 = x - w / 2
+		    rect.1 = y - h / 2
+		    rect.2 = x + w / 2
+		    rect.3 = y + h / 2
+		    aboxfa rect, alpha
+		swbreak
 
         case TYPE_CIRCLE
-            split draw_object_params(obj_id),",",tmp
             色を設定 int(tmp.0)
-            rect.0 = draw_object_posx(obj_id) - draw_object_sizex(obj_id)/2
-            rect.1 = draw_object_posy(obj_id) - draw_object_sizey(obj_id)/2
-            rect.2 = draw_object_posx(obj_id) + draw_object_sizex(obj_id)/2
-            rect.3 = draw_object_posy(obj_id) + draw_object_sizey(obj_id)/2
+		    rect.0 = x - w / 2
+		    rect.1 = y - h / 2
+		    rect.2 = x + w / 2
+		    rect.3 = y + h / 2
             acircle rect, int(tmp.1)
         swbreak
 
         case TYPE_STR
-            split draw_object_params(obj_id),",",tmp
-            rect.0 = draw_object_posx(obj_id) - draw_object_sizex(obj_id)/2
-            rect.1 = draw_object_posy(obj_id) - draw_object_sizey(obj_id)/2
-            pos rect.0,rect.1
+        
+		    rect.0 = x - w / 2
+		    rect.1 = y - h / 2
+            
             font tmp.0, int(tmp.1)
+				pos 1000,1000
+				mes tmp.2
+
+            pos rect.0 - ginfo_mesx/2,rect.1 - ginfo_mesy/2
             色を設定 int(tmp.3)
             mes tmp.2
         swbreak
 
 		case TYPE_LINE
-		    split draw_object_params(obj_id), ",", tmp
 		    色を設定 int(tmp.0)
-		    x1 = draw_object_posx(obj_id)
-		    y1 = draw_object_posy(obj_id)
-		    x2 = x1 + draw_object_sizex(obj_id)
-		    y2 = y1 + draw_object_sizey(obj_id)
-		    line x1, y1, x2, y2
+		    rect.0 = x - w / 2
+		    rect.1 = y - h / 2
+		    rect.2 = x + w / 2
+		    rect.3 = y + h / 2
+		    line rect.0,rect.1,rect.2,rect.3
 		swbreak
 
         case TYPE_SPRITE
-            split draw_object_params(obj_id),",",tmp
+        
             imgid = int(tmp.0)
-            sx = int(tmp.1)
+            sx = int(tmp.1) 
             sy = int(tmp.2)
             sw = int(tmp.3)
             sh = int(tmp.4)
-            dx = draw_object_posx(obj_id)
-            dy = draw_object_posy(obj_id)
 
+			logmes strf("%d , %d,%d,%d,%d  ,  %d,%d,%d,%d",imgid ,sx,sy,sw,sh,x,y,w,h)
             color 0,0,0
-            gmode 4, sw, sh, draw_object_alpha(obj_id)
-            pos dx, dy
+            gmode 4, sw, sh, alpha
+            pos x, y
 
-            scaled_sizex = draw_object_sizex(obj_id) * draw_object_scale(obj_id)
-            scaled_sizey = draw_object_sizey(obj_id) * draw_object_scale(obj_id)
-
-            grotate imgid, sx, sy, draw_object_angle(obj_id), scaled_sizex, scaled_sizey
+            grotate imgid, sx, sy, angle, w, h
         swbreak
 
         swend
 
-		 if draw_object_life(obj_id) > 0 {
-		    draw_object_life(obj_id)--
-		    if draw_object_life(obj_id) <= 0 {
+        //ライフ進行処理
+
+         draw_object_life_elapsed(obj_id) += global_draw_dt
+
+		 if draw_object_life(obj_id) < LIFE_FOREVER{
+		    draw_object_life(obj_id) -= global_draw_dt
+		    if draw_object_life(obj_id) <= 0.0 {
 		        destroy_draw_object_immediately obj_id
 		    }
 		}
+		
     loop
     return
+    
+#defcfunc get_entity_id int id
+	return draw_object_entities(id)
+	
+#deffunc notify_dt_draw_object double d
+    global_draw_dt = d
+	return
+	
+#defcfunc is_eternal_draw_object int id
+    return draw_object_life(id) >= LIFE_FOREVER
 
-#deffunc update_draw_objects
-    foreach_id draw_object_id_manager, obj_id
-        draw_object_posx(obj_id) += draw_object_vx(obj_id)
-        draw_object_posy(obj_id) += draw_object_vy(obj_id)
-        draw_object_angle(obj_id) += draw_object_v_angle(obj_id)
-        draw_object_scale(obj_id) = limitf(draw_object_scale(obj_id) + draw_object_vs(obj_id), 0.0)
-        draw_object_alpha(obj_id) = limitf(draw_object_alpha(obj_id) + draw_object_va(obj_id), 0, 255)
-    foreach_end
-    return
+#deffunc update_priority_draw_object int id, int _priority
+	draw_object_priority(id) = _priority
+	return
+
+#deffunc update_params_draw_object int id, str s
+    draw_object_params(id) = s
+	return
+	
+//ライフ操作系
+#deffunc reset_life_draw_object int id
+    draw_object_life(id) = draw_object_max_life(id)
+    draw_object_life_elapsed(id) = 0.
+	return
+
+#deffunc extend_life_draw_object int id, double extra
+    if draw_object_life(id) < LIFE_FOREVER {
+        draw_object_life(id) += extra
+        draw_object_life(id) = limitf(draw_object_life(id), 0.0, draw_object_max_life(id))
+    }
+	return
+
 
 #global
 init_draw_objects
@@ -196,13 +275,11 @@ init_draw_objects
 	
 	block_size = 12  // 初期ブロックサイズ
 
-	;/*/
 	ss = 0
 	while ss < a_num - 1
 		insertion_sort_range a, ss, limit(ss + block_size - 1,, a_num - 1), b
 		ss += block_size
 	wend
-	;*/
     while block_size < a_num
         start = 0  // ブロックの開始位置
         while start < a_num
@@ -210,7 +287,7 @@ init_draw_objects
             mid = start + block_size - 1 //左ブロック終端
             e = limit(start + 2 * block_size - 1,, a_num - 1) // 右ブロック終端
             if e <= mid : _break //右ブロックが存在しない
-            j = mid + 1     // 右ブロックの開始インデックス
+            j = mid + 1 // 右ブロックの開始インデックス
             
             leftsize = j - start
 

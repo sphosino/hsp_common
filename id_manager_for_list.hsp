@@ -2,7 +2,6 @@
 
 #addition "id_manager.hsp"
 
-//見つからない場合の候補群
 #addition "hsp_common/id_manager.hsp"
 #addition "../hsp_common/id_manager.hsp"
 #addition "../../hsp_common/id_manager.hsp"
@@ -15,9 +14,9 @@
 
 #modinit int p1
 	if p1 == 0{
-		//id_manager側で確保した初期サイズに合わせる。
+		//id_manager側で確保した�E期サイズに合わせる、E
 		newmod id_list_manager, id_manager
-		dim id_to_listnum, get_id_length(id_list_manager) //確保したサイズを取得して設定
+		dim id_to_listnum, get_id_length(id_list_manager) //確保したサイズを取得して設宁E
 		dim listnum_to_id, get_id_length(id_list_manager)
 	}else: if p1 < 0 {
 		//マイナスならlist_id_managerの初期値
@@ -25,7 +24,7 @@
 		dim id_to_listnum, DEFAULT_SIZE
 		dim listnum_to_id, DEFAULT_SIZE
 	}else{
-		//指定値で確保
+		//持E��値で確俁E
 		newmod id_list_manager, id_manager, p1
 		dim id_to_listnum, p1
 		dim listnum_to_id, p1

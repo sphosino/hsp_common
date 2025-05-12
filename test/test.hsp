@@ -1,4 +1,4 @@
-
+#include "../../hsp_common/keyfps.hsp"
 #include "../renderer.hsp"
 
 //‰E‰ºˆÚ“®OK

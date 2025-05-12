@@ -1,5 +1,11 @@
 #ifndef hash_manager
+
+#addition "id_manager.hsp"
+
+#addition "hsp_common/id_manager.hsp"
+#addition "../hsp_common/id_manager.hsp"
 #addition "../../hsp_common/id_manager.hsp"
+
 #module hash_manager data, hashcount, hashtable, hash_id_manager, valid_hash_manager, valid_hash, valid_tableid_to_hash
 
 #enum KEY = 0

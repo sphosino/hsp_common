@@ -1,0 +1,56 @@
+#ifndef static
+#module static x, y, w, h, alpha, angle
+
+#modinit double _x, double _y, double _w, double _h, local thismod_ID
+	x = _x : y = _y : w = _w : h = _h
+	alpha = 255.
+	mref thismod_ID, 2
+	return thismod_ID
+
+#modcfunc _get_static_posx
+	return x
+#modcfunc _get_static_posy
+	return y
+#modcfunc _get_static_sizex
+	return w
+#modcfunc _get_static_sizey
+	return h
+#modcfunc _get_static_alpha
+	return alpha
+#modcfunc _get_static_angle
+	return angle
+#global
+
+
+#module static_manager 
+
+#defcfunc make_static_obj double x, double y, double w, double h
+	newmod data, static, x, y, w, h
+	return stat
+	
+#defcfunc get_static_posx int id
+	return _get_static_posx(data(id))
+	
+#defcfunc get_static_posy int id
+	return _get_static_posy(data(id))
+	
+#defcfunc get_static_sizex int id
+	return _get_static_sizex(data(id))
+	
+#defcfunc get_static_sizey int id
+	return _get_static_sizey(data(id))
+
+#defcfunc get_static_alpha int id
+	return _get_static_alpha(data(id))
+#defcfunc get_static_angle int id
+	return _get_static_angle(data(id))
+	
+#deffunc update_static int id, double dt
+	; ‚È‚É‚à‚µ‚È‚¢
+	return
+
+#deffunc del_static_obj int id
+	delmod data(id)
+	return
+#global
+#endif

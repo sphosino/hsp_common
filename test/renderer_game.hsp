@@ -15,7 +15,7 @@ player_sizey = 30.
 player_vx = 0.0
 player_vy = 0.0
 player_ax = 0.0
-jump_power = -250.
+jump_power = -350.
 
 init_draw_objects
 randomize
@@ -29,7 +29,7 @@ life = 3
 
 DIRECTION_CHANGE_DAMPENING = 0.9//逆方向選択時の速度の瞬間変動率
 REVERSE_MULTIPLIER = 2.0 //逆方向への加速倍率
-FRICTON = 0.95 //入力なし時の減速率
+FRICTON = 0.97 //入力なし時の減速率
 
 // 足場の管理
 #enum BLOCK_TYPE_NORMAL = 0  // 乗れるだけ
@@ -83,9 +83,11 @@ set_priority_draw_object bg, PRIORITY_BACK
 
 setfps 60
 *main
-    manage_keyfps
+    manage_keyfps //fps調整と_getkey()サポート
 
     dt = frametime()
+
+    notify_dt_draw_object dt //ドローオブジェクトモジュールに通知
     
 
 
@@ -103,22 +105,15 @@ setfps 60
 		if gameover >= 0 && _getkey(32) == 1{
 			gosub *init
 		}
-
+		
 		//--- ジャンプ処理 ---
-		if on_ground && _getkey(32) >= 1{
+		if on_ground && _getkey(32) == 1{
 		    player_vy = jump_power 
+		    player_vx += block_move / dt //こうしてみたら割といい感じになった。
+		    logmes strf("%f3 , %f3", player_vx, block_move)
+		    on_ground = 0
 		}
 		
-		//--- 滑空処理の条件判定 ---
-		if on_ground == 0 && player_vy > 20 && _getkey(38) >= 1 {
-		    gliding = 1
-		    gravity_now = 100.		    
-		    make_draw_object TYPE_STR, 1, player_x, player_y - 30, 0, 0, 0, 0, "メイリオ,20,滑空中～♪"
-		} else {
-		    gliding = 0
-		    gravity_now = 440.
-		}
-
 		moving_right = player_vx > 0
 		moving_left = player_vx < 0
 		wants_to_go_right = _getkey(39) >= 1
@@ -138,13 +133,25 @@ setfps 60
 		}else: if wants_to_go_left{
 			player_vx -= ax * dt
 		}else{
-			player_vx *= FRICTION
+			if on_ground: player_vx *= FRICTION
 		}		
+
+				//--- 滑空処理の条件判定 ---
+		if on_ground == 0 && player_vy > 20 && _getkey(38) >= 1 {
+		    gliding = 1
+		    gravity_now = 100.
+		    make_draw_object TYPE_STR, 1, player_x, player_y - 30, 0, 0, 0, 0, "メイリオ,20,滑空中～♪"
+		} else {
+		    gliding = 0
+		    gravity_now = 440.
+		}
 			
 		player_vy += gravity_now * dt
 		
 		//--- 速度から位置を更新 ---
-		player_x += player_vx * dt + (block_move * on_ground); block_move はフレーム単位のまま
+
+		// X位置の更新（ブロックによる影響を合成）
+		player_x += player_vx * dt + (block_move * on_ground)
 		player_y += player_vy * dt
 
 		title strf("%f,%d,%d,%d,%d", dt, wants_to_go_right,wants_to_go_left, moving_right, moving_left)
@@ -171,7 +178,7 @@ setfps 60
 	cc = 0
 	foreach_id blocks_id_manager, id
 	
-	    block_x(id) += block_vx(id) ; 左に動かす
+	    block_x(id) += block_vx(id) * dt ; 左に動かす
 	    make_draw_object TYPE_RECT, 1, block_x(id), block_y(id), block_w(id), block_h(id), 0, 0, strf("%d", block_colors(block_type(id)))
 		set_priority_draw_object stat, PRIORITY_NORMAL + (frame_counter() - c) * 1000 + cc // c = init時に取得したカウンタ
 		cc++
@@ -182,6 +189,7 @@ setfps 60
 	
 	// --- 足場判定 ---
 	on_ground = 0
+	block_move = 0.
 	if gameover == -1{
 		foreach_id blocks_id_manager, id
 			// ブロックとの当たり判定
@@ -195,7 +203,7 @@ setfps 60
 						player_vy = 0.0
 		
 						// ★ブロックの横移動をプレイヤーにも伝える！
-						block_move = block_vx(id)
+						block_move = block_vx(id) * dt
 						on_ground = 1
 						break
 					}
@@ -241,7 +249,7 @@ setfps 60
 	// --- 敵の動きと描画 ---
 	foreach_id enemies_id_manager, id
 		// 移動
-		enemy_x(id) += enemy_vx(id)
+		enemy_x(id) += enemy_vx(id) * dt
 	
 		// 端で反転
 		if enemy_x(id) < 0 or enemy_x(id) > 640 {
@@ -294,6 +302,7 @@ setfps 60
 	
 	        player_x = block_x(id)
 	        player_y = block_y(id) - (block_h(id) + player_sizey) / 2
+	        player_vx = 0
 	        player_vy = 0
 	    } else {
 	        // ゲームオーバー処理
@@ -305,8 +314,9 @@ setfps 60
 	
 	//アイテムの動き
 	foreach_id items_id_manager, id
-	    item_vy(id) += item_gravity(id)
-	    item_y(id) += item_vy(id)
+		item_x(id) += item_vx(id) * dt
+	    item_vy(id) += item_gravity(id) * dt
+	    item_y(id) += item_vy(id) * dt
 	    make_draw_object TYPE_SPRITE, 1, item_x(id), item_y(id), 75,80, 0,0, strf("20,%d,0,75,80,0,0,0", item_type(id)*75)
 	
 	    ; アイテムが画面外に落ちたら消す
@@ -392,7 +402,7 @@ setfps 60
     id = get_new_id(blocks_id_manager)
     block_x(id) = 600.
     block_y(id) = 200. + rnd(280) ; 200～480の範囲で
-    block_vx(id) = -4. * 60 * dt 
+    block_vx(id) = -4. * 60
     block_vy(id) = 0.
     block_w(id) = 80.
     block_h(id) = 20.
@@ -405,21 +415,21 @@ setfps 60
 	eid = get_new_id(enemies_id_manager)
 	enemy_x(eid) = px
 	enemy_y(eid) = py ; ブロックの上にちょこんと置く
-	enemy_vx(eid) = -4.
 	enemy_vy(eid) = 0.
 	enemy_w(eid) = 20.
 	enemy_h(eid) = 20.
-	enemy_vx(eid) = -1. + rnd(2)*2 ; -1 or 1 (左右ランダムに動く)
+	enemy_vx(eid) = 60. + (rnd(2)*2 - 1); -1 or 1 (左右ランダムに動く)
 	return
 
 #deffunc make_item double px, double py
 	item_id = get_new_id(items_id_manager)
     item_x(item_id) = px
     item_y(item_id) = py
-    item_vy(item_id) = -0.9
+    item_vx(item_id) = 0.
+    item_vy(item_id) = -3. * 60
     item_w(item_id) = 20.
     item_h(item_id) = 20.
-    item_gravity(item_id) = 0.2
+    item_gravity(item_id) = 2. * 60
     item_type(item_id) = rnd(3) // アイテムの種類を指定
 	return
 

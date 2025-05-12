@@ -1,0 +1,263 @@
+#ifndef init_draw_objects
+#addition "id_manager.hsp"
+#addition "color_manager.hsp"
+#addition "rboxf.hsp"
+#module
+
+#const DRAW_OBJECTS_MAX 3000
+
+#const global PRIORITY_BACK 50000
+#const global PRIORITY_NORMAL 100000
+#const global PRIORITY_FRONT 150000
+
+#enum global TYPE_RECT = 0
+#enum global TYPE_CIRCLE
+#enum global TYPE_STR
+#enum global TYPE_LINE
+#enum global TYPE_SPRITE
+
+
+#deffunc init_draw_objects
+    // オブジェクト基本情報
+    dim draw_object_type, DRAW_OBJECTS_MAX
+    sdim draw_object_params, DRAW_OBJECTS_MAX
+    dim draw_object_life, DRAW_OBJECTS_MAX
+    dim draw_object_priority, DRAW_OBJECTS_MAX
+
+    // オブジェクト位置・速度情報
+    ddim draw_object_posx, DRAW_OBJECTS_MAX
+    ddim draw_object_posy, DRAW_OBJECTS_MAX
+    ddim draw_object_sizex, DRAW_OBJECTS_MAX
+    ddim draw_object_sizey, DRAW_OBJECTS_MAX
+    ddim draw_object_vx, DRAW_OBJECTS_MAX
+    ddim draw_object_vy, DRAW_OBJECTS_MAX
+    ddim draw_object_scale, DRAW_OBJECTS_MAX
+    ddim draw_object_angle, DRAW_OBJECTS_MAX
+    ddim draw_object_v_angle, DRAW_OBJECTS_MAX
+    ddim draw_object_vs, DRAW_OBJECTS_MAX
+    ddim draw_object_alpha, DRAW_OBJECTS_MAX
+    ddim draw_object_va, DRAW_OBJECTS_MAX
+
+	// --- モジュール変数
+	newmod draw_object_id_manager, id_manager, DRAW_OBJECTS_MAX
+    return
+
+#deffunc make_draw_object int _type, int life, double x, double y, double w, double h, double vx, double vy, str parameters
+    if life == 0 : return -1
+
+    id = get_new_id(draw_object_id_manager)
+
+    draw_object_priority(id) = PRIORITY_NORMAL
+    draw_object_type(id) = _type
+    draw_object_life(id) = life
+    draw_object_posx(id) = x
+    draw_object_posy(id) = y
+    draw_object_sizex(id) = w
+    draw_object_sizey(id) = h
+    draw_object_vx(id) = vx
+    draw_object_vy(id) = vy
+    draw_object_scale(id) = 1.0
+    draw_object_vs(id) = 0.0
+    draw_object_angle(id) = 0.0
+    draw_object_v_angle(id) = 0.0
+    draw_object_alpha(id) = 256.
+    draw_object_va(id) = 0.0
+    draw_object_params(id) = parameters
+
+    if _type == TYPE_STR {
+        split draw_object_params(id), ",", tmp
+        npos = ginfo_cx,ginfo_cy
+        pos -500, 0
+        font tmp.0, int(tmp.1)
+        mes tmp.2
+        draw_object_sizex(id) = double(ginfo_mesx)
+        draw_object_sizey(id) = double(ginfo_mesy)
+        pos npos, npos.1
+    }
+
+    if _type == TYPE_SPRITE {
+        split draw_object_params(id), ",", tmp
+        draw_object_vs(id) = double(tmp.5)
+        draw_object_va(id) = double(tmp.6)
+        draw_object_v_angle(id) = double(tmp.7)
+    }
+
+    return id
+#deffunc destroy_draw_object int nid
+    draw_object_life(nid) = 1
+    return
+#deffunc destroy_draw_object_immediately int nid
+    release_id draw_object_id_manager, nid
+    return
+#deffunc set_priority_draw_object int nid, int priority
+	draw_object_priority(nid) = priority
+	return
+#deffunc draw_objects
+    idnum = get_used_ids( draw_object_id_manager, ids)
+    sort_list_by_priority_list ids, idnum, draw_object_priority
+
+    repeat idnum
+        obj_id = ids(cnt)
+
+        switch draw_object_type(obj_id)
+        case TYPE_RECT
+            split draw_object_params(obj_id),",",tmp
+            色を設定 int(tmp.0)
+            rect.0 = draw_object_posx(obj_id) - draw_object_sizex(obj_id)/2
+            rect.1 = draw_object_posy(obj_id) - draw_object_sizey(obj_id)/2
+            rect.2 = draw_object_posx(obj_id) + draw_object_sizex(obj_id)/2
+            rect.3 = draw_object_posy(obj_id) + draw_object_sizey(obj_id)/2
+            aboxf rect
+        swbreak
+
+        case TYPE_CIRCLE
+            split draw_object_params(obj_id),",",tmp
+            色を設定 int(tmp.0)
+            rect.0 = draw_object_posx(obj_id) - draw_object_sizex(obj_id)/2
+            rect.1 = draw_object_posy(obj_id) - draw_object_sizey(obj_id)/2
+            rect.2 = draw_object_posx(obj_id) + draw_object_sizex(obj_id)/2
+            rect.3 = draw_object_posy(obj_id) + draw_object_sizey(obj_id)/2
+            acircle rect, int(tmp.1)
+        swbreak
+
+        case TYPE_STR
+            split draw_object_params(obj_id),",",tmp
+            rect.0 = draw_object_posx(obj_id) - draw_object_sizex(obj_id)/2
+            rect.1 = draw_object_posy(obj_id) - draw_object_sizey(obj_id)/2
+            pos rect.0,rect.1
+            font tmp.0, int(tmp.1)
+            色を設定 int(tmp.3)
+            mes tmp.2
+        swbreak
+
+		case TYPE_LINE
+		    split draw_object_params(obj_id), ",", tmp
+		    色を設定 int(tmp.0)
+		    x1 = draw_object_posx(obj_id)
+		    y1 = draw_object_posy(obj_id)
+		    x2 = x1 + draw_object_sizex(obj_id)
+		    y2 = y1 + draw_object_sizey(obj_id)
+		    line x1, y1, x2, y2
+		swbreak
+
+        case TYPE_SPRITE
+            split draw_object_params(obj_id),",",tmp
+            imgid = int(tmp.0)
+            sx = int(tmp.1)
+            sy = int(tmp.2)
+            sw = int(tmp.3)
+            sh = int(tmp.4)
+            dx = draw_object_posx(obj_id)
+            dy = draw_object_posy(obj_id)
+
+            color 0,0,0
+            gmode 4, sw, sh, draw_object_alpha(obj_id)
+            pos dx, dy
+
+            scaled_sizex = draw_object_sizex(obj_id) * draw_object_scale(obj_id)
+            scaled_sizey = draw_object_sizey(obj_id) * draw_object_scale(obj_id)
+
+            grotate imgid, sx, sy, draw_object_angle(obj_id), scaled_sizex, scaled_sizey
+        swbreak
+
+        swend
+
+		 if draw_object_life(obj_id) > 0 {
+		    draw_object_life(obj_id)--
+		    if draw_object_life(obj_id) <= 0 {
+		        destroy_draw_object_immediately obj_id
+		    }
+		}
+    loop
+    return
+
+#deffunc update_draw_objects
+    foreach_id draw_object_id_manager, obj_id
+        draw_object_posx(obj_id) += draw_object_vx(obj_id)
+        draw_object_posy(obj_id) += draw_object_vy(obj_id)
+        draw_object_angle(obj_id) += draw_object_v_angle(obj_id)
+        draw_object_scale(obj_id) = limitf(draw_object_scale(obj_id) + draw_object_vs(obj_id), 0.0)
+        draw_object_alpha(obj_id) = limitf(draw_object_alpha(obj_id) + draw_object_va(obj_id), 0, 255)
+    foreach_end
+    return
+
+#global
+init_draw_objects
+
+
+#module
+#deffunc sort_list_by_priority_list array a, int a_num, array b
+    if a_num <= 1 : return  // 要素数が1以下ならソート不要
+
+	;insertion_sort_range a, 0, a_num-1, b: return
+	
+    // 作業用配列を準備
+    dim temp, a_num
+	
+	block_size = 12  // 初期ブロックサイズ
+
+	;/*/
+	ss = 0
+	while ss < a_num - 1
+		insertion_sort_range a, ss, limit(ss + block_size - 1,, a_num - 1), b
+		ss += block_size
+	wend
+	;*/
+    while block_size < a_num
+        start = 0  // ブロックの開始位置
+        while start < a_num
+            // マージする左ブロックと右ブロックの範囲を計算
+            mid = start + block_size - 1 //左ブロック終端
+            e = limit(start + 2 * block_size - 1,, a_num - 1) // 右ブロック終端
+            if e <= mid : _break //右ブロックが存在しない
+            j = mid + 1     // 右ブロックの開始インデックス
+            
+            leftsize = j - start
+
+            // マージ処理
+            k = 0 // temp配列のインデックス
+			memcpy temp, a, leftsize << 2,, start << 2 //左半分を作業配列にコピー
+
+            // 両ブロックを比較しながらマージ
+			*loop_label
+	            if b(temp(k)) <= b(a(j)) {
+	                a(start) = temp(k)
+	                k++
+	                if k >= leftsize{
+		                start = e + 1
+		                _continue //マージ完了なので、内側のwhileの条件比較に向かう
+		            }
+	            } else {
+	                a(start) = a(j)
+	               	if j >= e{
+		               	memcpy a, temp, leftsize -  k << 2, start + 1 << 2, k << 2
+		               	start = e + 1
+		               	_continue
+		           }
+	               j++
+	            }
+	            start++
+            goto *loop_label
+        wend
+        block_size *= 2  // ブロックサイズを倍増
+    wend
+    return
+#global
+
+#module
+#deffunc insertion_sort_range array a, int s, int e, array b
+	// a配列[s]～[e]を、bの優先度で昇順ソートする 
+	if e <= s : return
+	repeat e - s, s
+		target = a(cnt + 1)
+		priority = b(target)
+		j = cnt
+		while b(a(j)) > priority
+			a(j + 1) = a(j)
+			j--
+			if j >= s: wend
+		a(j + 1) = target
+	loop
+	return
+#global
+#endif
