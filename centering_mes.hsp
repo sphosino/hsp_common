@@ -4,19 +4,18 @@
 #const XY_RATIO 1.6 //文字のXY比
 
 /*
-内容	倍率	説明
-攻めたい	*1.75?*1.8	フォントによってはハミ出す
-安定志向	*1.6?*1.7	ほどよく収まる、安全マージンあり
-カツカツに見せたい	*1.85?	でもハミ出しリスク高め?
+内容	            倍率	           説明
+攻めたい	        *1.75～*1.8	フォントによってはハミ出す
+安定志向	        *1.6 ～*1.7	ほどよく収まる、安全マージンあり
+カツカツに見せたい	*1.85～	    でもハミ出しリスク高め?
 */
 
 #deffunc centering_mes str s1, array rect, str fontname, int p1
-	s= s1
 
+	s = s1
+	
 	notesel s
-	
 		行サイズ = (rect.3-rect.1) / notemax
-	
 		repeat notemax
 			noteget b,cnt
 			
@@ -37,10 +36,6 @@
 		loop
 	noteunsel
 	
-	return
-
-#deffunc draw_rect array a
-	boxf a,a.1,a.2,a.3
 	return
 	
 #global
