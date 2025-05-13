@@ -136,6 +136,9 @@
 	_set_ease_angle data(id), from, to, type
 	return
 
+#defcfunc is_entity_id_alive int id
+	return varuse(data(id))
+
 #defcfunc get_ease_posx int id, double t
 	return _get_ease_posx(data(id), t)
 #defcfunc get_ease_posy int id, double t

@@ -23,8 +23,12 @@
 			文字数 = strlen(b)
 
 			pos 3000, 3000
+
+			fsize = limit(行サイズ,,double(rect.2 - rect.0) * XY_RATIO / 文字数)
+
+			if fsize < 2: continue
 			
-			font fontname, limit(行サイズ,,double(rect.2 - rect.0) * XY_RATIO / 文字数)
+			font fontname, fsize
 			mes b, p1
 
 			pos (rect.2 + rect.0) / 2 - ginfo(14) / 2, rect.1 + (行サイズ * cnt) + 行サイズ / 2 - ginfo(15) / 2
