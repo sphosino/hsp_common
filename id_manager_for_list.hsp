@@ -14,17 +14,14 @@
 
 #modinit int p1
 	if p1 == 0{
-		//id_manager側で確保した�E期サイズに合わせる、E
 		newmod id_list_manager, id_manager
-		dim id_to_listnum, get_id_length(id_list_manager) //確保したサイズを取得して設宁E
+		dim id_to_listnum, get_id_length(id_list_manager)
 		dim listnum_to_id, get_id_length(id_list_manager)
 	}else: if p1 < 0 {
-		//マイナスならlist_id_managerの初期値
 		newmod id_list_manager, id_manager, DEFAULT_SIZE
 		dim id_to_listnum, DEFAULT_SIZE
 		dim listnum_to_id, DEFAULT_SIZE
 	}else{
-		//持E��値で確俁E
 		newmod id_list_manager, id_manager, p1
 		dim id_to_listnum, p1
 		dim listnum_to_id, p1
@@ -66,7 +63,9 @@
 	return
 	
 #modfunc delete_by_itemid int p1
-	delete_by_listnum thismod, id_to_listnum(p1)
+	if is_id_alive(id_list_manager, p1){
+		delete_by_listnum thismod, id_to_listnum(p1)
+	}
 	return
 
 #modcfunc get_list_count

@@ -1,5 +1,9 @@
 #include "../../hsp_common/keyfps.hsp"
 #include "../renderer.hsp"
+#include "../draw_obj/ease.hsp"
+#include "../draw_obj/physis.hsp"
+#include "../draw_obj/static.hsp"
+#include "../centering_mes.hsp"
 
 //右下移動OK
 id = make_draw_object(MOVE_TYPE_PHYSIS, TYPE_RECT, 3, 640/2, 480/2, 100,100,"$00FF00")
@@ -25,7 +29,7 @@ id = make_draw_object (MOVE_TYPE_STATIC, TYPE_RECT, LIFE_FOREVER, 640/2,480/2,64
 update_priority_draw_object id, PRIORITY_BACK
 
 //fps表示してみるー
-info_id = make_draw_object (MOVE_TYPE_STATIC, TYPE_STR, LIFE_FOREVER, 50, 20, -0,-0, "")
+info_id = make_draw_object (MOVE_TYPE_STATIC, TYPE_STR, LIFE_FOREVER, 150, 60, 150, 190, "")
 
 
 //お化けが回転したにゃ！
@@ -40,9 +44,10 @@ set_ease_angle get_entity_id(id), 0, 3.14*2 * 5, ease_quad_inout
 	dt = frametime()
 	notify_dt_draw_object dt
 
-	update_params_draw_object info_id, strf("メイリオ,20,%f,$FFFFFF",getrealfpsf()) 
+	update_params_draw_object info_id, strf("%f,$00FFFF,メイリオ",getrealfpsf()) 
 	
 	draw_objects
 
 	redraw: redraw 2
 	goto*main
+

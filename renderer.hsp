@@ -1,11 +1,16 @@
 #ifndef init_draw_objects
 
-#addition "id_manager.hsp"
+#addition "id_manager_for_list.hsp"
 #addition "color_manager.hsp"
 #addition "rboxf.hsp"
+
+#addition "centering_mes.hsp"
+
 #addition "draw_obj/physis.hsp"
 #addition "draw_obj/ease.hsp"
 #addition "draw_obj/static.hsp"
+
+
 
 #module
 
@@ -39,7 +44,7 @@
     sdim draw_object_params  , DRAW_OBJECTS_MAX
     ddim draw_object_life_elapsed, DRAW_OBJECTS_MAX
     
-	newmod draw_object_id_manager, id_manager, DRAW_OBJECTS_MAX
+	newmod draw_object_id_manager, list_id_manager, DRAW_OBJECTS_MAX //変更１
 
     return
 
@@ -55,7 +60,7 @@
 
     //基本情報
     
-    newid = get_new_id(draw_object_id_manager)
+    newid = get_new_id_for_list(draw_object_id_manager)　//変更２
     
     draw_object_priority(newid) = PRIORITY_NORMAL
     draw_object_life_max(newid) = life
@@ -84,7 +89,7 @@
     
 #deffunc destroy_draw_object_immediately int id
 	; IDを解放
-    release_id draw_object_id_manager, id
+    delete_by_itemid draw_object_id_manager, id //変更３
 
 	; エンティティの種類に応じて削除処理
 	switch draw_object_move_type(id)
@@ -103,7 +108,7 @@
     
 
 #deffunc draw_objects
-    idnum = get_used_ids( draw_object_id_manager, ids)
+    idnum = get_list_ids( draw_object_id_manager, ids) //変更４
     sort_list_by_priority_list ids, idnum, draw_object_priority
 
     repeat idnum
@@ -177,14 +182,18 @@
         
 		    rect.0 = x - w / 2
 		    rect.1 = y - h / 2
-            
-            font tmp.0, int(tmp.1)
-				pos 1000,1000
-				mes tmp.2
+           	rect.2 = x + w / 2
+		    rect.3 = y + h / 2 
+	
+			色を設定 int(tmp.1)
+			フォント名 = "": if stat >= 3:　フォント名 = tmp.2
+			オプション = 0: if stat >= 4: オプション = int(tmp.3)
+			if stat >= 5{
+				t = int(tmp.4)
+				objcolor t>>16&255,t>>8&255,t&255
+			}
+		    centering_mes tmp.0, rect, フォント名, オプション
 
-            pos rect.0 - ginfo_mesx/2,rect.1 - ginfo_mesy/2
-            色を設定 int(tmp.3)
-            mes tmp.2
         swbreak
 
 		case TYPE_LINE
