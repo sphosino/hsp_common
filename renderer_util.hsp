@@ -177,7 +177,17 @@
 	
 	return id
 
-
+#deffunc spawn_ripple_effect int cx, int cy
+	repeat 3
+		r = 30 * (cnt + 1)
+		alpha = 255 - cnt * 80
+		id = make_draw_object(MOVE_TYPE_EASE, TYPE_CIRCLE, 0.6, cx, cy, r, r, strf("$00FFFF,1"))
+		set_ease_sizex get_entity_id(id), 0, r, ease_quad_out
+		set_ease_sizey get_entity_id(id), 0, r, ease_quad_out
+		set_ease_alpha get_entity_id(id), alpha, 0, ease_linear
+		set_easetime_all get_entity_id(id), 0.6
+	loop
+	return
 #global
 #endif
 

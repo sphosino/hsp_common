@@ -5,6 +5,7 @@
 #include "../draw_obj/physis.hsp"
 #include "../draw_obj/static.hsp"
 #include "../centering_mes.hsp"
+#include "../renderer_util.hsp"
 
 //‰E‰ºˆÚ“®OK
 id = make_draw_object(MOVE_TYPE_PHYSIS, TYPE_RECT, 3, 640/2, 480/2, 100,100,"$00FF00")
@@ -47,6 +48,8 @@ set_ease_angle get_entity_id(id), 0, 3.14*2 * 5, ease_quad_inout
 	notify_dt_draw_object dt
 
 	update_params_draw_object info_id, strf("%f,$00FFFF,ƒƒCƒŠƒI",getrealfpsf()) 
+
+	if _getkey(1) == 1{	spawn_ripple_effect mousex, mousey}
 	
 	draw_objects
 
