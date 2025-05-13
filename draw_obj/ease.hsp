@@ -3,22 +3,23 @@
 #module ease from, to, type, easetime
 
 #modinit double _from, double _to, int _type, local thismod_ID
-	set_ease_obj thismod, _from, _to, _type
-	easetime = 1.0
+	set_ease_obj thismod, _from, _to, _type, 1.0
 	mref thismod_ID, 2
 	return thismod_ID
 	
 #modfunc set_ease_time double t
+	if t == 0: return
 	easetime = t
 	return
 
-#modfunc set_ease_obj double _from, double _to, int _type
+#modfunc set_ease_obj double _from, double _to, int _type, double t
 	from = _from
 	to = _to
-	type = _type 
+	type = _type
+	set_ease_time thismod, t
 	return
 
-#modfunc reverse_ease 
+#modfunc reverse_ease
 	tmp = from
 	from = to
 	to = tmp
@@ -36,7 +37,7 @@
 
 
 //複数のeaseを束ねたオブジェクト
-#module ease_obj x, y, sx, sy, a, r
+#module ease_obj x, y, sx, sy, a, r, u
 
 #modinit int posx, int posy, int sizex, int sizey, local thismod_ID
 	// 最初はその場に動かないオブジェクトを作成
@@ -46,6 +47,7 @@
 	newmod sy, ease, sizey, sizey, ease_linear
 	newmod a, ease, 255, 255, ease_linear
 	newmod r, ease, 0, 0, ease_linear
+	newmod u, ease, 0, 0, ease_linear
 	mref thismod_ID, 2
 	return thismod_ID
 	
@@ -56,25 +58,29 @@
 	set_ease_time sy, time
 	set_ease_time a, time
 	set_ease_time r, time
+	set_ease_time u, time
 	return
 	
-#modfunc _set_ease_posx double from, double to, int type
-	set_ease_obj x, from, to, type
+#modfunc _set_ease_posx double from, double to, int type, double t
+	set_ease_obj x, from, to, type, t
 	return
-#modfunc _set_ease_posy double from, double to, int type
-	set_ease_obj y, from, to, type
+#modfunc _set_ease_posy double from, double to, int type, double t
+	set_ease_obj y, from, to, type, t
 	return
-#modfunc _set_ease_sizex double from, double to, int type
-	set_ease_obj sx, from, to, type
+#modfunc _set_ease_sizex double from, double to, int type, double t
+	set_ease_obj sx, from, to, type, t
 	return
-#modfunc _set_ease_sizey double from, double to, int type
-	set_ease_obj sy, from, to, type
+#modfunc _set_ease_sizey double from, double to, int type, double t
+	set_ease_obj sy, from, to, type, t
 	return
-#modfunc _set_ease_alpha double from, double to, int type
-	set_ease_obj a, from, to, type
+#modfunc _set_ease_alpha double from, double to, int type, double t
+	set_ease_obj a, from, to, type, t
 	return
-#modfunc _set_ease_angle double from, double to, int type
-	set_ease_obj r, from, to, type
+#modfunc _set_ease_angle double from, double to, int type, double t
+	set_ease_obj r, from, to, type, t
+	return
+#modfunc _set_ease_custom double from, double to, int type, double t
+	set_ease_obj u, from, to, type, t
 	return
 	
 #modcfunc _get_ease_posx double t
@@ -89,15 +95,9 @@
 	return _get_ease_value(a, t)
 #modcfunc _get_ease_angle double t
 	return _get_ease_value(r, t)
+#modcfunc _get_ease_custom double t
+	return _get_ease_value(u, t)
 	
-#modterm
-	delmod x
-	delmod y
-	delmod sx
-	delmod sy
-	delmod r
-	return
-
 #global
 
 
@@ -111,30 +111,15 @@
 #deffunc set_easetime_all int id, double time
 	_set_easetime_all data(id), time
 	return
-	
-#deffunc set_ease_posx int id, double from, double to, int type
-	_set_ease_posx data(id), from, to, type
-	return
-	
-#deffunc set_ease_posy int id, double from, double to, int type
-	_set_ease_posy data(id), from, to, type
-	return
-	
-#deffunc set_ease_sizex int id, double from, double to, int type
-	_set_ease_sizex data(id), from, to, type
-	return
-	
-#deffunc set_ease_sizey int id, double from, double to, int type
-	_set_ease_sizey data(id), from, to, type
-	return
 
-#deffunc set_ease_alpha int id, double from, double to, int type
-	_set_ease_alpha data(id), from, to, type
-	return
-
-#deffunc set_ease_angle int id, double from, double to, int type
-	_set_ease_angle data(id), from, to, type
-	return
+//マクロで定義easetimeを個別で指定可能に0.0なら設定を変更しない
+#define global set_ease_posx(%1,%2,%3,%4 = 0, %5 = 0.0) _set_ease_posx data@ease_obj_manager(%1),%2,%3,%4,%5
+#define global set_ease_posy(%1,%2,%3,%4 = 0, %5 = 0.0) _set_ease_posy data@ease_obj_manager(%1),%2,%3,%4,%5
+#define global set_ease_sizex(%1,%2,%3,%4 = 0, %5 = 0.0) _set_ease_sizex data@ease_obj_manager(%1),%2,%3,%4,%5
+#define global set_ease_sizey(%1,%2,%3,%4 = 0, %5 = 0.0) _set_ease_sizey data@ease_obj_manager(%1),%2,%3,%4,%5
+#define global set_ease_alpha(%1,%2,%3,%4 = 0, %5 = 0.0) _set_ease_alpha data@ease_obj_manager(%1),%2,%3,%4,%5
+#define global set_ease_angle(%1,%2,%3,%4 = 0, %5 = 0.0) _set_ease_angle data@ease_obj_manager(%1),%2,%3,%4,%5
+#define global set_ease_custom(%1,%2,%3,%4 = 0, %5 = 0.0) _set_ease_custom data@ease_obj_manager(%1),%2,%3,%4,%5
 
 #defcfunc is_entity_id_alive int id
 	return varuse(data(id))
@@ -151,6 +136,8 @@
 	return _get_ease_alpha(data(id), t)
 #defcfunc get_ease_angle int id, double t
 	return _get_ease_angle(data(id), t)
+#defcfunc get_ease_custom int id, double t
+	return _get_ease_custom(data(id), t)
 	
 #deffunc del_ease_obj int id
 	delmod data(id)

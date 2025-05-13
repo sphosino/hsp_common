@@ -10,8 +10,6 @@
 #addition "draw_obj/ease.hsp"
 #addition "draw_obj/static.hsp"
 
-
-
 #module
 
 #const DRAW_OBJECTS_MAX 3000

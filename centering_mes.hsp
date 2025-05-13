@@ -4,10 +4,10 @@
 #const XY_RATIO 1.6 //文字のXY比
 
 /*
-内容	            倍率	           説明
-攻めたい	        *1.75～*1.8	フォントによってはハミ出す
-安定志向	        *1.6 ～*1.7	ほどよく収まる、安全マージンあり
-カツカツに見せたい	*1.85～	    でもハミ出しリスク高め?
+内容	            倍率	        説明
+攻めたい	        *1.75～*1.8	 フォントによってはハミ出す
+安定志向	        *1.6 ～*1.7	 ほどよく収まる、安全マージンあり
+カツカツに見せたい	*1.85～	     でもハミ出しリスク高め?
 */
 
 #deffunc centering_mes str s1, array rect, str fontname, int p1
@@ -23,7 +23,7 @@
 
 			pos 3000, 3000
 
-			fsize = limit(行サイズ,,double(rect.2 - rect.0) * XY_RATIO / 文字数)
+			fsize = limitf(行サイズ,,double(rect.2 - rect.0) * XY_RATIO / 文字数)
 
 			if fsize < 2: continue
 			
