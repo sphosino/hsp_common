@@ -45,7 +45,7 @@
 	newmod y, ease, posy, posy, ease_linear
 	newmod sx, ease, sizex, sizex, ease_linear
 	newmod sy, ease, sizey, sizey, ease_linear
-	newmod a, ease, 255, 255, ease_linear
+	newmod a, ease, 256, 256, ease_linear
 	newmod r, ease, 0, 0, ease_linear
 	newmod u, ease, 0, 0, ease_linear
 	mref thismod_ID, 2

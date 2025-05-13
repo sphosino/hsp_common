@@ -1,4 +1,5 @@
 #include "../../hsp_common/keyfps.hsp"
+#include "../color_manager.hsp"
 #include "../renderer.hsp"
 #include "../draw_obj/ease.hsp"
 #include "../draw_obj/physis.hsp"
@@ -10,17 +11,18 @@ id = make_draw_object(MOVE_TYPE_PHYSIS, TYPE_RECT, 3, 640/2, 480/2, 100,100,"$00
 set_physis_pos_velocity id, 100.0,50.0
 
 //往復OK
-id = make_draw_object(MOVE_TYPE_EASE, TYPE_RECT, 3, 100, 480/2, 100,100,"$0000FF")
+id = make_draw_object(MOVE_TYPE_EASE, TYPE_CIRCLE, 3, 100, 480/2, 200,100,"$0000FF")
 set_easetime_all get_entity_id(id), 1
+set_ease_angle get_entity_id(id), 0, 3.14159*2
 set_ease_posx get_entity_id(id), 100, 500, ease_quad_inout | ease_loop
 
 //フェードOK
-id = make_draw_object(MOVE_TYPE_PHYSIS, TYPE_RECT, 3.0, 320, 240, 100, 100, "$FF0000")
+id = make_draw_object(MOVE_TYPE_PHYSIS, TYPE_RECT, 3.0, 320, 140, 100, 100, "$FF0000")
 set_physis_alpha get_entity_id(id), 255
 set_physis_alpha_velocity get_entity_id(id), -84.2 ; 3秒で完全に消える
 
 //点滅OK
-id = make_draw_object( MOVE_TYPE_EASE, TYPE_RECT, LIFE_FOREVER, 320, 140, 64, 64, "$00FFFF")
+id = make_draw_object( MOVE_TYPE_EASE, TYPE_CIRCLE, LIFE_FOREVER, 320, 140, 64, 64, "$00FFFF")
 set_ease_alpha get_entity_id(id), 1, 256, ease_quad_inout | ease_loop
 set_easetime_all get_entity_id(id), 2
 

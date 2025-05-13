@@ -31,6 +31,8 @@
 #const global LIFE_INSTANT 0.000001
 #const global LIFE_FOREVER 99999999.0
 
+#const global DRAW_OBJECT_BUFFER 18679
+
 #deffunc init_draw_objects
     // オブジェクト基本情報
     dim draw_object_priority , DRAW_OBJECTS_MAX
@@ -44,6 +46,9 @@
     
 	newmod draw_object_id_manager, list_id_manager, DRAW_OBJECTS_MAX //変更１
 
+	tmp = ginfo_sel
+	buffer DRAW_OBJECT_BUFFER
+	gsel tmp
     return
 
 #deffunc _make_draw_object int _move_type, int _draw_type, double life, double x, double y, double w, double h, str parameters
@@ -160,20 +165,31 @@
 		switch draw_object_draw_type(obj_id)
 		case TYPE_RECT
 		    色を設定 int(tmp.0)
-		    rect.0 = x - w / 2
-		    rect.1 = y - h / 2
-		    rect.2 = x + w / 2
-		    rect.3 = y + h / 2
-		    aboxfa rect, alpha
+		    gmode 3,,,alpha
+		    grect x,y,angle, w, h
 		swbreak
 
         case TYPE_CIRCLE
+			e = 1
+            if stat >=2: e = int(tmp.1)
+        	//バッファに描画
+        	tmp_buffer = ginfo_sel
+        	gsel DRAW_OBJECT_BUFFER
+        	color 0,0,0
+
+			nazo = 1 // なぜか１ピクセル欠けるので。
+        	
+        	boxf 0,0,w + nazo,h
             色を設定 int(tmp.0)
-		    rect.0 = x - w / 2
-		    rect.1 = y - h / 2
-		    rect.2 = x + w / 2
-		    rect.3 = y + h / 2
-            acircle rect, int(tmp.1)
+			circle 0,0,w,h,e
+
+			//実際に描画
+		    gsel tmp_buffer
+		    gmode 4,w + nazo,h,alpha
+		    color 0,0,0
+		    pos x,y
+		    logmes ""+x+","+y
+		    grotate DRAW_OBJECT_BUFFER, 0, 0, angle
         swbreak
 
         case TYPE_STR

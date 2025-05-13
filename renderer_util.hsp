@@ -120,13 +120,12 @@
 	set_ease_angle eid, 0, spin_angle, ease_type
 	
 	; 同時にフェードアウト
-	set_ease_alpha eid, 255, 0, ease_type
+	set_ease_alpha eid, 256, 1, ease_type
 	
 	; サイズを少し大きくしながら回転
 	set_ease_sizex eid, w, w * 1.2, ease_type
 	set_ease_sizey eid, h, h * 1.2, ease_type
 	
-	set_easetime_all eid, duration
 	return id
 
 ; パルスエフェクト (拡大縮小を繰り返す鼓動のような動き)
@@ -182,52 +181,5 @@
 #global
 #endif
 
-#if 10
-#include "keyfps.hsp"
-
-; テスト用
-;spawn_effect_fadein TYPE_RECT, 320, 240, 200, 100, "$FF0000", 0.5 ; 赤い四角がフェードインポップする (ChatGPT作)
-
-; --- Gemini提案関数の使用例 ---
-; 青い四角が左上から右下へ移動する
-;spawn_effect_moveto TYPE_RECT, 100, 100, 500, 400, 50, 50, "$0000FF", 1.0, ease_quad_in_out
-
-; 緑の四角が右上から出現し、その場でフェードアウトする
-;spawn_effect_fadeout TYPE_RECT, 500, 100, 80, 80, "$00FF00", 0.8, ease_quint_out
-
-; 黄色い四角が左下から右上へ斜めに移動しつつフェードアウトする (パーティクル風)
-;spawn_effect_move_and_fade TYPE_RECT, 50, 400, 600, 50, 30, 30, "$FFFF00", 1.2, ease_cubic_in, ease_linear
-
-; マゼンタの四角が中央で少し拡大しつつフェードアウトする (簡単な爆発・ヒットエフェクト風)
-;spawn_effect_scale_and_fade TYPE_RECT, 320, 240, 40, 40, "$FF00FF", 0.7, 2.5, ease_quad_out, ease_cubic_in
-
-; バウンスエフェクト - 赤い四角が跳ねる
-spawn_effect_bounce TYPE_RECT, 200, 300, 60, 60, "$FF0000", 0.8, 80
-
-; シェイクエフェクト - 緑の四角が震える
-spawn_effect_shake TYPE_RECT, 320, 240, 100, 100, "$00FF00", 0.6, 15
-
-; 回転フェードアウト - 青い四角が回転しながら消える
-spawn_effect_spin_out TYPE_RECT, 400, 200, 70, 70, "$0000FF", 1.0, 360, ease_cubic_out
-
-; パルスエフェクト - 黄色い四角が3回鼓動する
-spawn_effect_pulse TYPE_RECT, 150, 150, 50, 50, "$FFFF00", 1.5, 3, 1.4
-
-; スライドエフェクト - 紫の四角が右から入って左へ出る
-spawn_effect_slide TYPE_RECT, 640, 320, -100, 240, 200, 80, "$FF00FF", 0.5, 1.0, 0.5, ease_back_out, ease_quint_in
-
-; 色変化エフェクト - 青から赤へ色が変わる
-spawn_effect_color_shift TYPE_RECT, 320, 400, 120, 60, "$0000FF", "$FF0000", 2.0, ease_sine_in_out
 
 
-_make_draw_object MOVE_TYPE_STATIC, TYPE_RECT, LIFE_FOREVER, 640/2,480/2,640,480,""
-update_priority_draw_object stat,PRIORITY_BACK
-*main
-	manage_keyfps
-	notify_dt_draw_object frametime()
-
-	draw_objects
-	redraw: redraw 2
-	goto*main
-
-#endif
