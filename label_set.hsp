@@ -1,0 +1,142 @@
+#ifndef label_set 
+#module label_set data, data_num, hashcount, hashtable, data_deleted_list, data_deleted_list_num, valid_buckets, valid_buckets_num, lab
+
+#const MAX_KEYS 666667
+#const FNV_PRIME 73091
+#const SEED 72889
+
+#const DEFAULT_SET_SIZE 128
+    
+#defcfunc local get_hash str s1
+
+    s = SEED
+    t = s1
+    repeat strlen(t)
+        s ^= peek(t, cnt) 
+        s *= FNV_PRIME 
+    loop
+    return (s & 0x7FFFFFFF) \ MAX_KEYS
+    
+#modinit int num_maxdata , local thismod_ID
+
+	n = DEFAULT_SET_SIZE
+	if num_maxdata > 0{
+		n = limit(num_maxdata, 2)
+	}
+	sdim data,,n
+	ldim lab,n 
+	dim hashcount, MAX_KEYS
+	dim hashtable, MAX_KEYS, 3
+	dim data_deleted_list, n
+	dim data_deleted_list_num
+	dim valid_buckets, n
+	dim valid_buckets_num
+
+	mref thismod_ID, 2
+	return thismod_ID
+
+#modfunc label_set_push str s1, label l
+
+	hash = get_hash(s1)
+
+	for i,, hashcount(hash)
+		if data(hashtable(hash, i)) == s1{
+			logmes "[ " + s1 + " ] is already registered! (skipped)"
+			return 1
+		}
+	next
+
+	if data_deleted_list_num{
+		data_deleted_list_num--
+		newid = data_deleted_list(data_deleted_list_num)
+	}else{
+		newid = data_num
+		//２倍の拡張処理
+		if newid >= length(data){
+			data(newid * 2) = ""
+			lab(newid * 2) = *何もしない 
+		}
+	}
+
+	if hashcount(hash) == 0{
+		valid_buckets(valid_buckets_num) = hash
+		valid_buckets_num++
+	}
+		
+	data(newid) = s1
+	lab(newid) = l
+	
+	hashtable(hash, hashcount(hash)) = newid
+	hashcount(hash)++
+	
+	data_num++
+
+	return 1
+
+#modfunc get_label_set str s1, var a 
+
+	hash = get_hash(s1)
+	a = *何もしない 
+	for i,,hashcount(hash)
+		if data(hashtable(hash, i)) == s1{
+			a = lab(hashtable(hash, i)) 
+		}
+	next
+
+	return 0
+	
+
+#modfunc del_label_set str s1
+
+	hash = get_hash(s1)
+	
+	for i,, hashcount(hash)
+	
+		dup id, hashtable(hash, i)
+		
+		if data(id) == s1{
+			
+			data_deleted_list(data_deleted_list_num) = id
+			data_deleted_list_num++
+
+			hashcount(hash)--
+			id = hashtable(hash, hashcount(hash))
+
+			if hashcount(hash) == 0{
+				repeat valid_buckets_num
+					if valid_buckets(cnt) == hash{
+						valid_buckets_num--
+						valid_buckets(cnt) = valid_buckets(valid_buckets_num)
+						break
+					}
+				loop
+			}
+
+			data_num--
+			
+			return
+		}
+	next
+
+#modcfunc get_label_set_all array result //キー名をすべて取得
+
+	sdim result
+	rn = 0
+	repeat valid_buckets_num
+		m = cnt
+		repeat hashcount(valid_buckets(m))
+			result(rn) = data(hashtable(valid_buckets(m), cnt))
+			rn++
+		loop
+	loop
+
+	return rn
+
+#modcfunc get_label_set_cardinality
+	return data_num
+	
+*何もしない
+	logmes "何もしないラベルがコールされたよ。タイプ名が間違ってるかも"
+	return
+#global
+#endif

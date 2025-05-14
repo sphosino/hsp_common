@@ -10,6 +10,8 @@
 #addition "draw_obj/ease.hsp"
 #addition "draw_obj/static.hsp"
 
+#addition "label_set.hsp" //タイプ文字列とラベルの紐づけ管理"
+
 #module
 
 #const DRAW_OBJECTS_MAX 3000
@@ -17,12 +19,6 @@
 #const global PRIORITY_BACK   100000
 #const global PRIORITY_NORMAL 200000
 #const global PRIORITY_FRONT  300000
-
-#enum global TYPE_RECT = 0
-#enum global TYPE_CIRCLE
-#enum global TYPE_STR
-#enum global TYPE_LINE
-#enum global TYPE_SPRITE
 
 #enum global MOVE_TYPE_PHYSIS 0
 #enum global MOVE_TYPE_EASE
@@ -39,20 +35,27 @@
    	ddim draw_object_life_max, DRAW_OBJECTS_MAX 
 	ddim draw_object_life    , DRAW_OBJECTS_MAX
     dim draw_object_move_type, DRAW_OBJECTS_MAX //動き方の方式 easingで動くか、 物理式で動くかなど。
-    dim draw_object_draw_type, DRAW_OBJECTS_MAX //何をどう描画するか -> TYPE_RECT, TYPE_CIRCLEなど。
+    sdim draw_object_draw_type, DRAW_OBJECTS_MAX //何をどう描画するか -> 文字列！
     dim draw_object_entities , DRAW_OBJECTS_MAX
     sdim draw_object_params  , DRAW_OBJECTS_MAX
     ddim draw_object_life_elapsed, DRAW_OBJECTS_MAX
     
-	newmod draw_object_id_manager, list_id_manager, DRAW_OBJECTS_MAX //変更１
+    
+	newmod draw_object_id_manager, list_id_manager, DRAW_OBJECTS_MAX
+	newmod labs,label_set
 
 	tmp = ginfo_sel
 	buffer DRAW_OBJECT_BUFFER
 	gsel tmp
     return
 
-#deffunc _make_draw_object int _move_type, int _draw_type, double life, double x, double y, double w, double h, str parameters
-#defcfunc make_draw_object int _move_type, int _draw_type, double life, double x, double y, double w, double h, str parameters
+#deffunc register_renderer str s1, label l
+
+	label_set_push labs, s1, l
+	return
+
+#deffunc _make_draw_object int _move_type, str _draw_type, double life, double _x, double _y, double _w, double _h, str parameters
+#defcfunc make_draw_object int _move_type, str _draw_type, double life, double _x, double _y, double _w, double _h, str parameters
 	if life <= 0.0{
 		logmes "ライフ０以下の描画オブジェクトを作成しようとしました"
 		return -1
@@ -75,14 +78,14 @@
    
 	switch draw_object_move_type(newid)
 	case MOVE_TYPE_PHYSIS
-    	draw_object_entities(newid) = make_physis_obj(x, y, w, h)
+    	draw_object_entities(newid) = make_physis_obj(_x, _y, _w, _h)
    	swbreak
    	case MOVE_TYPE_EASE
-    	draw_object_entities(newid) = make_ease_obj(x, y, w, h)
+    	draw_object_entities(newid) = make_ease_obj(_x, _y, _w, _h)
     	set_easetime_all draw_object_entities(newid), life
     swbreak
     case MOVE_TYPE_STATIC
-    	draw_object_entities(newid) = make_static_obj(x, y, w, h)
+    	draw_object_entities(newid) = make_static_obj(_x, _y, _w, _h)
     swend
     return newid
     
@@ -108,10 +111,20 @@
 	swend
 
 	return
-    
 
+
+#deffunc get_basic_params array a
+	a = 0.0
+	a = x,y,w,h,alpha,angle
+	return
+	
+#deffunc get_extra_params array a
+	if draw_object_params(obj_id) == "": return 0
+	split draw_object_params(obj_id), ",", a
+	return stat
+	
 #deffunc draw_objects
-    idnum = get_list_ids( draw_object_id_manager, ids) //変更４
+    idnum = get_list_ids( draw_object_id_manager, ids) 
     sort_list_by_priority_list ids, idnum, draw_object_priority
 
     repeat idnum
@@ -119,7 +132,7 @@
         obj_id = ids(cnt) //固有のID
         entity_id = draw_object_entities(obj_id) //描画オブジェクトの種類ごとのID
 
-        //描画情報取得 -> (x, y, w, h, alpha) を取得
+        //描画情報取得 -> (x, y, w, h, alpha, angle) を取得
 
 		switch draw_object_move_type(obj_id)
 		
@@ -157,91 +170,9 @@
 			angle = get_static_angle(entity_id)
 		swbreak
 		swend
-
-		split draw_object_params(obj_id), ",", tmp
-
-		//描画開始
 		
-		switch draw_object_draw_type(obj_id)
-		case TYPE_RECT
-		    色を設定 int(tmp.0)
-		    gmode 3,,,alpha
-		    grect x,y,angle, w, h
-		swbreak
-
-        case TYPE_CIRCLE
-			e = 1
-            if stat >=2: e = int(tmp.1)
-        	//バッファに描画
-        	tmp_buffer = ginfo_sel
-        	gsel DRAW_OBJECT_BUFFER
-        	color 0,0,0
-
-			nazo = 1 // なぜか１ピクセル欠けるので。
-        	
-        	boxf 0,0,w + nazo,h
-            色を設定 int(tmp.0)
-			circle 0,0,w,h,e
-
-			//実際に描画
-		    gsel tmp_buffer
-		    gmode 4,w + nazo,h,alpha
-		    color 0,0,0
-		    pos x,y
-		    logmes ""+x+","+y
-		    grotate DRAW_OBJECT_BUFFER, 0, 0, angle
-        swbreak
-
-        case TYPE_STR
-        
-		    rect.0 = x - w / 2
-		    rect.1 = y - h / 2
-           	rect.2 = x + w / 2
-		    rect.3 = y + h / 2 
-	
-			
-			フォント名 = "": if stat >= 3:　フォント名 = tmp.2
-			オプション = 0: if stat >= 4: オプション = int(tmp.3)
-			if stat >= 5{
-				t = int(tmp.4)
-				objcolor t>>16&255,t>>8&255,t&255
-			}
-			if stat >= 6{//これだけか笑
-				色を設定 int(tmp.5)
-				aboxf rect
-			}
-
-			色を設定 int(tmp.1)
-		    centering_mes tmp.0, rect, フォント名, オプション
-
-        swbreak
-
-		case TYPE_LINE
-		    色を設定 int(tmp.0)
-		    rect.0 = x - w / 2
-		    rect.1 = y - h / 2
-		    rect.2 = x + w / 2
-		    rect.3 = y + h / 2
-		    line rect.0,rect.1,rect.2,rect.3
-		swbreak
-
-        case TYPE_SPRITE
-        
-            imgid = int(tmp.0)
-            sx = int(tmp.1) 
-            sy = int(tmp.2)
-            sw = int(tmp.3)
-            sh = int(tmp.4)
-
-			logmes strf("%d , %d,%d,%d,%d  ,  %d,%d,%d,%d",imgid ,sx,sy,sw,sh,x,y,w,h)
-            color 0,0,0
-            gmode 4, sw, sh, alpha
-            pos x, y
-
-            grotate imgid, sx, sy, angle, w, h
-        swbreak
-
-        swend
+    	get_label_set labs, draw_object_draw_type(obj_id), func
+    	gosub func
 
         //ライフ進行処理
 
@@ -288,10 +219,6 @@
     }
 	return
 
-//以下生成のラッパー関数！！！
-#deffunc _spawn_static_instance int _type, double _x, double _y, double _w, double _h, str parametors
-#defcfunc spawn_static_instance int _type, double _x, double _y, double _w, double _h, str parametors
-	return make_draw_object(MOVE_TYPE_STATIC, _type, LIFE_INSTANT, _x, _y, _w, _h, parametors)
 
 
 #global

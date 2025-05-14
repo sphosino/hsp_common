@@ -1,58 +1,47 @@
 #include "../../hsp_common/keyfps.hsp"
+
+//基本命令の拡張
 #include "../color_manager.hsp"
-#include "../renderer.hsp"
+#include "../centering_mes.hsp"
+#include "../rboxf.hsp
+
+//動きモジュール
 #include "../draw_obj/ease.hsp"
 #include "../draw_obj/physis.hsp"
 #include "../draw_obj/static.hsp"
-#include "../centering_mes.hsp"
-#include "../renderer_util.hsp"
 
-//右下移動OK
-id = make_draw_object(MOVE_TYPE_PHYSIS, TYPE_RECT, 3, 640/2, 480/2, 100,100,"$00FF00")
-set_physis_pos_velocity id, 100.0,50.0
+//「描画タイプ→ラベル」管理モジュール
+#include "../label_set.hsp"
 
-//往復OK
-id = make_draw_object(MOVE_TYPE_EASE, TYPE_CIRCLE, 3, 100, 480/2, 200,100,"$0000FF")
-set_easetime_all get_entity_id(id), 1
-set_ease_angle get_entity_id(id), 0, 3.14159*2
-set_ease_posx get_entity_id(id), 100, 500, ease_quad_inout | ease_loop
+//レンダラ
+#include "../renderer.hsp"
 
-//フェードOK
-id = make_draw_object(MOVE_TYPE_PHYSIS, TYPE_RECT, 3.0, 320, 140, 100, 100, "$FF0000")
-set_physis_alpha get_entity_id(id), 255
-set_physis_alpha_velocity get_entity_id(id), -84.2 ; 3秒で完全に消える
-
-//点滅OK
-id = make_draw_object( MOVE_TYPE_EASE, TYPE_CIRCLE, LIFE_FOREVER, 320, 140, 64, 64, "$00FFFF")
-set_ease_alpha get_entity_id(id), 1, 256, ease_quad_inout | ease_loop
-set_easetime_all get_entity_id(id), 2
-
-//背景設定
-id = make_draw_object (MOVE_TYPE_STATIC, TYPE_RECT, LIFE_FOREVER, 640/2,480/2,640,480,"$000000")
-update_priority_draw_object id, PRIORITY_BACK
-
-//fps表示してみるー
-info_id = make_draw_object (MOVE_TYPE_STATIC, TYPE_STR, LIFE_FOREVER, 150, 60, 150, 190, "")
+//描画タイプ定義集
+#include "../draw_type/boxf.hsp"
+#include "../draw_type/circle.hsp"
 
 
-//お化けが回転したにゃ！
-buffer 2: picload "obake.png"
-gsel 0
-id = make_draw_object(MOVE_TYPE_EASE, TYPE_SPRITE, 4.0, 200,200, 200,200, "2,0,0,374,400")
-set_ease_angle get_entity_id(id), 0, 3.14*2 * 5, ease_quad_inout 
+		                                         ; life           , x    , y    , w  , h  , ohter_params
+bg_id = make_draw_object(MOVE_TYPE_STATIC, "BOXF", LIFE_FOREVER   , 640/2, 480/2, 640, 480, "$000000")
+update_priority_draw_object bg_id, PRIORITY_BACK
+//背景セットOKです！
 
-
+	// テスト：中央から上に向かって移動する赤い円を出してみる
+	circle_id = make_draw_object(MOVE_TYPE_EASE, "CIRCLE", 1, 640/2, 480/2, 80, 80, "$FF0000")
+	set_easetime_all get_entity_id(circle_id), 1.0
+	set_ease_posy get_entity_id(circle_id), 640/2, 480/2 - 200
+	// 円は1秒で上に移動して消える！
 *main
 	manage_keyfps
 	dt = frametime()
 	notify_dt_draw_object dt
 
-	update_params_draw_object info_id, strf("%f,$00FFFF,メイリオ",getrealfpsf()) 
-
-	if _getkey(1) == 1{	spawn_ripple_effect mousex, mousey}
+if _getkey(1) == 1 { // 左クリック
+    id = make_draw_object(MOVE_TYPE_EASE, "CIRCLE", 1, mousex, mousey, 50, 50, "$00FFCC")
+    set_easetime_all get_entity_id(id), 1.0
+    set_ease_posy get_entity_id(id), mousey,mousey - 150
+}
 	
 	draw_objects
-
 	redraw: redraw 2
 	goto*main
-

@@ -1,0 +1,44 @@
+#ifndef str_mod
+#module str_mod
+#deffunc init_str_mod
+	tmp = ginfo_sel
+	str_mod_buffer = ginfo_newid
+	buffer str_mod_buffer
+	gsel tmp
+	register_renderer "STR",*str_render
+	return
+*str_render
+		get_basic_params params
+		x = params.0
+		y = params.1
+		w = params.2
+		h = params.3
+
+	    rect.0 = x - w / 2
+	    rect.1 = y - h / 2
+       	rect.2 = x + w / 2
+	    rect.3 = y + h / 2 
+
+	    get_extra_params tmp
+
+		
+		フォント名 = "": if stat >= 3:　フォント名 = tmp.2
+		オプション = 0: if stat >= 4: オプション = int(tmp.3)
+		if stat >= 5{
+			t = int(tmp.4)
+			objcolor t>>16&255,t>>8&255,t&255
+		}
+		if stat >= 6{
+			色を設定 int(tmp.5)
+			aboxf rect
+		}
+
+		色を設定 int(tmp.1)
+	    centering_mes tmp.0, rect, フォント名, オプション
+
+
+	return
+#global
+init_str_mod
+
+#endif

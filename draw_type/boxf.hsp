@@ -1,0 +1,28 @@
+#ifndef boxf_mod
+#module boxf_mod
+
+#deffunc init_boxf_mod
+	register_renderer "BOXF", *boxf_render
+	return
+*boxf_render
+	
+	get_basic_params params
+	x = params.0
+	y = params.1
+	w = params.2
+	h = params.3
+	alpha = params.4
+	angle = params.5
+	get_extra_params col
+	logmes strf("%d,%d,%d,%d,%d,%d,%d",x,y,w,h,alpha,angle,int(col))
+	F‚ğİ’è int(col)
+	gmode 3,,,alpha
+	grect x,y,angle,w,h
+	return
+	
+
+	
+#global
+init_boxf_mod
+
+#endif

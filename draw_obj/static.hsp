@@ -4,6 +4,7 @@
 #modinit double _x, double _y, double _w, double _h, local thismod_ID
 	x = _x : y = _y : w = _w : h = _h
 	alpha = 255.
+	angle = 0.
 	mref thismod_ID, 2
 	return thismod_ID
 
@@ -42,12 +43,9 @@
 
 #defcfunc get_static_alpha int id
 	return _get_static_alpha(data(id))
+	
 #defcfunc get_static_angle int id
 	return _get_static_angle(data(id))
-	
-#deffunc update_static int id, double dt
-	; ‚È‚É‚à‚µ‚È‚¢
-	return
 
 #deffunc del_static_obj int id
 	delmod data(id)

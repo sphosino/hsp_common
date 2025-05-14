@@ -5,6 +5,11 @@
 
 
 #module effect_util
+//以下生成のラッパー関数！！！
+#deffunc _spawn_static_instance int _type, double _x, double _y, double _w, double _h, str parametors
+#defcfunc spawn_static_instance int _type, double _x, double _y, double _w, double _h, str parametors
+	return make_draw_object(MOVE_TYPE_STATIC, _type, LIFE_INSTANT, _x, _y, _w, _h, parametors)
+	
 //make by chatgptさん
 #deffunc spawn_effect_fadein int _type, double x, double y, double w, double h, str param, double duration
 	id = make_draw_object(MOVE_TYPE_EASE, _type, duration, x, y, w * 0.5, h * 0.5, param)
@@ -181,7 +186,7 @@
 	repeat 3
 		r = 30 * (cnt + 1)
 		alpha = 255 - cnt * 80
-		id = make_draw_object(MOVE_TYPE_EASE, TYPE_CIRCLE, 0.6, cx, cy, r, r, strf("$00FFFF,1"))
+		id = make_draw_object(MOVE_TYPE_EASE, "CIRCLE", 0.6, cx, cy, r, r, strf("$00FFFF,1"))
 		set_ease_sizex get_entity_id(id), 0, r, ease_quad_out
 		set_ease_sizey get_entity_id(id), 0, r, ease_quad_out
 		set_ease_alpha get_entity_id(id), alpha, 0, ease_linear

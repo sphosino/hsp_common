@@ -1,0 +1,50 @@
+#ifndef circle_mod
+#module circle_mod
+*circle_render
+	get_basic_params params
+	x=params.0
+	y=params.1
+	w=params.2
+	h=params.3
+	alpha = params.4
+	angle = params.5
+	
+	get_extra_params e	
+	futi = 1
+	col = 0
+	if stat >= 1{
+		col = e.0
+		if stat >= 2{
+			futi = e.1
+		}
+	}
+	
+	tmp = ginfo_sel
+
+	gsel circlebuffer
+	color 0,0,0:boxf 0,0,w,h
+	êFÇê›íË int(col)
+	circle 0,0,w,h, int(futi)
+	logmes alpha
+	logmes col
+	gsel tmp
+	
+	pos x,y
+	gmode 4,w,h,alpha
+	grotate circlebuffer,0,0,angle,w,h
+
+	return
+	
+#deffunc init_circle_mod
+
+	tmp = ginfo_sel
+	circlebuffer = ginfo_newid
+	buffer circlebuffer
+	gsel tmp
+	register_renderer "CIRCLE", *circle_render
+	return
+	
+#global
+init_circle_mod
+
+#endif
