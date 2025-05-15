@@ -5,10 +5,10 @@
 	str_mod_buffer = ginfo_newid
 	buffer str_mod_buffer
 	gsel tmp
-	register_renderer "STR",*str_render
+	register_renderer "STR",*render
 	return
 	
-*str_render
+*render
 		get_basic_params params
 		x = params.0
 		y = params.1
@@ -22,22 +22,31 @@
 
 	    get_extra_params tmp
 
-		
-		フォント名 = "": if stat >= 3:　フォント名 = tmp.2
-		オプション = 0: if stat >= 4: オプション = int(tmp.3)
-		if stat >= 5{
-			t = int(tmp.4)
-			objcolor t>>16&255,t>>8&255,t&255
+		col = 0
+		fontname = ""
+		option = 0
+		backcolor = 0
+
+		if stat > 1{ //文字の色
+			col = int(tmp.1)
+			if stat > 2{ //フォント名
+				fontname = tmp.2
+				if stat > 3{ //オプション
+					option = int(tmp.3)
+					if stat > 4{//影の色
+						t = int(tmp.4)
+						objcolor t>>16&255,t>>8&255,t&255
+						if stat > 5{ //背景を描画
+							色を設定 int(tmp.5)
+							aboxf rect
+						}
+					}
+				}
+			}
 		}
-		if stat >= 6{
-			色を設定 int(tmp.5)
-			aboxf rect
-		}
-
-		色を設定 int(tmp.1)
-	    centering_mes tmp.0, rect, フォント名, オプション
-
-
+		色を設定 col
+	    centering_mes tmp.0, rect, fontname, option
+	    
 	return
 #global
 init_STR_mod

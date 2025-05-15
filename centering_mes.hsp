@@ -23,7 +23,7 @@
 
 			pos 3000, 3000
 
-			fsize = limitf(行サイズ,,double(rect.2 - rect.0) * XY_RATIO / 文字数)
+			fsize = limitf(行サイズ,,limitf(maxsize,,double(rect.2 - rect.0) * XY_RATIO / 文字数))
 
 			if fsize < 2: continue
 			
@@ -37,6 +37,11 @@
 	noteunsel
 	
 	return
-	
+
+#deffunc set_max_centering_mes int p1
+	maxsize = p1
+	return
+
 #global
+
 #endif

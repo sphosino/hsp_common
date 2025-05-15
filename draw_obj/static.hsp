@@ -20,6 +20,25 @@
 	return alpha
 #modcfunc _get_static_angle
 	return angle
+	
+#modfunc _set_static_posx double _x
+	x = _x
+	return
+#modfunc _set_static_posy double _y
+	y = _y
+	return
+#modfunc _set_static_sizex double _w
+	w = _w
+	return
+#modfunc _set_static_sizey double _h
+	h = _h
+	return
+#modfunc _set_static_alpha double _alpha
+	alpha = _alpha
+	return
+#modfunc _set_static_angle double _angle
+	angle = _angle
+	return
 #global
 
 
@@ -46,9 +65,41 @@
 	
 #defcfunc get_static_angle int id
 	return _get_static_angle(data(id))
-
+//ƒZƒbƒ^
+#deffunc set_static_posx int id, double x
+	_set_static_posx data(id), x
+	return
+#deffunc set_static_posy int id ,double y
+	_set_static_posy data(id), y
+	return
+#deffunc set_static_sizex int id, double w
+	_set_static_sizex data(id), w
+	return
+#deffunc set_static_sizey int id, double h
+	_set_static_sizey data(id), h
+	return
+#deffunc set_static_alpha int id, double alpha
+	_set_static_alpha data(id), alpha
+	return
+#deffunc set_static_angle int id, double angle
+	_set_static_angle data(id), angle
+	return
+	
 #deffunc del_static_obj int id
 	delmod data(id)
+	return
+
+
+#deffunc update_static_rect int eid, array rect
+	centerx = (rect(0) + rect(2)) / 2
+	centery = (rect(1) + rect(3)) / 2
+	sizex = rect(2) - rect(0)
+	sizey = rect(3) - rect(1)
+
+	set_static_posx eid, centerx
+	set_static_posy eid, centery
+	set_static_sizex eid, sizex
+	set_static_sizey eid, sizey
 	return
 #global
 #endif

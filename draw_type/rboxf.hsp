@@ -1,39 +1,137 @@
 #ifndef rboxf_mod
 #module rboxf_mod
-#const DEFAULT_R 5
-#define ctype max( %1, %2 ) limit(%1, %2)
-#define ctype min( %1, %2 ) limit(%1,,%2)
+#const DEFAULT_R 6
+
 *render
-    x1 = min(_x1, _x2) : x2 = max(_x1, _x2)
-    y1 = min(_y1, _y2) : y2 = max(_y1, _y2)
-    box_width = x2 - x1 : box_height = y2 - y1
+	get_basic_params p
+	
+	x = p
+	y = p.1
+	w = p.2
+	h = p.3
+	alpha = p.4
+	angle = p.5
 
-    if ( _r <= 0 ) {
-        r = DEFAULT_R
-    } else {
-        r = _r
-    }
-    r = min( r, min( box_width / 2, box_height / 2 ) )
+	get_extra_params e
 
-    boxf x1, y1+r, x2, y2-r
-    boxf x1+r, y1, x2-r, y2
+	col = 0
+	r = DEFAULT_R
+	flags = 0
+
+	if stat >= 1{
+		col = int(e.0)
+		if stat >= 2{
+			if e.1 != ""{
+				r = int(e.1)
+			}
+			if stat >= 3{
+				flags = int(e.2)
+				if stat >= 4{
+					angle = double(p.3)
+				}
+			}
+		}
+	}
+    r = limit(r, 0, limit(w/2, 0, h/2))  // 半径の最大値を制限
+
+	tmp = ginfo_sel
+	gsel circlebuffer
+	color 0,0,0: boxf
+	色を設定 col
+    // 中央の横長矩形（上下の角丸部分を除外）
+    boxf 0, r, w + 1, h - r
+    // 中央の縦長矩形（左右の角丸部分を除外）
+    boxf r, 0, w - r, h + 1
+
     repeat 4
-        x = x1 + ( cnt \ 2 ) * ( box_width - r * 2 + 1)
-        y = y1 + ( cnt / 2 ) * ( box_height - r * 2 + 1)
-        if flags & 1<<cnt{
-	         boxf x, y, x + r * 2 - 1, y + r * 2 -1
-	    }else{
-		    circle x, y, x + r * 2, y + r * 2
+		switch cnt
+            case 0: cx = r     : cy = r    :swbreak // 左上
+            case 1: cx = w - r : cy = r    :swbreak // 右上
+            case 2: cx = w - r : cy = h - r:swbreak // 右下
+            case 3: cx = r     : cy = h - r:swbreak // 左下
+       	swend
+
+        if flags & (1<<cnt) {
+	        // 四角形で角を描画
+	        boxf cx - r, cy - r, cx + r, cy + r
+	    } else {
+		    // 円で角を描画
+		    circle cx - r, cy - r, cx + r, cy + r
+		}
+    loop
+    
+    gsel tmp
+    
+    gmode 4, w, h,alpha
+    color 0,0,0
+    pos x, y
+    grotate circlebuffer,,,angle
+    
+    return
+    
+*render_fast
+	get_basic_params p
+	
+	x = p
+	y = p.1
+	w = p.2
+	h = p.3
+	alpha = p.4
+	angle = p.5
+
+	get_extra_params e
+
+	col = 0
+	r = DEFAULT_R
+	flags = 0
+	if stat >= 1{
+		col = int(e.0)
+		if stat >= 2{
+			if e.1 != ""{
+				r = int(e.1)
+			}
+			if stat >= 3{
+				flags = int(e.2)
+			}
+		}
+	}
+	
+    r = limit(r, 0, limit(w/2,0, h/2))  // 半径の最大値を制限
+
+    色を設定 col
+
+    // 中央の横長矩形（上下の角丸部分を除外）
+    boxf x - w/2    , y - h/2 + r  , x + w/2    , y + h/2 - r
+    // 中央の縦長矩形（左右の角丸部分を除外）
+    boxf x - w/2 + r, y - h/2      , x + w/2 - r, y + h/2
+
+    repeat 4
+		switch cnt
+            case 0: cx = x - w/2 + r : cy = y - h/2 + r:swbreak // 左上
+            case 1: cx = x + w/2 - r : cy = y - h/2 + r:swbreak // 右上
+            case 2: cx = x + w/2 - r : cy = y + h/2 - r:swbreak // 右下
+            case 3: cx = x - w/2 + r : cy = y + h/2 - r:swbreak // 左下
+       	swend
+
+        if flags & (1<<cnt) {
+	        // 四角形で角を描画
+	        boxf cx - r, cy - r, cx + r, cy + r
+	    } else {
+		    // 円で角を描画
+		    circle cx - r, cy - r, cx + r, cy + r
 		}
     loop
     return
+    
 #deffunc init_rboxf_mod
-	tmp = ginfo_sel
 	circlebuffer = ginfo_newid
+	tmp = ginfo_sel
 	buffer circlebuffer
 	gsel tmp
 	register_renderer "RBOXF", *render
+	register_renderer "RBOXF_FAST", *render_fast
 	return
+	
 #global
-init_rboxf
+init_rboxf_mod
 #endif

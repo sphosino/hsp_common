@@ -19,6 +19,8 @@
 //描画タイプ定義集
 #include "../draw_type/boxf.hsp"
 #include "../draw_type/circle.hsp"
+#include "../draw_type/str.hsp"
+#include "../draw_type/rboxf.hsp"
 
 
 		                                         ; life           , x    , y    , w  , h  , ohter_params
@@ -26,11 +28,15 @@ bg_id = make_draw_object(MOVE_TYPE_STATIC, "BOXF", LIFE_FOREVER   , 640/2, 480/2
 update_priority_draw_object bg_id, PRIORITY_BACK
 //背景セットOKです！
 
-	// テスト：中央から上に向かって移動する赤い円を出してみる
-	circle_id = make_draw_object(MOVE_TYPE_EASE, "CIRCLE", 1, 640/2, 480/2, 80, 80, "$FF0000")
-	set_easetime_all get_entity_id(circle_id), 1.0
-	set_ease_posy get_entity_id(circle_id), 640/2, 480/2 - 200
-	// 円は1秒で上に移動して消える！
+// テスト：中央から上に向かって移動する赤い円を出してみる
+circle_id = make_draw_object(MOVE_TYPE_EASE, "CIRCLE", 1, 640/2, 480/2, 80, 80, "$FF0000")
+set_easetime_all get_entity_id(circle_id), 1.0
+set_ease_posy get_entity_id(circle_id), 640/2, 480/2 - 200
+// 円は1秒で上に移動して消える！
+
+//出来た！！！　extra_params = 色、rsize, 丸くしない位置のフラグ, 角度
+_make_draw_object MOVE_TYPE_STATIC,"RBOXF_FAST", LIFE_FOREVER, 640/2,480/2, 100,50, "$00FF00,5,0,0.5"
+
 *main
 	manage_keyfps
 	dt = frametime()

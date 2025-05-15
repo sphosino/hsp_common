@@ -84,7 +84,6 @@
 	return
 #deffunc set_physis_alpha_velocity int id, double va
 	_set_physis_alpha_velocity data(id), va
-	// ƒZƒbƒ^’Ç‰Á
 #deffunc set_physis_angle int id, double angle
 	_set_physis_angle data(id), angle
 	return

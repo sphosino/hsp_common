@@ -27,8 +27,6 @@
 #const global LIFE_INSTANT 0.000001
 #const global LIFE_FOREVER 99999999.0
 
-#const global DRAW_OBJECT_BUFFER 18679
-
 #deffunc init_draw_objects
     // オブジェクト基本情報
     dim draw_object_priority , DRAW_OBJECTS_MAX
@@ -40,13 +38,11 @@
     sdim draw_object_params  , DRAW_OBJECTS_MAX
     ddim draw_object_life_elapsed, DRAW_OBJECTS_MAX
     
-    
 	newmod draw_object_id_manager, list_id_manager, DRAW_OBJECTS_MAX
 	newmod labs,label_set
 
-	tmp = ginfo_sel
-	buffer DRAW_OBJECT_BUFFER
-	gsel tmp
+	sdim tmp,, 100 //splitパラ用
+
     return
 
 #deffunc register_renderer str s1, label l
@@ -112,16 +108,42 @@
 
 	return
 
-
 #deffunc get_basic_params array a
+	if フラグ: dialog"描画ラベル以外でget_basic_paramsが呼び出されました": end
 	a = 0.0
 	a = x,y,w,h,alpha,angle
 	return
 	
 #deffunc get_extra_params array a
+	if フラグ: dialog"描画ラベル以外でget_extra_paramsが呼び出されました": end
 	if draw_object_params(obj_id) == "": return 0
 	split draw_object_params(obj_id), ",", a
 	return stat
+
+//利用側で使う
+#deffunc set_extra_param int id, int idx, str newval
+	if draw_object_params(id) == "": return 0
+	split draw_object_params(id), ",", tmp
+	tmp(idx) = newval
+	s = tmp(0)
+	repeat stat - 1
+		s += "," + tmp(cnt+1)
+	loop
+	draw_object_params(id) = s
+	return stat
+//利用側で使う
+#defcfunc get_extra_param int id, int idx
+	split draw_object_params(id), ",", tmp
+	return tmp(idx)
+//利用側で使う
+#deffunc set_all_extra_params int id, str s1
+	draw_object_params(id) = s1
+	return
+//利用側で使う
+#defcfunc count_extra_params int id
+	if draw_object_params(id) == 0: return 0
+	split draw_object_params(id), ",", tmp
+	return length(tmp)
 	
 #deffunc draw_objects
     idnum = get_list_ids( draw_object_id_manager, ids) 
@@ -171,8 +193,11 @@
 		swbreak
 		swend
 		
+		//描画ラベルを呼ぶ
     	get_label_set labs, draw_object_draw_type(obj_id), func
+		フラグ = 0
     	gosub func
+		フラグ = 1
 
         //ライフ進行処理
 
@@ -202,8 +227,8 @@
 	draw_object_priority(id) = _priority
 	return
 
-#deffunc update_params_draw_object int id, str s
-    draw_object_params(id) = s
+#deffunc update_params_draw_object int id, str s1
+    draw_object_params(id) = s1
 	return
 	
 //ライフ操作系
@@ -219,7 +244,16 @@
     }
 	return
 
-
+//make_draw_object ラッパー
+#defcfunc make_forever_draw_object int move_type, str draw_type, array rect, str params
+    x = (rect(0) + rect(2)) / 2
+    y = (rect(1) + rect(3)) / 2
+    w = rect(2) - rect(0)
+    h = rect(3) - rect(1)
+    return make_draw_object(move_type, draw_type, LIFE_FOREVER, x, y, w, h, params)
+    
+#defcfunc make_instant_draw_object str draw_type, double _x, double _y, double _w, double _h, str params
+    return make_draw_object(MOVE_TYPE_STATIC, draw_type, LIFE_INSTANT, _x, _y, _w, _h, params)
 
 #global
 init_draw_objects

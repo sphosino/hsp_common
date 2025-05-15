@@ -54,7 +54,7 @@
 		//２倍の拡張処理
 		if newid >= length(data){
 			data(newid * 2) = ""
-			lab(newid * 2) = *何もしない 
+			;lab(newid * 2) = *何もしない 
 		}
 	}
 
@@ -76,14 +76,24 @@
 #modfunc get_label_set str s1, var a 
 
 	hash = get_hash(s1)
-	a = *何もしない 
+	searched = 0 //ラベルは直接比較できないのでフラグを作る
+	a = *何もしない
 	for i,,hashcount(hash)
 		if data(hashtable(hash, i)) == s1{
 			a = lab(hashtable(hash, i)) 
+			searched = 1
+			_break
 		}
 	next
 
-	return 0
+	#ifdef _debug
+		if searched == 0{
+			dialog "draw_type [" + s1 + "] is not registered!"
+			end
+		}
+	#endif
+
+	return searched
 	
 
 #modfunc del_label_set str s1
@@ -136,7 +146,7 @@
 	return data_num
 	
 *何もしない
-	logmes "何もしないラベルがコールされたよ。タイプ名が間違ってるかも"
+	logmes "called *何もしない"
 	return
 #global
 #endif
