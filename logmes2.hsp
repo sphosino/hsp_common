@@ -1,0 +1,66 @@
+;===============================================================
+; logmes2_mod.hsp - デバッグ用ログ記録＆閲覧モジュール
+; 
+; 「このログどっから出てんだよ…」問題が発生したときにプログラムの先頭でインクルードしてください。
+;　
+; 使用例：
+;     logmes "ここまで到達しました"
+; → 自動でファイル名・行番号を記録し、GUIで選択して参照可能。
+;
+; 注意：
+
+; - HSP標準のonerrorでは行位置は分かりますが、エラーが起きた「ファイル名」が取得できないため、
+;　エラーが起きたファイルが分からないときは、
+;  コールスタックを見る為に、knowbug を 導入してみてください。
+;　knowbug にはオプションでWrapCall.as をインクルードすることで（重くなりますが）、コールスタックを見ることができます
+;  コールスタックとエラー行番号で呼び出し元を手動で追跡してください。（ラベルジャンプでファイルをまたいでいる場合は簡単ではありません）
+;===============================================================
+#ifndef logmes2_mod
+
+;#addition "WrapCall.as"　; 必要であれば
+
+#undef logmes
+#define global logmes(%1 = "") logmes@hsp %1 :\
+	tmp@logmes2_mod = ginfo_sel :\
+	gsel LOG_BUFFER@logmes2_mod :\
+	logdata@logmes2_mod(0, lognum@logmes2_mod) = str(%1), __FILE__, str(__LINE__) :\
+	lognum@logmes2_mod++ :\
+	gsel tmp@logmes2_mod :
+	
+#module logmes2_mod
+*logmesmain
+	onerror 0
+
+	gsel LOG_BUFFER,1
+	mes "エラー番号 -> " + wparam //この情報と
+	mes "エラー行番号 -> " + lparam //この情報は使えるみたい
+	s = ""
+	repeat lognum
+		s += logdata(0,cnt) + "\n"
+	loop
+	objprm listbox_id, s
+	*main
+		if selnum != pre_selnum && selnum != -1{
+			pre_selnum = selnum
+			logmes@hsp strf("ファイル名【%s】: 行番号【%s】", logdata(1, selnum), logdata(2, selnum))
+		}
+		await 17
+		goto*main
+
+#deffunc init_logmes2_mod
+	if LOG_BUFFER: return
+	sdim logdata,, 3,1000
+	selnum = -1
+	pre_selnum = selnum
+	tmp = ginfo_sel
+	LOG_BUFFER = ginfo_newid
+	screen LOG_BUFFER,400,480,screen_hide
+	objsize ginfo_sx,320
+	listbox selnum,,""
+	listbox_id = stat
+	gsel tmp
+	onerror *logmesmain
+	return
+#global
+init_logmes2_mod
+#endif

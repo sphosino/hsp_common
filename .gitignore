@@ -2,3 +2,4 @@ hsptmp
 obj
 packfile
 *.ax
+test*.hsp
