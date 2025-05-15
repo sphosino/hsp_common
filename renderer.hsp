@@ -122,7 +122,6 @@
 
 //—˜—p‘¤‚ÅŽg‚¤
 #deffunc set_extra_param int id, int idx, str newval
-	if draw_object_params(id) == "": return 0
 	split draw_object_params(id), ",", tmp
 	tmp(idx) = newval
 	s = tmp(0)
