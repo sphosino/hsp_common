@@ -1,0 +1,39 @@
+#ifndef rboxf_mod
+#module rboxf_mod
+#const DEFAULT_R 5
+#define ctype max( %1, %2 ) limit(%1, %2)
+#define ctype min( %1, %2 ) limit(%1,,%2)
+*render
+    x1 = min(_x1, _x2) : x2 = max(_x1, _x2)
+    y1 = min(_y1, _y2) : y2 = max(_y1, _y2)
+    box_width = x2 - x1 : box_height = y2 - y1
+
+    if ( _r <= 0 ) {
+        r = DEFAULT_R
+    } else {
+        r = _r
+    }
+    r = min( r, min( box_width / 2, box_height / 2 ) )
+
+    boxf x1, y1+r, x2, y2-r
+    boxf x1+r, y1, x2-r, y2
+    repeat 4
+        x = x1 + ( cnt \ 2 ) * ( box_width - r * 2 + 1)
+        y = y1 + ( cnt / 2 ) * ( box_height - r * 2 + 1)
+        if flags & 1<<cnt{
+	         boxf x, y, x + r * 2 - 1, y + r * 2 -1
+	    }else{
+		    circle x, y, x + r * 2, y + r * 2
+		}
+    loop
+    return
+#deffunc init_rboxf_mod
+	tmp = ginfo_sel
+	circlebuffer = ginfo_newid
+	buffer circlebuffer
+	gsel tmp
+	register_renderer "RBOXF", *render
+	return
+#global
+init_rboxf
+#endif

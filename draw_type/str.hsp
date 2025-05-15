@@ -7,6 +7,7 @@
 	gsel tmp
 	register_renderer "STR",*str_render
 	return
+	
 *str_render
 		get_basic_params params
 		x = params.0
@@ -39,6 +40,6 @@
 
 	return
 #global
-init_str_mod
+init_STR_mod
 
 #endif

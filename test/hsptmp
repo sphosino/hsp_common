@@ -36,11 +36,11 @@ update_priority_draw_object bg_id, PRIORITY_BACK
 	dt = frametime()
 	notify_dt_draw_object dt
 
-if _getkey(1) == 1 { // 左クリック
-    id = make_draw_object(MOVE_TYPE_EASE, "CIRCLE", 1, mousex, mousey, 50, 50, "$00FFCC")
-    set_easetime_all get_entity_id(id), 1.0
-    set_ease_posy get_entity_id(id), mousey,mousey - 150
-}
+	if _getkey(1) == 1 { // 左クリック
+	    id = make_draw_object(MOVE_TYPE_EASE, "CIRCLE", 1, mousex, mousey, 50, 50, "$00FFCC")
+	    set_easetime_all get_entity_id(id), 1.0
+	    set_ease_posy get_entity_id(id), mousey,mousey - 150
+	}
 	
 	draw_objects
 	redraw: redraw 2

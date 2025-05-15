@@ -6,6 +6,7 @@
 #deffunc acircle array a, int p1
 	circle a, a.1, a.2, a.3, p1^1
 	return
+	
 //ŠpŠÛ‹éŒ`
 #deffunc arboxf array a, int _r, int flags
 	rboxf a, a.1, a.2, a.3, _r, flags

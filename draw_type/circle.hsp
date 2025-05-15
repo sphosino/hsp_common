@@ -1,6 +1,6 @@
 #ifndef circle_mod
 #module circle_mod
-*circle_render
+*render
 	get_basic_params params
 	x=params.0
 	y=params.1
@@ -28,6 +28,7 @@
 	logmes alpha
 	logmes col
 	gsel tmp
+	color 0,0,0
 	
 	pos x,y
 	gmode 4,w,h,alpha
@@ -36,15 +37,14 @@
 	return
 	
 #deffunc init_circle_mod
-
 	tmp = ginfo_sel
 	circlebuffer = ginfo_newid
 	buffer circlebuffer
 	gsel tmp
-	register_renderer "CIRCLE", *circle_render
+	register_renderer "CIRCLE", *render
 	return
 	
 #global
-init_circle_mod
+init_CIRCLE_mod
 
 #endif
