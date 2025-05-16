@@ -1,0 +1,20 @@
+#module base_grid indices, indices_num, x, y, x_max, y_max, w
+/*
+
+indices - grid内に入っているインデックスのリスト
+
+x,y - 実体の形状
+x_max, y_max 許可される最大の実体サイズ
+w - インデックスの値の計算用　(xと同義？）
+
+*/
+
+#modinit
+	indices_num = 0
+	x = 1 : y = 1
+	x_max = -1 : y_max = -1
+	w = x
+	dim indices, 100
+	return
+	
+#global

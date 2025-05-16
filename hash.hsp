@@ -57,7 +57,7 @@
 	next
 
 	newid = get_new_id(hash_id_manager)
-	;if newid >= length2(data): data(0, newid * 2) = ""
+	if newid >= length2(data): data(0, newid * 2) = ""
 	
 	
 	data(KEY, newid) = s1

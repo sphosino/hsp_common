@@ -1,0 +1,133 @@
+#module
+#define global ctype find_empty_index(%1,%2,%3,%4,%5=-1) _find_empty_index(%1,%2,%3,%4,%5) 
+#defcfunc _find_empty_index array item_indices, int item_indices_num, int w, int h, int row
+    /*
+        空きが見つかったらその番号を返す。
+        row == -1 の場合は全体をチェック。
+        row >= 0 の場合は、その行のみをチェック。
+    */
+    if item_indices_num = 0: return 0
+
+	result = -1
+
+	dim checklist, w * h
+	
+	if row <= -1{
+		repeat w * h
+			checklist(cnt) = cnt
+		loop
+	}else{
+		if row >= h{
+			logmes "存在しない行をチェックしようとしました"
+			return -2
+		}
+		repeat w
+			checklist(cnt) = row * w + cnt
+		loop
+	}
+
+	repeat length(checklist)
+ 
+		p = checklist(cnt)
+		x = p \ w
+		y = p / w
+		is_empty = 1
+		repeat item_indices_num
+			if x == item_indices(cnt) \ w && y == item_indices(cnt) / w{
+				is_empty = 0
+				break
+			}
+		loop
+		if is_empty{
+			result = p
+			break
+		}
+	loop
+	return result
+
+#define global ctype find_empty_index_vertical(%1,%2,%3,%4,%5=-1) _find_empty_index_vertical(%1,%2,%3,%4,%5) 
+
+#defcfunc _find_empty_index_vertical array item_indices,int item_indices_num, int w, int h, int col
+    /*
+        空きが見つかったらその番号を返す。
+        col == -1 の場合は全体をチェック。
+        col >= 0 の場合は、その列のみをチェック。
+    */
+
+    result = -1
+
+    // 配列の確保
+    dim checklist, w * h
+
+    if col <= -1 {
+        // 全体をチェックする場合
+        repeat w * h
+            checklist(cnt) = cnt \ w * h + cnt / w
+        loop
+    } else {
+        // 範囲チェック
+        if col >= w {
+            logmes "存在しない列をチェックしようとしました"
+            return -2
+        }
+        // 指定列だけチェックリストに追加
+        repeat h
+            checklist(cnt) = cnt \ w * h + col
+        loop
+    }
+
+    // 空きを探す
+    repeat length(checklist)
+        p = checklist(cnt)
+        x = p \ w
+        y = p / w
+        is_empty = 1
+        repeat item_indices_num
+            if x == item_indices(cnt) \ w && y == item_indices(cnt) / w {
+                is_empty = 0
+                break
+            }
+        loop
+        if is_empty {
+            result = p
+            break
+        }
+    loop
+
+    return result
+
+
+#deffunc trans_grid_smart array item_indices, int item_indices_num, int w1, int w_max, int h_max, array result
+	// item_indices (w1基準) を、可能な限り幅を狭くしつつ h_max に収まるようにする
+	// 返り値 result[0] = new_w, result[1] = new_h
+
+	new_w = -1
+
+	repeat w_max
+		test_w = cnt + 1
+		test_h = (item_indices_num + test_w - 1) / test_w
+		if test_h <= h_max {
+			new_w = test_w
+			break
+		}
+	loop
+
+	if new_w = -1 {
+		result = -1, -1
+		return
+	}
+
+	new_h = (item_indices_num + new_w - 1) / new_w
+	result = new_w, new_h
+	return
+
+#deffunc trans_grid array item_indices, int item_indices_num, int w1, int w2
+	if item_indices / w2 >= h_max: return
+	repeat item_indices_num
+		x = item_indices(cnt) \ w1
+		y = item_indices(cnt) / w1
+		item_indices(cnt) = y * w2 + x
+	loop
+	h = item_indices / w2
+	return
+#global

@@ -8,7 +8,7 @@
 	return thismod_ID
 	
 #modfunc set_ease_time double t
-	if t == 0: return
+	if t <= 0.0: return
 	easetime = t
 	return
 

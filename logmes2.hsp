@@ -3,21 +3,19 @@
 ; 
 ; 「このログどっから出てんだよ…」問題が発生したときにプログラムの先頭でインクルードしてください。
 ;　
+; logmes自体を書き換えるのでコードはそのままで利用できます。
 ; 使用例：
 ;     logmes "ここまで到達しました"
-; → 自動でファイル名・行番号を記録し、GUIで選択して参照可能。
+; → 自動でファイル名・行番号を記録し、エラー時にログから参照可能。
 ;
 ; 注意：
-
-; - HSP標準のonerrorでは行位置は分かりますが、エラーが起きた「ファイル名」が取得できないため、
-;　エラーが起きたファイルが分からないときは、
-;  コールスタックを見る為に、knowbug を 導入してみてください。
-;　knowbug にはオプションでWrapCall.as をインクルードすることで（重くなりますが）、コールスタックを見ることができます
-;  コールスタックとエラー行番号で呼び出し元を手動で追跡してください。（ラベルジャンプでファイルをまたいでいる場合は簡単ではありません）
+; - あくまで、ログの出力元を見るツールです。
+; - HSP標準のonerrorを使用しています。
+; - 行位置は分かりますが、エラーが起きた「ファイル名」が取得できないため、
+; - エラー地点を探る際はこのモジュールを使わずに、hspのエラーダイアログを見てください。
 ;===============================================================
+#ifdef _debug
 #ifndef logmes2_mod
-
-;#addition "WrapCall.as"　; 必要であれば
 
 #undef logmes
 #define global logmes(%1 = "") logmes@hsp %1 :\
@@ -32,8 +30,8 @@
 	onerror 0
 
 	gsel LOG_BUFFER,1
-	mes "エラー番号 -> " + wparam //この情報と
-	mes "エラー行番号 -> " + lparam //この情報は使えるみたい
+	mes "エラー番号 -> " + wparam 
+	mes "エラー行番号 -> " + lparam 
 	s = ""
 	repeat lognum
 		s += logdata(0,cnt) + "\n"
@@ -55,6 +53,7 @@
 	tmp = ginfo_sel
 	LOG_BUFFER = ginfo_newid
 	screen LOG_BUFFER,400,480,screen_hide
+	title "エラーが発生しました！！！"
 	objsize ginfo_sx,320
 	listbox selnum,,""
 	listbox_id = stat
@@ -63,4 +62,5 @@
 	return
 #global
 init_logmes2_mod
+#endif
 #endif

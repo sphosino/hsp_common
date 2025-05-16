@@ -78,7 +78,11 @@
    	swbreak
    	case MOVE_TYPE_EASE
     	draw_object_entities(newid) = make_ease_obj(_x, _y, _w, _h)
-    	set_easetime_all draw_object_entities(newid), life
+    	if life == LIFE_FOREVER{
+    		set_easetime_all draw_object_entities(newid), 1.0 ; 永続オブジェクトの初期値
+    	}else{
+    		set_easetime_all draw_object_entities(newid), life
+    	}
     swbreak
     case MOVE_TYPE_STATIC
     	draw_object_entities(newid) = make_static_obj(_x, _y, _w, _h)

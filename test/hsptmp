@@ -16,12 +16,16 @@
 //レンダラ
 #include "../renderer.hsp"
 
+
 //描画タイプ定義集
 #include "../draw_type/boxf.hsp"
 #include "../draw_type/circle.hsp"
+
 #include "../draw_type/str.hsp"
+
 #include "../draw_type/rboxf.hsp"
 
+#include "../draw_type/line.hsp"
 
 		                                         ; life           , x    , y    , w  , h  , ohter_params
 bg_id = make_draw_object(MOVE_TYPE_STATIC, "BOXF", LIFE_FOREVER   , 640/2, 480/2, 640, 480, "$000000")
@@ -35,7 +39,12 @@ set_ease_posy get_entity_id(circle_id), 640/2, 480/2 - 200
 // 円は1秒で上に移動して消える！
 
 //出来た！！！　extra_params = 色、rsize, 丸くしない位置のフラグ, 角度
-_make_draw_object MOVE_TYPE_STATIC,"RBOXF_FAST", LIFE_FOREVER, 640/2,480/2, 100,50, "$00FF00,5,0,0.5"
+   _make_draw_object MOVE_TYPE_STATIC,"RBOXF_FAST", LIFE_FOREVER, 640/2,480/2, 100,50, "$00FF00,5,0,0.5"
+
+l = make_draw_object(MOVE_TYPE_EASE,"LINE"      , LIFE_FOREVER, 100,200, 70,70,"$00FFFF,0")
+set_ease_angle get_entity_id(l), 0,deg2rad(360), ease_quad_inout　//一応各パラごとに調整可能　省略で現状維持 ==１秒
+set_ease_posx get_entity_id(l), 000, 200, ease_quad_inout,4 
+//回転した後滑ってくる。　仕様と合致だよね？
 
 *main
 	manage_keyfps

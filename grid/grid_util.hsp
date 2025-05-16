@@ -1,0 +1,25 @@
+
+
+#deffunc trans_grid_smart array item_indices, int item_indices_num, int w1, int w_max, int h_max, array result
+	// item_indices (w1Šî€) ‚ğA‰Â”\‚ÈŒÀ‚è•‚ğ‹·‚­‚µ‚Â‚Â h_max ‚Éû‚Ü‚é‚æ‚¤‚É‚·‚é
+	// •Ô‚è’l result[0] = new_w, result[1] = new_h
+
+	new_w = -1
+
+	repeat w_max
+		test_w = cnt + 1
+		test_h = (item_indices_num + test_w - 1) / test_w
+		if test_h <= h_max {
+			new_w = test_w
+			break
+		}
+	loop
+
+	if new_w = -1 {
+		result = -1, -1
+		return
+	}
+
+	new_h = (item_indices_num + new_w - 1) / new_w
+	result = new_w, new_h
+	return
