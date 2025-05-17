@@ -43,5 +43,6 @@
 	return
 
 #global
+set_max_centering_mes 99999
 
 #endif

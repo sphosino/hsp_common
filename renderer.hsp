@@ -255,7 +255,7 @@
     h = rect(3) - rect(1)
     return make_draw_object(move_type, draw_type, LIFE_FOREVER, x, y, w, h, params)
     
-#defcfunc make_instant_draw_object str draw_type, double _x, double _y, double _w, double _h, str params
+#deffunc make_instant_draw_object str draw_type, double _x, double _y, double _w, double _h, str params
     return make_draw_object(MOVE_TYPE_STATIC, draw_type, LIFE_INSTANT, _x, _y, _w, _h, params)
 
 #global

@@ -33,13 +33,35 @@
 	grotate circlebuffer,0,0,angle,w,h
 
 	return
+
+*render_fast
+	get_basic_params params
+	x=params.0
+	y=params.1
+	w=params.2
+	h=params.3
+
+	get_extra_params e
+	futi = 1
+	col = 0
+	if stat >= 1 {
+		col = e.0
+		if stat >= 2 {
+			futi = e.1
+		}
+	}
 	
+	F‚ğİ’è int(col)
+	circle x-w/2, y-w/2, x + w/2, y + h/2, int(futi)
+
+	return
 #deffunc init_circle_mod
 	tmp = ginfo_sel
 	circlebuffer = ginfo_newid
 	buffer circlebuffer
 	gsel tmp
 	register_renderer "CIRCLE", *render
+	register_renderer "CIRCLE_FAST",*render_fast
 	return
 	
 #global
