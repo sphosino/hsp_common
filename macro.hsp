@@ -1,7 +1,0 @@
-#ifndef lÌŒÜ“ü
-#define ctype global lÌŒÜ“ü(%1) (((%1) > 0) * 2 - 1) * (absf(%1) + 0.5)
-#define ctype global ­”ˆÈ‰ºØ‚èÌ‚Ä(%1) 0. + (0 + %1)
-#define ctype global •‰‚Ì•ûŒü‚ÉŠÛ‚ß‚é(%1)  (-((%1) < int(%1)) + (%1))
-#define ctype global ³‚Ì•ûŒü‚ÉŠÛ‚ß‚é(%1)   (((%1) > int(%1)) + (%1))
-#define ctype global â‘Î’l‘å‚ÉŠÛ‚ß‚é(%1) ((((%1) > 0) * 2 - 1) * ((%1) != int(%1)) + (%1))
-#endif

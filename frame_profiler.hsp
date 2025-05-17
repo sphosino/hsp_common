@@ -1,4 +1,5 @@
 #ifndef frame_profiler
+#addition "keyfps.hsp"
 #module frame_profiler
 #deffunc init_
 	#ifdef _debug

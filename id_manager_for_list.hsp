@@ -2,9 +2,6 @@
 
 #addition "id_manager.hsp"
 
-#addition "hsp_common/id_manager.hsp"
-#addition "../hsp_common/id_manager.hsp"
-#addition "../../hsp_common/id_manager.hsp"
 
 #module list_id_manager id_to_listnum, listnum_to_id, listnum, id_list_manager, len
 

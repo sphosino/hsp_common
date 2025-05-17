@@ -1,0 +1,16 @@
+#ifndef get_scroll_value
+#module
+#defcfunc get_scroll_value int min, int max, int range, int cur, int handlesize
+	usable_space = range - handlesize
+	if usable_space <= 0: return min
+	return limit(min + (max-min) * cur / usable_space,min,max)
+
+#defcfunc get_scroll_pos int min, int max, int range, int value, int handlesize
+    usable_space = range - handlesize
+    if usable_space <= 0 : return 0
+    if max == min : return 0 ; ’l‚Ì”ÍˆÍ‚ªƒ[ƒ‚Ìê‡
+    p = (value - min) * usable_space / (max - min)
+    return limit(p, 0, usable_space)
+    
+#global
+#endif
