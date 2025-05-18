@@ -66,23 +66,18 @@
 
 	; 描画
 	if horizontal {
-		色を設定 col
 		bar_area = px , py, px + size * normal, py + tickness * frip
-		aboxf bar_area
-		色を設定 col.1
-		boxf px + bar_position * normal, py, px + (bar_position + handlesize) * normal, py + tickness * frip
+		make_instant_draw_object "BOXF_FAST",px , py, px + size * normal, py + tickness * frip, str(col)
+		make_instant_draw_object "BOXF_FAST",px + bar_position * normal, py, px + (bar_position + handlesize) * normal, py + tickness * frip, str(col.1)
 	} else {
-		色を設定 col
 		bar_area = px , py, px + tickness * frip, py + size * normal
-		aboxf bar_area
-		色を設定 col.1
-		boxf px, py + bar_position * normal, px + tickness * frip, py + (bar_position + handlesize) * normal
+		make_instant_draw_object "BOXF_FAST",px , py, px + tickness * frip, py + size * normal, str(col)
+		make_instant_draw_object "BOXF_FAST",px, py + bar_position * normal, px + tickness * frip, py + (bar_position + handlesize) * normal, str(col.1)
 	}
 
 	; 値の表示
 	if draw_value_flag {
-		pos px, py
-		mes value
+		make_instant_draw_object "STR",px,py,20,20, strf("%d,%d",value,0)
 	}
 		
 	return

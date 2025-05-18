@@ -152,6 +152,9 @@
     idnum = get_list_ids( draw_object_id_manager, ids) 
     sort_list_by_priority_list ids, idnum, draw_object_priority
 
+    tmptmp ++
+    if tmptmp \60 == 0: logmes idnum
+
     repeat idnum
     
         obj_id = ids(cnt) //ŒÅ—L‚ÌID

@@ -5,39 +5,59 @@
 	get_basic_params p
 	get_extra_params e
 
-	// p = x, y, w, h, alpha, angle
 	x = p(0)
 	y = p(1)
 	w = p(2)
-	h = p(3)
-	alpha = p(4)
-	angle = p(5)
-
-	col = defcolor
+	
+	col = 0
+	use_box = 0
 	if stat >=1{
-		if e.0!= "":col = int(e.0)
+		col = int(e.0)
+		if stat >= 2{
+			use_box = int(e.1)
+		}
 	}
 	
-	// 角度をラジアンに変換
-	rad = angle 
-	cos_a = cos(rad)
-	sin_a = sin(rad)
-
-	// 線の中心が (x, y)、左右に w/2 伸びた線
-	dx = w / 2.0
-	dy = 0
-
-	x1 = -dx * cos_a - dy * sin_a + x
-	y1 = -dx * sin_a + dy * cos_a + y
-	x2 = dx * cos_a - dy * sin_a + x
-	y2 = dx * sin_a + dy * cos_a + y
-
 	色を設定 col
 
-	if use_box == 0 {
-		// 細い線（1px）
+	if use_box{
+		h = p(3)
+		boxfl x - w/2, y - h/2, x + w/2, y + h/2
+	}else{	
+		if p(5) == 0{
+			line x-w/2,y,x+w/2,y
+		}
+		// 線の中心が (x, y)、左右に w/2 伸びた線
+		dx = w / 2.0
+
+		angle = p(5)
+		cos_a = cos(angle)
+		sin_a = sin(angle)
+	
+		x1 = -dx * cos_a + x
+		y1 = -dx * sin_a + y
+		x2 = dx * cos_a + x
+		y2 = dx * sin_a + y
 		line x1, y1, x2, y2
 	}
+	return
+*render_fast
+	get_basic_params p
+	get_extra_params e
+
+	x1 = p(0)
+	y1 = p(1)
+	x2 = p(2)
+	y2 = p(3)
+	
+	col = 0
+	if stat >=1{
+		col = int(e.0)
+	}
+	
+	色を設定 col
+	line x1,y1,x2,y2
+	
 	return
 
 #deffunc init_line_mod
@@ -47,6 +67,7 @@
 	buffer linebuf
 	gsel tmp
 	register_renderer "LINE", *render
+	register_renderer "LINE_FAST", *render_fast
 	return
 
 #deffunc make_line_object_by_points double _x1, double _y1, double _x2, double _y2, str colo

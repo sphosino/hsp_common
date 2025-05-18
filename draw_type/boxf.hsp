@@ -3,6 +3,7 @@
 
 #deffunc init_boxf_mod
 	register_renderer "BOXF", *render
+	register_renderer "BOXF_FAST", *render_fast
 	return
 *render
 	
@@ -17,6 +18,17 @@
 	F‚ğİ’è int(col)
 	gmode 3,,,alpha
 	grect x,y,angle,w,h
+	return
+*render_fast
+	get_basic_params p
+	get_extra_params col
+	if stat>=1{
+		F‚ğİ’è int(col)
+	}else{
+		F‚ğİ’è 0
+	}
+	boxf p,p.1,p.2,p.3
+	
 	return
 	
 #global
