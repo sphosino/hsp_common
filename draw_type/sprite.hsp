@@ -1,0 +1,82 @@
+#ifndef sprite_mod
+#module sprite_mod
+#const DEFAULT_R 6
+
+*render
+	get_basic_params p
+
+	x = p
+	y = p.1
+	w = p.2
+	h = p.3
+	alpha = 256.0
+	angle = 0.0
+
+	get_extra_params e
+
+	//コピー元情報
+	px = 0.
+	py = 0.
+	sizex = w
+	sizey = h
+	mode = 3
+	
+	if stat >= 2{
+		if e.1 != ""{
+			px = int(e.1)
+		}
+		if stat >= 3{
+			if e.2 != ""{
+				py = int(e.2)
+			}
+			if stat >= 4{
+				if e.3 != ""{
+					alpha = int(e.3)
+				}
+				if stat >= 5{
+					if e.4 != ""{
+						angle = int(e.4)
+					}
+					if stat >= 6{
+						if e.5 != ""{
+							sizex = int(e.5)
+						}
+						if stat >= 7{
+							if e.6 != ""{
+								sizey = int(e.6)
+							}
+							if stat >= 8{
+								mode = 4
+								色を設定 int(e.7)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	
+    
+    gmode mode, sizex, sizey,alpha
+    //コピーモード、元画像のサイズｘ、元画像のサイズｙ,alpha
+    pos x, y
+    grotate int(e(0)),px,py,angle, w, h
+    
+/* grotate
+p1=0～(0) : コピー元のウィンドウID
+p2=0～(0) : コピー元の左上X座標
+p3=0～(0) : コピー元の左上Y座標
+p4=0.0～(0.0) : 回転角度(単位はラジアン)
+p5=0～(?) : Xサイズ 実際の大きさ省略時は元画像と同じ(gmodeでセットしたｘ
+p6=0～(?) : Yサイズ 実際の大きさ省略時は元画像と同じ(gmodeでセットしたｙ
+*/  
+    return
+    
+    
+#deffunc init_sprite_mod
+	register_renderer "SPRITE", *render
+	return
+	
+#global
+init_sprite_mod
+#endif

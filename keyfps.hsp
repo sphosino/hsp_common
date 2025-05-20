@@ -380,7 +380,7 @@ p2で間隔を指定します。この時間以内に２回目が押されると、１を返します。
 	#define global       setFPStime(%1 = FPStime@keyFPS) FPStime@keyFPS = limitf(%1, 0.1): dim prefps@keyFPS ; FPS精度を設定
 	#define global ctype getFPStime                      FPStime@keyFPS ; FPS精度
 	
-	#define global ctype slowdown                        (time_remaining@keyFPS <= 0) ; 処理落ちしているかどうか
+	#define global ctype waitedtime                      time_remaining@keyFPS ; 処理落ちしているかどうか
 	#define global ctype frametime                       ((0. + actual_elapsed@keyFPS) / 1000) ; 前回のフレームにかかった時間(秒)
 		
 	//キー状態取得関連

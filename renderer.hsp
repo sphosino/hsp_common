@@ -41,7 +41,7 @@
 	newmod draw_object_id_manager, list_id_manager, DRAW_OBJECTS_MAX
 	newmod labs,label_set
 
-	sdim tmp,, 100 //splitパラ用
+	sdim tmp,, 50 //splitパラ用
 
     return
 
@@ -56,13 +56,10 @@
 		logmes "ライフ０以下の描画オブジェクトを作成しようとしました"
 		return -1
 	}
-	if life == LIFE_FOREVER{
-		logmes "永続オブジェクトを作成にゃ!"
-	}
-
+	
     //基本情報
     
-    newid = get_new_id_for_list(draw_object_id_manager)　//変更２
+    newid = get_new_id_for_list(draw_object_id_manager)
     
     draw_object_priority(newid) = PRIORITY_NORMAL
     draw_object_life_max(newid) = life
@@ -95,7 +92,7 @@
     
 #deffunc destroy_draw_object_immediately int id
 	; IDを解放
-    delete_by_itemid draw_object_id_manager, id //変更３
+    delete_by_itemid draw_object_id_manager, id
 
 	; エンティティの種類に応じて削除処理
 	switch draw_object_move_type(id)
@@ -152,9 +149,8 @@
     idnum = get_list_ids( draw_object_id_manager, ids) 
     sort_list_by_priority_list ids, idnum, draw_object_priority
 
-    tmptmp ++
-    if tmptmp \60 == 0: logmes idnum
-
+    ;tmptmp++: if tmptmp \ 60 == 0: logmes idnum
+	フラグ = 0
     repeat idnum
     
         obj_id = ids(cnt) //固有のID
@@ -201,9 +197,9 @@
 		
 		//描画ラベルを呼ぶ
     	get_label_set labs, draw_object_draw_type(obj_id), func
-		フラグ = 0
+		
     	gosub func
-		フラグ = 1
+		
 
         //ライフ進行処理
 
@@ -217,6 +213,7 @@
 		}
 		
     loop
+    フラグ = 1
     return
     
 #defcfunc get_entity_id int id

@@ -21,7 +21,7 @@
 			
 			文字数 = strlen(b)
 
-			pos 3000, 3000
+			pos 2000, 1500
 
 			fsize = limitf(行サイズ,,limitf(maxsize,,double(rect.2 - rect.0) * XY_RATIO / 文字数))
 

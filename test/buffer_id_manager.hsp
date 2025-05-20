@@ -1,0 +1,38 @@
+#ifndef buffer_id_manager
+#module buffer_id_manager minimized,minimized_num,using_buffer,using_num
+#modinit
+	return
+#modfunc get_new_buffer_id
+	if minimized_num == 0{
+		newid = ginfo_newid ;HSPÇ©ÇÁñ¢égópÇÃî‘çÜÇ‡ÇÁÇ§
+		using_buffer(using_num) = newid
+		using_num++
+	}else{
+		minimized_num--
+		newid = minimized(minimized_num)
+	}
+	using_buffer(using_num) = newid
+	using_num++
+	return newid
+	
+#modfunc del_buffer int id
+	if is_buffer_alive(id){
+		buffer id,1,1
+		minimized(minimized_num) = id
+		minimized_num++
+		for i,, using_num
+			if using_buffer(i) == id {
+				using_buffer(i) = using_buffer(using_num - 1)
+				using_num--
+				_break
+			}
+		next
+	}
+	return
+#modcfunc is_buffer_alive int id
+	for i,, using_num
+		if using_buffer(i) == id: return 1
+	next
+	return 0
+#global
+#endif
