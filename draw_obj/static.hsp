@@ -1,105 +1,78 @@
-#ifndef static
-#module static x, y, w, h, alpha, angle
+#ifndef static_manager
+#include "../hsp_common/id_manager.hsp"
+#module static_manager
+#deffunc init_static_manager
+	newmod static_id_manager, id_manager
+	ddim posx
+	ddim posy
+	ddim sizex
+	ddim sizey
+	ddim alpha
+	ddim angle
+	return
+#defcfunc make_static_obj double p1,double p2,double p3,double p4
+	newid = get_new_id(static_id_manager)
+	posx(newid) = p1
+	posy(newid) = p2
+	sizex(newid) = p3
+	sizey(newid) = p4
+	alpha(newid) = 256.0
+	angle(newid) = 0.0
+	return newid
 
-#modinit double _x, double _y, double _w, double _h, local thismod_ID
-	x = _x : y = _y : w = _w : h = _h
-	alpha = 255.
-	angle = 0.
-	mref thismod_ID, 2
-	return thismod_ID
-
-#modcfunc _get_static_posx
-	return x
-#modcfunc _get_static_posy
-	return y
-#modcfunc _get_static_sizex
-	return w
-#modcfunc _get_static_sizey
-	return h
-#modcfunc _get_static_alpha
-	return alpha
-#modcfunc _get_static_angle
-	return angle
-	
-#modfunc _set_static_posx double _x
-	x = _x
-	return
-#modfunc _set_static_posy double _y
-	y = _y
-	return
-#modfunc _set_static_sizex double _w
-	w = _w
-	return
-#modfunc _set_static_sizey double _h
-	h = _h
-	return
-#modfunc _set_static_alpha double _alpha
-	alpha = _alpha
-	return
-#modfunc _set_static_angle double _angle
-	angle = _angle
-	return
-#global
-
-
-#module static_manager 
-
-#defcfunc make_static_obj double x, double y, double w, double h
-	newmod data, static, x, y, w, h
-	return stat
-	
 #defcfunc get_static_posx int id
-	return _get_static_posx(data(id))
+	return posx(id)
 	
 #defcfunc get_static_posy int id
-	return _get_static_posy(data(id))
+	return posy(id)
 	
 #defcfunc get_static_sizex int id
-	return _get_static_sizex(data(id))
+	return sizex(id)
 	
 #defcfunc get_static_sizey int id
-	return _get_static_sizey(data(id))
+	return sizey(id)
 
 #defcfunc get_static_alpha int id
-	return _get_static_alpha(data(id))
-	
+	return alpha(id)
+
 #defcfunc get_static_angle int id
-	return _get_static_angle(data(id))
+	return angle(id)
+
 //ƒZƒbƒ^
 #deffunc set_static_posx int id, double x
-	_set_static_posx data(id), x
+	posx(id) = x
 	return
 #deffunc set_static_posy int id ,double y
-	_set_static_posy data(id), y
+	posy(id) = y
 	return
 #deffunc set_static_sizex int id, double w
-	_set_static_sizex data(id), w
+	sizex(id) = w
 	return
 #deffunc set_static_sizey int id, double h
-	_set_static_sizey data(id), h
+	sizey(id) = h
 	return
-#deffunc set_static_alpha int id, double alpha
-	_set_static_alpha data(id), alpha
+#deffunc set_static_alpha int id, double _alpha
+	alpha(id) = _alpha
 	return
-#deffunc set_static_angle int id, double angle
-	_set_static_angle data(id), angle
+#deffunc set_static_angle int id, double _angle
+	angle(id) = _angle
 	return
 	
-#deffunc del_static_obj int id
-	delmod data(id)
+#deffunc del_static_obj int p1
+	release_id static_id_manager,p1
 	return
-
 
 #deffunc update_static_rect int eid, array rect
 	centerx = (rect(0) + rect(2)) / 2
 	centery = (rect(1) + rect(3)) / 2
-	sizex = rect(2) - rect(0)
-	sizey = rect(3) - rect(1)
+	_sizex = rect(2) - rect(0)
+	_sizey = rect(3) - rect(1)
 
-	set_static_posx eid, centerx
-	set_static_posy eid, centery
-	set_static_sizex eid, sizex
-	set_static_sizey eid, sizey
+	posx(eid) = 0.+centerx
+	posy(eid) = 0.+centery
+	sizex(eid) = 0.+_sizex
+	sizey(eid) = 0.+_sizey
 	return
 #global
+init_static_manager
 #endif
