@@ -5,7 +5,7 @@
 #const MAX_DIV 20000 //断片化許可数
 #const CLASS_NUM 6
 
-#const MIN_SPLIT_SIZE 8
+#const MIN_SPLIT_SIZE 32
 #const MAX_EXPAND_LIMIT 4000000
 
 #const DEFAULT_POOL_SIZE 10000
@@ -34,7 +34,8 @@
 	return
 
 #defcfunc get_new_block int size
-
+	if size <= 0: logmes "サイズ０以下では確保できません! in get_new_block()": return -1
+	
 	class = get_class_index(size)
 
 	newid = -1
@@ -115,7 +116,7 @@
 	return offset(id)
 	
 #deffunc free_block int id
-	if is_id_alive(mem_id_manager) == 0: return
+	if is_id_alive(mem_id_manager, id) == 0: return
 	if is_free(id): return //既に開放済みのブロック
 	
 	prev_id = back_mem_id(id) //前のブロックid
@@ -137,6 +138,11 @@
 		if is_free(prev_id){
 			pattern_flag |= 1 ;左側がフリー
 		}
+	}else{
+		//　左にブロックがなくても小断片化している可能性がある。　ブロックが左にないのであれば左端までを領域とすればよい。
+		//（右端が変わらないように隙間を吸収）
+		mem_size(id) += offset(id)
+		offset(id) = 0
 	}
 
 	switch pattern_flag
@@ -151,13 +157,22 @@
 		offset(id) = left
 		mem_size(id) = right - left
 
-		//フリーリストに登録
-		class = get_class_index(right - left)
-		free_list(class, free_list_num(class)) = id
-		free_list_num(class)++
-
-		//この空間を開放済みにする
-		is_free(id) = 1
+		if mem_size(id) >= MIN_SPLIT_SIZE{
+			//フリーリストに登録
+			class = get_class_index(right - left)
+			free_list(class, free_list_num(class)) = id
+			free_list_num(class)++
+			is_free(id) = 1 ;この空間を開放済みにする
+		}else{
+			//小断片なので無視し、前後を連結する
+			if prev_id >= 0{
+				next_mem_id(prev_id) = next_mem_id(id)
+			}
+			if next_id >= 0{
+				back_mem_id(next_id) = back_mem_id(id)
+			}
+			release_id mem_id_manager, id //id返却
+		}
 	swbreak
 				
 	case 1 //左にのみ統合
@@ -220,14 +235,15 @@
 			back_mem_id(next_mem_id(next_id)) = prev_id
 		}
 		
-		release_id mem_id_manager, id
-		release_id mem_id_manager, next_id
-		
 		remove_from_free_list get_class_index_by_id(next_id), next_id //nextはフリーリストに存在するはずなので削除
 
 		if next_id == last_block_id{
 			last_block_id = prev_id
 		}
+
+		//消失idを返却
+		release_id mem_id_manager, id
+		release_id mem_id_manager, next_id
 
 	swbreak
 	swend
@@ -281,11 +297,11 @@
 	return
 	
 #defcfunc get_class_index int size
-	if size <= 16 : return 0
-	if size <= 32 : return 1
-	if size <= 64 : return 2
-	if size <= 128 : return 3
-	if size <= 256 : return 4
+	if size <= 32 : return 0
+	if size <= 64 : return 1
+	if size <= 128 : return 2
+	if size <= 256 : return 3
+	if size <= 512 : return 4
 	return 5
 	
 #defcfunc get_class_index_by_id int id

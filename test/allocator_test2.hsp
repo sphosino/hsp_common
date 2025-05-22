@@ -1,11 +1,11 @@
 #include "../memory_allocator.hsp"
 
-id = get_new_block(4)
+id = get_new_block(1)
 
-append_str id, "heyhey"
-id2 = get_new_block(5)
-append_str id, "hogehoge"
-free_block id2
-id2 = get_new_block(5)
+id2 = get_new_block(1)
 
-mes read_mem_str(id)
+id3 = get_new_block(5)
+
+append_str id2, "Ab"
+
+mes read_mem_str(id2)
