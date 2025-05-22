@@ -1,11 +1,250 @@
 #include "../memory_allocator.hsp"
 
-id = get_new_block(1)
+// テスト結果表示用
+#define TEST_OK "OK"
+#define TEST_NG "NG"
 
-id2 = get_new_block(1)
+test_count = 0
+pass_count = 0
 
-id3 = get_new_block(5)
+goto*@f
+#deffunc test_start str test_name
+    current_test = test_name
+    logmes "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    logmes "テスト " + test_count + ": " + test_name
+    logmes "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    return
 
-append_str id2, "Ab"
+#deffunc test_result int result, str message
 
-mes read_mem_str(id2)
+ 	test_count++
+    if result {
+        logmes TEST_OK + " " + message
+        pass_count++
+    } else {
+        logmes TEST_NG + " " + message
+    }
+    logmes "    [デバッグ] テスト番号: " + test_count + ", 成功数: " + pass_count + ", 結果: " + result
+    return
+
+#deffunc test_summary
+    logmes ""
+    logmes "==============================================="
+    logmes "テスト結果: " + pass_count + "/" + test_count + " passed"
+    if pass_count == test_count {
+        logmes "?? すべてのテストが成功しました！"
+    } else {
+        logmes "??  " + (test_count - pass_count) + "個のテストが失敗しました"
+    }
+    logmes "==============================================="
+    return
+*@
+
+// メイン テスト開始
+logmes "=== メモリプール文字列操作テスト開始 ==="
+logmes ""
+
+// テスト1: 基本的な文字列書き込み・読み込み
+test_start "基本的な文字列書き込み・読み込み"
+
+block1 = get_new_block(100)
+test_result block1 >= 0, "ブロック確保: ID=" + block1
+
+write_mem_str block1, "Hello, World!", 0
+result = read_mem_str(block1, 0)
+test_result result == "Hello, World!", "文字列書き込み・読み込み: \"" + result + "\""
+
+size = get_block_size(block1)
+test_result size == 100, "ブロックサイズ確認: " + size + " bytes"
+
+// テスト2: 文字列の追加・連結
+test_start "文字列の追加・連結"
+
+block2 = get_new_block(200)
+write_mem_str block2, "こんにちは", 0
+append_str block2, "、世界！"
+result = read_mem_str(block2, 0)
+test_result result == "こんにちは、世界！", "文字列連結: \"" + result + "\""
+
+// オフセット指定での書き込み
+write_mem_str block2, "HSP", 50
+result2 = read_mem_str(block2, 50)
+test_result strmid(result2, 0, 3) == "HSP", "オフセット書き込み: \"" + strmid(result2, 0, 3) + "\""
+
+// テスト3: 複数ブロックの管理
+test_start "複数ブロックの管理"
+
+// 異なるサイズのブロックを複数作成
+block_small = get_new_block(16)   // クラス0
+block_medium = get_new_block(64)  // クラス2
+block_large = get_new_block(300)  // クラス5
+
+write_mem_str block_small, "小", 0
+write_mem_str block_medium, "中サイズのテキスト", 0
+write_mem_str block_large, "これは大きなブロックに保存される長いテキストデータです。メモリプールの動作確認用のサンプル文字列として使用します。", 0
+
+result1 = read_mem_str(block_small, 0)
+result2 = read_mem_str(block_medium, 0)
+result3 = read_mem_str(block_large, 0)
+
+test_result strmid(result1, 0, 2) == "小", "小ブロック: \"" + strmid(result1, 0, 10) + "\""
+test_result result2 == "中サイズのテキスト", "中ブロック: \"" + result2 + "\""
+test_result strlen(result3) > 50, "大ブロック長さ: " + strlen(result3) + " 文字"
+
+// テスト4: メモリ解放とコアレッシング
+test_start "メモリ解放とコアレッシング"
+
+// 連続するブロックを作成
+seq_block1 = get_new_block(50)
+seq_block2 = get_new_block(50)
+seq_block3 = get_new_block(50)
+
+write_mem_str seq_block1, "ブロック1", 0
+write_mem_str seq_block2, "ブロック2", 0
+write_mem_str seq_block3, "ブロック3", 0
+
+logmes "解放前:"
+logmes "  ブロック" + seq_block1 + ": \"" + read_mem_str(seq_block1, 0) + "\""
+logmes "  ブロック" + seq_block2 + ": \"" + read_mem_str(seq_block2, 0) + "\""
+logmes "  ブロック" + seq_block3 + ": \"" + read_mem_str(seq_block3, 0) + "\""
+
+// 中央のブロックを解放（コアレッシングテスト）
+free_block seq_block2
+test_result 1, "中央ブロック解放完了"
+
+// 新しいブロックが解放された領域を再利用するかテスト
+reuse_block = get_new_block(30)
+write_mem_str reuse_block, "再利用", 0
+result = read_mem_str(reuse_block, 0)
+test_result result == "再利用", "メモリ再利用: \"" + result + "\""
+
+// テスト5: 動的サイズ変更
+test_start "動的サイズ変更（文字列拡張）"
+
+dynamic_block = get_new_block(20)
+write_mem_str dynamic_block, "短い", 0
+
+// 元のサイズを超える文字列を書き込み（自動拡張テスト）
+long_text = "これは元のブロックサイズを超える長い文字列です。メモリプールが自動的に拡張されるかテストします。"
+write_mem_str dynamic_block, long_text, 0
+
+result = read_mem_str(dynamic_block, 0)
+
+test_result strlen(result) > 20, "自動拡張: " + strlen(result) + " 文字（元20文字制限）"
+test_result result == long_text, "拡張後データ整合性: 正常"
+/*/
+logmes strlen(long_text)
+logmes result
+stop
+;*/
+// テスト6: エラーハンドリング
+test_start "エラーハンドリング"
+
+// 非常に大きなブロックの要求
+huge_block = get_new_block(5000000)  // MAX_EXPAND_LIMITを超える
+test_result huge_block == -1, "巨大ブロック拒否: ID=" + huge_block
+
+// 無効なIDでの操作
+invalid_result = read_mem_str(-1, 0)
+test_result 1, "無効ID処理: エラーなく実行"
+
+// テスト7: 日本語文字列処理
+test_start "日本語文字列処理"
+
+jp_block = get_new_block(200)
+jp_text = "こんにちは！これは日本語のテストです。ひらがな、カタカナ、漢字が含まれています。??"
+write_mem_str jp_block, jp_text, 0
+
+result = read_mem_str(jp_block, 0)
+test_result result == jp_text, "日本語書き込み・読み込み: 正常"
+
+// 日本語文字列の部分書き換え
+write_mem_str jp_block, "さようなら", 15
+partial_result = read_mem_str(jp_block, 15)
+test_result strmid(partial_result, 0, 10) == "さようなら", "日本語部分書き換え: 正常"
+
+// テスト8: 大量データ処理
+test_start "大量データ処理"
+
+// 多数の小さなブロックを作成
+logmes "100個の小ブロックを作成中..."
+dim small_blocks, 100
+repeat 100
+    small_blocks(cnt) = get_new_block(32)
+    write_mem_str small_blocks(cnt), "データ" + cnt, 0
+loop
+
+// ランダムにいくつかを読み込んでテスト
+test_data = read_mem_str(small_blocks(25), 0)
+test_result test_data == "データ25", "大量ブロック管理: ブロック25 = \"" + test_data + "\""
+
+test_data = read_mem_str(small_blocks(75), 0)
+test_result test_data == "データ75", "大量ブロック管理: ブロック75 = \"" + test_data + "\""
+
+// 半分のブロックを解放
+logmes "50個のブロックを解放中..."
+repeat 50
+    free_block small_blocks(cnt * 2)
+loop
+
+test_result 1, "大量解放: 完了"
+
+// テスト9: 境界値テスト
+test_start "境界値テスト"
+
+// 最小サイズ
+min_block = get_new_block(1)
+write_mem_str min_block, "A", 0
+result = read_mem_str(min_block, 0)
+test_result strmid(result, 0, 1) == "A", "最小ブロック(1byte): \"" + strmid(result, 0, 1) + "\""
+
+// サイズクラス境界値
+boundary_tests = 16, 32, 64, 128, 256
+repeat 5
+    size = boundary_tests(cnt)
+    boundary_block = get_new_block(size)
+    boundary_text = ""
+    repeat size - 1
+        boundary_text += "A"
+    loop
+    write_mem_str boundary_block, boundary_text, 0
+    result = read_mem_str(boundary_block, 0)
+    test_result strlen(result) >= size - 1, "境界値" + size + "bytes: " + strlen(strmid(result, 0, 10)) + "文字..."
+loop
+
+// 最終テスト: メモリ使用状況の確認
+test_start "メモリ使用状況確認"
+
+logmes "=== 最終メモリ状況 ==="
+logmes "作成されたブロック数: " + (test_count * 3) + "以上"
+logmes "テスト実行完了"
+
+// 最後に大きなブロックでメモリプールの状態を確認
+final_block = get_new_block(1000)
+if final_block >= 0 {
+    write_mem_str final_block, "最終テストブロック - メモリプールは正常に動作しています！", 0
+    final_result = read_mem_str(final_block, 0)
+    test_result final_result != "", "最終ブロック確保: 正常"
+} else {
+    test_result 0, "最終ブロック確保: 失敗（メモリ枯渇）"
+}
+
+// テスト結果まとめ
+logmes ""
+test_summary
+
+logmes ""
+logmes "=== 使用例デモ ==="
+
+// 実際の使用例を示す
+demo_block = get_new_block(500)
+write_mem_str demo_block, "ユーザー名: ", 0
+append_str demo_block, "田中太郎"
+append_str demo_block, "\n年齢: 25歳"
+append_str demo_block, "\n職業: プログラマー"
+
+logmes "デモ - ユーザー情報:"
+logmes read_mem_str(demo_block, 0)
+
+logmes ""
+logmes "=== テスト終了 ==="

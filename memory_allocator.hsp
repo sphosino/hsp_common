@@ -34,7 +34,10 @@
 	return
 
 #defcfunc get_new_block int size
-	if size <= 0: logmes "サイズ０以下では確保できません! in get_new_block()": return -1
+	if size <= 0{
+		logmes "サイズ０以下では確保できません! 【 get_new_block() 】"
+		return -1
+	}
 	
 	class = get_class_index(size)
 
@@ -330,6 +333,46 @@
 #defcfunc get_mem_offset int id
 	return offset(id)
 
+///////////////////
+//////可視化///////
+#deffunc draw_memory_pool_with_labels int xsize, int xoffset
+	color 0,255,0
+	boxf xoffset,0,xoffset+xsize,640
+	
+	foreach_id mem_id_manager, vid
+		ofs = offset(vid)
+		size = mem_size(vid)
+		class = get_class_index(size)
+		col = get_color_by_class(class)
+
+		if is_free(vid){
+			color 255,255,255
+		}else{
+			color col>>16&255,col>>8&255,col&255
+		}
+		boxf xoffset, ofs, xoffset+xsize, ofs + size
+		; サイズ表示（ある程度大きいときだけ）
+		if size >= 12 {
+			color 0,0,0
+			pos xoffset + 2, ofs + 2
+			mes vid
+			line xoffset, ofs, xoffset+xsize, ofs
+		}
+	foreach_end
+	return
+#defcfunc get_color_by_class int _class
+	switch _class
+	case 0 : return $ff6666 ; 赤系（最小ブロック）
+	case 1 : return $66cc66 ; 緑系
+	case 2 : return $6699ff ; 青系
+	case 3 : return $ffcc66 ; 黄オレンジ系
+	case 4 : return $cc66ff ; 紫系
+	case 5 : return $999999 ; 灰色（でかすぎクラスタ）
+	default: return $333333 ; 黒っぽい（不明クラス）
+	swbreak
+	swend
+return
+
 ///////////////////	
 //////操作API//////
 ///////////////////
@@ -364,6 +407,7 @@
 			}
 		}
 	}
+	memexpand memory_pool, offset(id) + offset_in_block + sz //この行が足りてなかった！！
 	memcpy memory_pool, v, sz, offset(id) + offset_in_block //sz分だけ書き込む
 	return
 
