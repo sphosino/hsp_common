@@ -8,7 +8,7 @@
 #const MIN_SPLIT_SIZE 8
 #const MAX_EXPAND_LIMIT 4000000
 
-#const DEFAULT_POOL_SIZE 5000
+#const DEFAULT_POOL_SIZE 10000
 
 #deffunc init_memory_pool int size
 
@@ -115,7 +115,7 @@
 	return offset(id)
 	
 #deffunc free_block int id
-
+	if is_id_alive(mem_id_manager) == 0: return
 	if is_free(id): return //既に開放済みのブロック
 	
 	prev_id = back_mem_id(id) //前のブロックid
@@ -153,7 +153,6 @@
 
 		//フリーリストに登録
 		class = get_class_index(right - left)
-		;logmes "登録 class=" + class + " id=" + id + " offset=" + offset(id) + " size= " + mem_size(id)
 		free_list(class, free_list_num(class)) = id
 		free_list_num(class)++
 
@@ -213,7 +212,7 @@
 		//prev更新
 		class = get_class_index(right - left)
 		move_id_free_list prev_id, get_class_index(mem_size(prev_id)), class
-		mem_size(next_id) = right - left
+		mem_size(prev_id) = right - left
 
 		//連結更新
 		next_mem_id(prev_id) = next_mem_id(next_id)
@@ -320,8 +319,13 @@
 ///////////////////
 #defcfunc get_block_size int id
     return mem_size(id)
-    
+
+//文字列として操作
 #deffunc write_mem_str int id, str value, int offset_in_block
+
+	if is_id_alive(mem_id_manager, id) == 0: return
+	if is_free(id): return
+	
 	sz = strlen(value)
 	v = value
 	oversize = offset_in_block + sz - mem_size(id)
@@ -339,19 +343,18 @@
 					cutpart = strmid(value, sz, 65535) ; ← 断片部分を抜き出す					
 					logmes "書き込み文字列が長すぎました。\n途中で切り捨てました！\n\n失われた断片:\n" + cutpart
 				}
-			}else{					
+			}else{
 				mem_size(id) += oversize
 			}
 		}
 	}
 	memcpy memory_pool, v, sz, offset(id) + offset_in_block //sz分だけ書き込む
-
 	return
 
-//文字列として操作
 #defcfunc read_mem_str int id, int offset_in_block
 	if is_id_alive(mem_id_manager, id) == 0: return ""
 	if is_free(id): return ""
+	
 	sdim s, mem_size(id)
 	memcpy s, memory_pool, mem_size(id) - offset_in_block, 0, offset(id) + offset_in_block
 
@@ -369,11 +372,15 @@
 
 //バイナリ操作
 #deffunc poke_block int id, var a, int offset_in_block
+	if is_id_alive(mem_id_manager, id) == 0: return
+	if is_free(id): return
 	//変数の情報をそのままコピー
 	memcpy memory_pool, a, limit(varsize(a),, mem_size(id) - offset_in_block),  offset(id) + offset_in_block, 0
 	return
 
 #deffunc copy_block int id, var a, int offset_in_block
+	if is_id_alive(mem_id_manager, id) == 0: return
+	if is_free(id): return
 	//現在のメモリ内容を変数にコピー
 	memcpy a, memory_pool, limit(mem_size(id) - offset_in_block,, varsize(a)),   0, offset(id) + offset_in_block
 	return
