@@ -189,3 +189,11 @@
   z => T
 
 ;*/
+
+#if 01
+
+newmod a, hash_manager
+repeat 4400000
+	new_value a,str(cnt), str(cnt)
+loop
+

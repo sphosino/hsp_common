@@ -1,0 +1,383 @@
+#ifndef memory_allocator
+#addition "id_manager.hsp"
+#module memory_allocator
+
+#const MAX_DIV 20000 //断片化許可数
+#const CLASS_NUM 6
+
+#const MIN_SPLIT_SIZE 8
+#const MAX_EXPAND_LIMIT 4000000
+
+#const DEFAULT_POOL_SIZE 5000
+
+#deffunc init_memory_pool int size
+
+	if size == 0{
+		sdim memory_pool, DEFAULT_POOL_SIZE
+	}else{
+		sdim memory_pool, size
+	}
+	
+	dim offset, MAX_DIV //メモリプール上のオフセット
+	dim mem_size, MAX_DIV //メモリのサイズ
+	dim is_free, MAX_DIV //このブロックが空きかどうか
+	dim back_mem_id, MAX_DIV　//前のブロックid
+	dim next_mem_id, MAX_DIV　//次のブロックid
+	
+	newmod mem_id_manager, id_manager, MAX_DIV
+
+	last_block_id = -1 
+
+	dim free_list    , CLASS_NUM, MAX_DIV
+	dim free_list_num, CLASS_NUM
+	
+	return
+
+#defcfunc get_new_block int size
+
+	class = get_class_index(size)
+
+	newid = -1
+	repeat CLASS_NUM - class, class
+		for i,,free_list_num(cnt)
+			if get_block_size(free_list(cnt, i)) >= size{
+				newid = free_list(cnt, i)
+				for j,i,free_list_num(cnt)
+					free_list(cnt,j) = free_list(cnt,j+1)
+				next
+				free_list_num(cnt)--
+				break
+			}
+		next
+	loop
+	
+	if newid >= 0{
+		//見つかったIDで割り当てる
+		空きサイズ = 0
+		if get_block_size(newid) - size >= MIN_SPLIT_SIZE{
+			空きサイズ = get_block_size(newid) - size
+		}
+		if 空きサイズ > 0{
+			//新たな空き空間を作成
+			new_free_id = get_new_id(mem_id_manager)
+			if next_mem_id(newid) >= 0{
+				back_mem_id(next_mem_id(newid)) = new_free_id
+			}
+			offset(new_free_id) = offset(newid) + size
+			mem_size(new_free_id) = mem_size(newid) - size
+			back_mem_id(new_free_id) = newid
+			next_mem_id(new_free_id) = next_mem_id(newid)
+			
+			//フリーリストに登録
+			new_free_class = get_class_index(空きサイズ)
+			free_list(new_free_class, free_list_num(new_free_class)) = new_free_id
+			free_list_num(new_free_class)++
+			is_free(new_free_id) = 1
+
+			next_mem_id(newid) = new_free_id
+		}
+		
+		mem_size(newid) = size
+		
+		is_free(newid) = 0
+		memset memory_pool,0, mem_size(newid), offset(newid)
+		return newid
+		
+	}
+
+	//新たに確保。一番右のブロック位置とそのサイズの先に新しいブロックを割り当てる
+	newid = get_new_id(mem_id_manager)
+	mem_size(newid) = size
+	if last_block_id >= 0{
+		offset(newid) = offset(last_block_id) + mem_size(last_block_id)
+		next_mem_id(last_block_id) = newid
+	}else{
+		offset(newid) = 0
+	}
+
+	if offset(newid) + size > MAX_EXPAND_LIMIT{
+		release_id mem_id_manager, newid //id返却
+		return -1
+	}
+	
+	back_mem_id(newid) = last_block_id
+	next_mem_id(newid) = -1
+	
+	last_block_id = newid
+
+	is_free(newid) = 0
+	
+	memexpand memory_pool, offset(newid) + size
+	memset memory_pool,0, mem_size(newid), offset(newid)
+	return newid
+
+#defcfunc get_block_offset int id
+	return offset(id)
+	
+#deffunc free_block int id
+
+	if is_free(id): return //既に開放済みのブロック
+	
+	prev_id = back_mem_id(id) //前のブロックid
+	next_id = next_mem_id(id) //次のブロックid
+
+	pattern_flag = 0
+	
+	if id == last_block_id{
+		last_block_id = back_mem_id(id)
+	}else{
+		if next_id >= 0{
+			if is_free(next_id){
+				pattern_flag |= 2 ;右側がフリー
+			}
+		}
+	}
+	
+	if prev_id >= 0 {
+		if is_free(prev_id){
+			pattern_flag |= 1 ;左側がフリー
+		}
+	}
+
+	switch pattern_flag
+	case 0 //どちらにも統合なし
+		left = offset(id)
+		right = offset(id) + mem_size(id)
+
+		//隙間を吸収
+		if next_id >= 0: right = offset(next_id)
+		if prev_id >= 0: left = offset(prev_id) + mem_size(prev_id)
+		
+		offset(id) = left
+		mem_size(id) = right - left
+
+		//フリーリストに登録
+		class = get_class_index(right - left)
+		;logmes "登録 class=" + class + " id=" + id + " offset=" + offset(id) + " size= " + mem_size(id)
+		free_list(class, free_list_num(class)) = id
+		free_list_num(class)++
+
+		//この空間を開放済みにする
+		is_free(id) = 1
+	swbreak
+				
+	case 1 //左にのみ統合
+		left = offset(prev_id)
+		right = offset(id) + mem_size(id)
+		
+		//隙間吸収
+		if next_id >= 0{
+			right = offset(next_id)
+		}
+
+		//prev_更新
+		class = get_class_index(right - left)
+		move_id_free_list prev_id, get_class_index(mem_size(prev_id)), class
+		mem_size(prev_id) = right - left
+
+		//連結更新
+		next_mem_id(prev_id) = next_mem_id(id)
+		if next_mem_id(id) >= 0{
+			back_mem_id(next_mem_id(id)) = prev_id
+		}
+
+		release_id mem_id_manager, id //idは消失
+	swbreak
+	case 2 //右にのみ統合
+		left = offset(id)
+		right = offset(next_id) + mem_size(next_id)
+		
+		if prev_id >= 0{
+			left = offset(prev_id) + mem_size(prev_id)
+		}
+
+		//next更新
+		class = get_class_index(right - left)
+		move_id_free_list next_id, get_class_index(mem_size(next_id)), class
+		mem_size(next_id) = right - left
+		offset(next_id) = left
+
+		//連結更新
+		back_mem_id(next_id) = back_mem_id(id)
+		if back_mem_id(id) >= 0{
+			next_mem_id(back_mem_id(id)) = next_id
+		}
+
+		release_id mem_id_manager, id //idは消失
+		
+	swbreak
+	case 3 //左右に統合 -> prev_idに統一する
+		left = offset(prev_id)
+		right = offset(next_id) + mem_size(next_id)
+
+		//prev更新
+		class = get_class_index(right - left)
+		move_id_free_list prev_id, get_class_index(mem_size(prev_id)), class
+		mem_size(next_id) = right - left
+
+		//連結更新
+		next_mem_id(prev_id) = next_mem_id(next_id)
+		if next_mem_id(next_id) >= 0{
+			back_mem_id(next_mem_id(next_id)) = prev_id
+		}
+		
+		release_id mem_id_manager, id
+		release_id mem_id_manager, next_id
+		
+		remove_from_free_list get_class_index_by_id(next_id), next_id //nextはフリーリストに存在するはずなので削除
+
+		if next_id == last_block_id{
+			last_block_id = prev_id
+		}
+
+	swbreak
+	swend
+	
+	return
+	
+#deffunc move_block int oldid, int newsize
+
+	newid = get_new_block(newsize)
+	
+	if newid == -1{
+		logmes "メモリブロック移動時に領域の確保に失敗しました"
+		return -1
+	}
+	
+	//newidの連結ノードに通知
+	if back_mem_id(newid) >= 0{
+		next_mem_id(back_mem_id(newid)) = oldid
+	}
+	if next_mem_id(newid) >= 0{
+		back_mem_id(next_mem_id(newid)) = oldid
+	}
+	//oldidの連結ノードに通知
+	if back_mem_id(oldid) >= 0{
+		next_mem_id(back_mem_id(oldid)) = newid
+	}
+	if next_mem_id(oldid) >= 0{
+		back_mem_id(next_mem_id(oldid)) = newid
+	}
+
+	//情報退避
+	connect_info = back_mem_id(newid), next_mem_id(newid) //oldidがつなぐべき要素
+	data_info = offset(oldid), mem_size(oldid) //今の状態の情報
+	
+	//実データを更新
+	memcpy memory_pool, memory_pool, mem_size(oldid), offset(newid), offset(oldid)
+	offset(oldid) = offset(newid)
+	mem_size(oldid) = mem_size(newid)
+	
+	//free_blockにむけてnewidにoldid情報を完全再現
+	back_mem_id(newid) = back_mem_id(oldid)
+	next_mem_id(newid) = next_mem_id(oldid)
+	offset(newid) = data_info
+	mem_size(newid) = data_info.1
+
+	back_mem_id(oldid) = connect_info  
+	next_mem_id(oldid) = connect_info.1
+
+	free_block newid　//解放
+
+	return
+	
+#defcfunc get_class_index int size
+	if size <= 16 : return 0
+	if size <= 32 : return 1
+	if size <= 64 : return 2
+	if size <= 128 : return 3
+	if size <= 256 : return 4
+	return 5
+	
+#defcfunc get_class_index_by_id int id
+	return get_class_index(mem_size(id))
+
+#deffunc remove_from_free_list int class_id, int id
+
+	repeat free_list_num(class_id)
+		if free_list(class_id, cnt) == id {
+			for i,cnt,free_list_num(class_id)
+				free_list(class_id,i) = free_list(class_id,i+1)
+			next
+			free_list_num(class_id)--
+			break
+		}
+	loop
+	
+	return
+
+#deffunc move_id_free_list int id, int old_class, int new_class
+	remove_from_free_list old_class, id
+	free_list(new_class, free_list_num(new_class)) = id
+	free_list_num(new_class)++
+	return
+	
+#defcfunc get_mem_offset int id
+	return offset(id)
+
+///////////////////	
+//////操作API//////
+///////////////////
+#defcfunc get_block_size int id
+    return mem_size(id)
+    
+#deffunc write_mem_str int id, str value, int offset_in_block
+	sz = strlen(value)
+	v = value
+	oversize = offset_in_block + sz - mem_size(id)
+	if oversize > 0{
+		if next_mem_id(id) >= 0{
+			//ブロックidをプール内で移動して、利用サイズで再確保（内容維持）
+			move_block id, limit(offset_in_block + sz, mem_size(id))
+			
+		}else{
+			if offset(id) + offset_in_block + sz > MAX_EXPAND_LIMIT{
+				logmes "メモリプールがいっぱいです"
+				mem_size(id) = MAX_EXPAND_LIMIT - offset(id) //ギリギリまで拡張
+				sz = limit(sz,,MAX_EXPAND_LIMIT - offset(id) - offset_in_block)　;取りうる最大値までのサイズを書き込み実行
+				if sz != strlen(v){
+					cutpart = strmid(value, sz, 65535) ; ← 断片部分を抜き出す					
+					logmes "書き込み文字列が長すぎました。\n途中で切り捨てました！\n\n失われた断片:\n" + cutpart
+				}
+			}else{					
+				mem_size(id) += oversize
+			}
+		}
+	}
+	memcpy memory_pool, v, sz, offset(id) + offset_in_block //sz分だけ書き込む
+
+	return
+
+//文字列として操作
+#defcfunc read_mem_str int id, int offset_in_block
+	if is_id_alive(mem_id_manager, id) == 0: return ""
+	if is_free(id): return ""
+	sdim s, mem_size(id)
+	memcpy s, memory_pool, mem_size(id) - offset_in_block, 0, offset(id) + offset_in_block
+
+	return strmid(s, 0, mem_size(id)) //ごみを除く
+	
+#define global append_str(%1,%2 = "", %3 = -1) _append_str %1,%2,%3
+
+#deffunc _append_str int id, str value, int offset_in_block
+	if offset_in_block == -1{
+		write_mem_str id, read_mem_str(id) + value
+	}else{
+		write_mem_str id, value, offset_in_block
+	}
+	return
+
+//バイナリ操作
+#deffunc poke_block int id, var a, int offset_in_block
+	//変数の情報をそのままコピー
+	memcpy memory_pool, a, limit(varsize(a),, mem_size(id) - offset_in_block),  offset(id) + offset_in_block, 0
+	return
+
+#deffunc copy_block int id, var a, int offset_in_block
+	//現在のメモリ内容を変数にコピー
+	memcpy a, memory_pool, limit(mem_size(id) - offset_in_block,, varsize(a)),   0, offset(id) + offset_in_block
+	return
+	
+#global
+init_memory_pool
+#endif
