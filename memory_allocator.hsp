@@ -2,7 +2,7 @@
 #addition "id_manager.hsp"
 #module memory_allocator
 
-#const MAX_DIV 20000 //’f•Ğ‰»‹–‰Â”
+#const MAX_DIV 10000 //’f•Ğ‰»‹–‰Â”
 #const CLASS_NUM 6
 
 #const MIN_SPLIT_SIZE 32
@@ -407,7 +407,7 @@ return
 			}
 		}
 	}
-	memexpand memory_pool, offset(id) + offset_in_block + sz //‚±‚Ìs‚ª‘«‚è‚Ä‚È‚©‚Á‚½II
+	memexpand memory_pool, offset(id) + offset_in_block + sz
 	memcpy memory_pool, v, sz, offset(id) + offset_in_block //sz•ª‚¾‚¯‘‚«‚Ş
 	return
 

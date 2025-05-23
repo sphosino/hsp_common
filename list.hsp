@@ -1,0 +1,98 @@
+#ifndef list_id_manager
+#include "id_manager.hsp"
+#module list_id_manager id_man, nextid, backid, lastid
+
+#const MAX_SIZE 500
+#modinit int max
+	if max{
+		dim nextid
+		dim backid
+		newmod id_man, id_manager
+	}else{
+		dim nextid, MAX_SIZE
+		dim backid, MAX_SIZE
+		newmod id_man, id_manager, MAX_SIZE
+	}
+	lastid = get_new_id(id_man)
+	backid(0) = -1
+	nextid(0) = -1
+	
+	mref thismod_ID, 2
+	return thismod_ID
+
+#modcfunc get_new_list_id
+	newid = get_new_id(id_man)
+	nextid(lastid) = newid
+	backid(newid) = lastid
+	nextid(newid) = -1
+	lastid = newid
+	return newid
+
+#modfunc del_list_id int p1
+	if p1 <= 0: return
+	if p1 == lastid{
+		
+		lastid = backid(p1)
+		nextid(lastid) = -1
+		
+	}else{
+
+		backid(nextid(p1)) = backid(p1)
+	    nextid(backid(p1)) = nextid(p1)
+	
+	}
+	release_id id_man, p1
+	return
+
+#modcfunc get_next_id int p1
+	return nextid(p1)
+
+#modcfunc get_list_count
+
+	return get_using_count(id_man) - 1
+
+#modcfunc get_list_ids array a
+	none_function
+	acount = 0
+	while get_next_id(thismod,stat)  >= 0
+		a(acount) = stat
+		acount++
+	wend
+	return get_list_count(thismod)
+#deffunc local none_function
+	return 0
+#global
+
+#define foreach_list(%1, %2)%tforlist :\
+	i@list = get_next_id(%1) :\
+	while i@list >= 0 :\
+	%2 = i@list :\
+	%s1
+
+#define foreach_list_end%tforlist i@list = get_next_id(%o, i@list) : wend
+
+#endif
+
+#if 00
+
+newmod a,list_id_manager
+
+node1 = get_new_list_id(a)
+node2 = get_new_list_id(a)
+node3 = get_new_list_id(a)
+node4 = get_new_list_id(a)
+node5 = get_new_list_id(a)
+
+del_list_id a, node2
+del_list_id a, node4
+mes "count="+get_list_count(a)
+
+foreach_list a, id
+	mes id
+foreach_list_end
+
+repeat get_list_ids(a,ids)
+
+	mes ids.cnt
+loop
+#endif

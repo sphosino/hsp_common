@@ -11,7 +11,7 @@
 */
 
 #deffunc centering_mes str s1, array rect, str fontname, int p1
-
+	if s1 = "":return
 	s = s1
 	
 	notesel s

@@ -1,6 +1,6 @@
 #ifndef init_draw_objects
-
-#addition "id_manager_for_list.hsp"
+#addition "sort_by_priority_list.hsp"
+#addition "listbox_id_manager.hsp"
 #addition "color_manager.hsp"
 #addition "rboxf.hsp"
 
@@ -59,7 +59,7 @@
 	
     //基本情報
     
-    newid = get_new_id_for_list(draw_object_id_manager)
+    newid = get_new_list_id(draw_object_id_manager)
     
     draw_object_priority(newid) = PRIORITY_NORMAL
     draw_object_life_max(newid) = life
@@ -92,7 +92,7 @@
     
 #deffunc destroy_draw_object_immediately int id
 	; IDを解放
-    delete_by_itemid draw_object_id_manager, id
+    del_list_id draw_object_id_manager, id
 
 	; エンティティの種類に応じて削除処理
 	switch draw_object_move_type(id)
@@ -146,7 +146,7 @@
 	return length(tmp)
 	
 #deffunc draw_objects
-    idnum = get_list_ids( draw_object_id_manager, ids) 
+    idnum = get_list_ids( draw_object_id_manager, ids)
     sort_list_by_priority_list ids, idnum, draw_object_priority
 
     ;tmptmp++: if tmptmp \ 60 == 0: logmes idnum
@@ -262,77 +262,4 @@
 init_draw_objects
 
 
-#module
-#deffunc sort_list_by_priority_list array a, int a_num, array b
-    if a_num <= 1 : return  // 要素数が1以下ならソート不要
-
-	;insertion_sort_range a, 0, a_num-1, b: return
-	
-    // 作業用配列を準備
-    dim temp, a_num
-	
-	block_size = 12  // 初期ブロックサイズ
-
-	ss = 0
-	while ss < a_num - 1
-		insertion_sort_range a, ss, limit(ss + block_size - 1,, a_num - 1), b
-		ss += block_size
-	wend
-    while block_size < a_num
-        start = 0  // ブロックの開始位置
-        while start < a_num
-            // マージする左ブロックと右ブロックの範囲を計算
-            mid = start + block_size - 1 //左ブロック終端
-            e = limit(start + 2 * block_size - 1,, a_num - 1) // 右ブロック終端
-            if e <= mid : _break //右ブロックが存在しない
-            j = mid + 1 // 右ブロックの開始インデックス
-            
-            leftsize = j - start
-
-            // マージ処理
-            k = 0 // temp配列のインデックス
-			memcpy temp, a, leftsize << 2,, start << 2 //左半分を作業配列にコピー
-
-            // 両ブロックを比較しながらマージ
-			*loop_label
-	            if b(temp(k)) <= b(a(j)) {
-	                a(start) = temp(k)
-	                k++
-	                if k >= leftsize{
-		                start = e + 1
-		                _continue //マージ完了なので、内側のwhileの条件比較に向かう
-		            }
-	            } else {
-	                a(start) = a(j)
-	               	if j >= e{
-		               	memcpy a, temp, leftsize -  k << 2, start + 1 << 2, k << 2
-		               	start = e + 1
-		               	_continue
-		           }
-	               j++
-	            }
-	            start++
-            goto *loop_label
-        wend
-        block_size *= 2  // ブロックサイズを倍増
-    wend
-    return
-#global
-
-#module
-#deffunc insertion_sort_range array a, int s, int e, array b
-	// a配列[s]～[e]を、bの優先度で昇順ソートする 
-	if e <= s : return
-	repeat e - s, s
-		target = a(cnt + 1)
-		priority = b(target)
-		j = cnt
-		while b(a(j)) > priority
-			a(j + 1) = a(j)
-			j--
-			if j >= s: wend
-		a(j + 1) = target
-	loop
-	return
-#global
 #endif
