@@ -1,11 +1,22 @@
 #include "../memory_allocator.hsp"
 
-id = get_new_block(1)
+randomize
+repeat 20
+	size = 10 + rnd(30)
+	logmes "" + cnt + " -> " + size
+	id.cnt = get_new_block(size)
+loop
+draw_memory_pool_with_labels  100,150
 
-id2 = get_new_block(1)
+m= 0
+repeat 8
+	free_block id(rnd(20))
+loop
+draw_memory_pool_with_labels  100,150 * 2
+repeat 8
+	t = get_new_block(10 + rnd(30))
+loop
 
-id3 = get_new_block(5)
 
-append_str id2, "Ab"
 
-mes read_mem_str(id2)
+draw_memory_pool_with_labels  100,150 * 3

@@ -253,7 +253,13 @@
 	
 	return
 	
-#deffunc move_block int oldid, int newsize
+#deffunc move_block int oldid, int newsize, int src_offset, int src_size 
+
+	if src_size{
+		datasize = src_size
+	}else{
+		datasize = newsize
+	}
 
 	newid = get_new_block(newsize)
 	
@@ -282,9 +288,10 @@
 	data_info = offset(oldid), mem_size(oldid) //今の状態の情報
 	
 	//実データを更新
-	memcpy memory_pool, memory_pool, mem_size(oldid), offset(newid), offset(oldid)
+
+	memcpy memory_pool, memory_pool, datasize, offset(newid), offset(oldid) + src_offset 
 	offset(oldid) = offset(newid)
-	mem_size(oldid) = mem_size(newid)
+	mem_size(oldid) = newsize
 	
 	//free_blockにむけてnewidにoldid情報を完全再現
 	back_mem_id(newid) = back_mem_id(oldid)
@@ -336,7 +343,8 @@
 ///////////////////
 //////可視化///////
 #deffunc draw_memory_pool_with_labels int xsize, int xoffset
-	color 0,255,0
+	
+	color 0,255,0 ; 使われておらず、フリーリストにも登録されていない
 	boxf xoffset,0,xoffset+xsize,640
 	
 	foreach_id mem_id_manager, vid
