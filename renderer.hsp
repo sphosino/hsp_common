@@ -146,14 +146,12 @@
 	return length(tmp)
 	
 #deffunc draw_objects
-    idnum = get_list_ids( draw_object_id_manager, ids)
-    sort_list_by_priority_list ids, idnum, draw_object_priority
-
-    ;tmptmp++: if tmptmp \ 60 == 0: logmes idnum
-	フラグ = 0
-    repeat idnum
     
-        obj_id = ids(cnt) //固有のID
+	sort_list_by_value_array draw_object_id_manager, draw_object_priority
+	
+	フラグ = 0
+    foreach_list draw_object_id_manager, obj_id
+    
         entity_id = draw_object_entities(obj_id) //描画オブジェクトの種類ごとのID
 
         //描画情報取得 -> (x, y, w, h, alpha, angle) を取得
@@ -197,7 +195,6 @@
 		
 		//描画ラベルを呼ぶ
     	get_label_set labs, draw_object_draw_type(obj_id), func
-		
     	gosub func
 		
 
@@ -212,8 +209,9 @@
 		    }
 		}
 		
-    loop
+    foreach_list_end
     フラグ = 1
+    
     return
     
 #defcfunc get_entity_id int id

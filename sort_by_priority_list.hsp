@@ -1,4 +1,5 @@
 #ifndef sort_list_by_priority_list
+
 #module
 #deffunc sort_list_by_priority_list array a, int a_num, array b
     if a_num <= 1 : return  // 要素数が1以下ならソート不要
