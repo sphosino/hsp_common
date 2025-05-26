@@ -1,22 +1,70 @@
 #include "../memory_allocator.hsp"
-
+#addition "WrapCall.as"
+screen 0,1900,1000,,0,0
 randomize
-repeat 20
-	size = 10 + rnd(30)
-	logmes "" + cnt + " -> " + size
-	id.cnt = get_new_block(size)
+init_memory_pool 10000
+
+repeat 
+	redraw 2
+	dim idlist
+	repeat 5
+		size2 = 10 + rnd(70)
+		t = get_new_block(size2)
+		idlist(cnt) = t
+		debug_check_link_integrity "作成後のリンク整合性チェック"
+		if stat {
+			draw_memory_pool_with_labels  100,150 * 2, idlist
+			redraw
+			stop
+		}
+	loop
+
+	// 可視化（確保直後）
+	draw_memory_pool_with_labels  100,150 * 2, idlist
+	redraw
+	await 100
+;/*
+	// 一部を拡張書き込みしてみる（3個ランダム選出）
+	redraw 2
+	dim idx
+	repeat 3
+		idx(cnt) = idlist(rnd(length(idlist)))
+		// 拡張を引き起こすように長い文字列を書く
+		append_str idx(cnt), "にゃんにゃんにゃんにゃんにゃんにゃ"
+		
+		debug_check_link_integrity "拡張後のリンク整合性チェック"
+		if stat {
+			draw_memory_pool_with_labels  100,150 * 3, idx
+			redraw
+			stop
+		}
+	loop
+
+	//拡張後の可視化
+	draw_memory_pool_with_labels  100,150 * 3, idx
+	redraw
+	await 100
+//*/
+
+	redraw 2
+	dim idx
+	repeat 7
+		c = get_used_block_count()
+		if c = 0 : break
+		idx(cnt) = rnd(c)
+		id_to_free = idx(cnt)
+		free_block id_to_free
+		debug_check_link_integrity "解放後のリンク整合性チェック"
+		if stat {
+			draw_memory_pool_with_labels  100,150 * 4, idx
+			redraw
+			stop
+		}
+	loop
+
+	// ?? 削除後の状態
+	draw_memory_pool_with_labels  100,150 * 4, idx
+	redraw
+	await 100
+
 loop
-draw_memory_pool_with_labels  100,150
-
-m= 0
-repeat 8
-	free_block id(rnd(20))
-loop
-draw_memory_pool_with_labels  100,150 * 2
-repeat 8
-	t = get_new_block(10 + rnd(30))
-loop
-
-
-
-draw_memory_pool_with_labels  100,150 * 3

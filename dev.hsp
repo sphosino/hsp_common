@@ -1,0 +1,109 @@
+#deffunc block_expansion int ID, int newsize
+if is_id_alive(mem_id_manager,ID) == 0: return
+if is_free(ID): return
+
+if last_block_id == ID {
+	end_required = offset(ID) + newsize
+	if end_required > MAX_EXPAND_LIMIT {
+		dialog strf("プール拡張限界を超えています！\n 拡張限界 = %d\n 試行サイズ = %d", MAX_EXPAND_LIMIT, end_required) 
+		end //とりあえず強制終了にゃ（笑）
+		return
+	}
+	memexpand memory_pool, end_required //既に確保より小さいなら何もしないらしい。
+	mem_size(ID) = newsize
+	return
+}
+
+offset_original = offset(ID)
+size_original = mem_size(ID)
+mem_size(ID) = newsize
+
+nid = next_mem_id(ID)
+
+dim right_usable_space
+
+if is_free(nid){
+	if newsize <= offset(nid) + mem_size(nid) - offset_original{
+		//IDブロックの右を右ブロックの右に接続
+		next_mem_id(ID) = next_mem_id(next_mem_id(ID))
+		back_mem_id(next_mem_id(ID)) = ID
+		//右のブロックIDをフリーリストから削除
+		remove_from_free_list get_class_index_by_id(nid), nid
+		//右のブロックIDをIDマネージャに返却
+		release_id nid
+	}else{
+		//右オフセット移動＆サイズ縮小
+		right = offset(nid) + mem_size(nid)
+		offset(nid) = offset_original + newsize
+		//右のサイズ変更
+		resize_free_blcok nid, right - offset(nid)
+	}
+	return
+}else{
+	if newsize <= offset(nid) - offset_original{
+		return
+	}
+	right_usable_space = offset(nid) - (offset_original + newsize)
+}
+
+
+bid = back_mem_id(ID)
+
+left_offset = 0
+if bid >= 0:left_offset = offset(bid): if is_free(bid){
+
+	//IDブロックの左を左ブロックの左に接続
+	back_mem_id(ID) = back_mem_id(bid)
+	if back_mem_id(ID) >= 0: next_mem_id(bid) = ID
+
+	usable_space = (offset_original + mem_size(ID) + right_usable_space) - left_offset
+	if newsize <= usable_space{
+		//オフセットを左に詰める
+		offset(ID) = left_offset
+		memcpy memory_pool, memory_pool, newsize, left_offset, offset_original + size_original
+		if usable_space - newsize >= MIN_SPLIT_SIZE{
+			//左ブロックの左をIDブロックに接続
+			next_mem_id(ID) = bid
+			back_mem_id(bid) = ID
+			//左ブロックのオフセットをIDブロックの右端にセット
+			offset(bid) = offset_original + size_original
+			//左ブロックの右をIDブロックの右ブロックに接続
+			next_mem_id(bid) = next_mem_id(ID)
+			//IDブロックの右を左ブロックに接続
+			back_mem_id(next_mem_id(ID)) = bid
+			//左ブロックのサイズ変更
+			resize_free_blcok bid, usable_space - newsize
+			
+		}else{
+			//最小値未満
+			remove_from_free_list get_class_index_by_id(bid), bid
+			release_id bid
+		}
+		return
+	}	
+	remove_from_free_list get_class_index_by_id(bid), bid
+	release_id bid
+	
+}else{
+	usable_space = (offset_original + mem_size(ID) + right_usable_space) - (offset(bid) + mem_size(bid))
+	if newsize <= usable_space{
+		offset(ID) -= usable_space - newsize
+		memcpy memory_pool, memory_pool, newsize, offset(ID), offset_original + size_original
+		return
+	}
+}
+
+offset(ID) = left_offset
+mem_size(ID) = (offset_original + size_original + right_usable_space) - left_offset
+
+move_block ID, newsize, offset_original, size_original
+
+return
+
+#deffunc resize_free_block int id, int newsize
+	newclass = get_class_index(newsize)
+	if get_class_index(mem_size(id)) != newclass {
+		move_id_free_list id, stat, newclass
+	}
+	mem_size(id) = newsize
+	return

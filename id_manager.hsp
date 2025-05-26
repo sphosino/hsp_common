@@ -86,3 +86,21 @@
 #define global foreach_end %tforeach_id loop
 
 #endif
+
+#if 01
+
+randomize
+newmod a,id_manager
+
+repeat 5
+tmp = get_new_id(a)
+loop
+
+repeat 3
+release_id a, rnd(get_using_count(a))
+loop
+
+foreach_id a, f
+	mes f
+foreach_end
+#endif 
