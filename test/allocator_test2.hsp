@@ -20,7 +20,7 @@ repeat
 	dim idlist
 	repeat 10
 		
-		size2 = 30 + rnd(30)
+		size2 = 1 + rnd(40)
 		t = get_new_block(size2)
 		idlist(cnt) = t
 		debug_check_link_integrity "作成後のリンク整合性チェック"
