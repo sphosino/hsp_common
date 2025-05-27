@@ -193,15 +193,19 @@ test_result 1, "大量解放: 完了"
 test_start "境界値テスト"
 
 // 最小サイズ
+
 min_block = get_new_block(1)
+
 write_mem_str min_block, "A", 0
+
 result = read_mem_str(min_block, 0)
 test_result strmid(result, 0, 1) == "A", "最小ブロック(1byte): \"" + strmid(result, 0, 1) + "\""
 
 // サイズクラス境界値
-boundary_tests = 16, 32, 64, 128, 256
-repeat 5
+boundary_tests = 4,8,16, 32, 64, 128, 256, 512,1024,2048
+repeat 10
     size = boundary_tests(cnt)
+    logmes cnt
     boundary_block = get_new_block(size)
     boundary_text = ""
     repeat size - 1
