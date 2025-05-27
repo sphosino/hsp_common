@@ -54,7 +54,9 @@
 
 	//ソートしてから再接続
 
-	nextid(TOPNODE) = _sort_list_by_value_array(thismod, a, nextid(TOPNODE))　
+	nextid(TOPNODE) = _sort_list_by_value_array(thismod, a, nextid(TOPNODE))
+
+	validate_list_integrity thismod, "ソート後"
 	
 	rebuild_backids thismod, TOPNODE
 	return　//終了
@@ -190,26 +192,36 @@
     error_count = 0
     warning_count = 0
     
-    mes "=== リスト整合性チェック開始 [" + call_location + "] ==="
+    logmes "=== リスト整合性チェック開始 [" + call_location + "] ==="
     
     // 1. 基本的な循環チェック（ウサギとカメアルゴリズム）
     slow = TOPNODE
     fast = TOPNODE
     has_cycle = 0
-    
-    while nextid(fast) >= 0 && nextid(nextid(fast)) >= 0
-        slow = nextid(slow)
-        fast = nextid(nextid(fast))
-        if slow == fast {
-            mes "[ERROR] 循環リストが検出されました！"
-            error_count++
-            has_cycle = 1
-            _break
-        }
-    wend
+
+    switch get_list_count(thismod)
+	case 0: swbreak
+	case 1
+		if slow == fast{ has_cycle = 1}
+		if backid(nextid(TOPNODE)) = TOPNODE{ has_cycle = 1}
+	swbreak
+	default
+	    while nextid(nextid(fast)) >= 0
+	        slow = nextid(slow)
+	        fast = nextid(nextid(fast))
+	        if slow == fast {
+	            logmes "[ERROR] 循環リストが検出されました！"
+	            error_count++
+	            has_cycle = 1
+	            _break
+	        }
+	        if nextid(fast) == -1: swbreak
+	    wend
+    swbreak
+    swend
     
     if has_cycle == 0 {
-        mes "[OK] 循環チェック: 循環なし"
+        logmes "[OK] 循環チェック: 循環なし"
     }
     
     // 2. 前方向リンクのチェック
@@ -233,10 +245,10 @@
     wend
     
     if forward_count >= max_iterations {
-        mes "[ERROR] 前方向チェックで無限ループの可能性"
+        logmes "[ERROR] 前方向チェックで無限ループの可能性"
         error_count++
     } else {
-        mes "[OK] 前方向リンク: " + forward_count + "個のノードを確認"
+        logmes "[OK] 前方向リンク: " + forward_count + "個のノードを確認"
     }
     
     // 3. 後方向リンクのチェック
@@ -248,7 +260,7 @@
         if next_point >= 0 {
             // 次のノードのbackが現在のノードを指しているかチェック
             if backid(next_point) != now_point {
-                mes "[ERROR] 後方向リンク不整合: " + next_point + "のback=" + backid(next_point) + " (期待値:" + now_point + ")"
+                logmes "[ERROR] 後方向リンク不整合: " + next_point + "のback=" + backid(next_point) + " (期待値:" + now_point + ")"
                 backward_errors++
             }
         }
@@ -256,7 +268,7 @@
     wend
     
     if backward_errors == 0 {
-        mes "[OK] 後方向リンク: 整合性確認"
+        logmes "[OK] 後方向リンク: 整合性確認"
     } else {
         error_count += backward_errors
     }
@@ -269,10 +281,10 @@
     wend
     
     if actual_last != lastid {
-        mes "[ERROR] lastid不整合: 実際=" + actual_last + " 記録=" + lastid
+        logmes "[ERROR] lastid不整合: 実際=" + actual_last + " 記録=" + lastid
         error_count++
     } else {
-        mes "[OK] lastid整合性: 正常"
+        logmes "[OK] lastid整合性: 正常"
     }
     
     // 5. IDマネージャーとの整合性チェック
@@ -280,10 +292,10 @@
     list_count = get_list_count(thismod)
     
     if using_count != list_count {
-        mes "[WARNING] IDマネージャーとリストカウントの不一致: IDMgr=" + using_count + " List=" + list_count
+        logmes "[WARNING] IDマネージャーとリストカウントの不一致: IDMgr=" + using_count + " List=" + list_count
         warning_count++
     } else {
-        mes "[OK] カウント整合性: " + list_count + "個"
+        logmes "[OK] カウント整合性: " + list_count + "個"
     }
     
     // 6. 孤立ノードのチェック
@@ -303,14 +315,14 @@
             wend
             
             if found_in_list == 0 {
-                mes "[WARNING] 孤立ノード発見: ID=" + check_id
+                logmes "[WARNING] 孤立ノード発見: ID=" + check_id
                 orphaned_nodes++
             }
         }
     loop
     
     if orphaned_nodes == 0 {
-        mes "[OK] 孤立ノード: なし"
+        logmes "[OK] 孤立ノード: なし"
     } else {
         warning_count += orphaned_nodes
     }
@@ -319,26 +331,26 @@
     total_allocated = get_using_count(id_man)
     if total_allocated > 0 {
         efficiency = (list_count * 100) / total_allocated
-        mes "[INFO] メモリ効率: " + efficiency + "% (" + list_count + "/" + total_allocated + ")"
+        logmes "[INFO] メモリ効率: " + efficiency + "% (" + list_count + "/" + total_allocated + ")"
         if efficiency < 70 {
-            mes "[WARNING] メモリ効率が低下しています（70%未満）"
+            logmes "[WARNING] メモリ効率が低下しています（70%未満）"
             warning_count++
         }
     }
     
     // 結果サマリー
-    mes "=== チェック結果サマリー ==="
-    mes "エラー: " + error_count + "件"
-    mes "警告: " + warning_count + "件"
+    logmes "=== チェック結果サマリー ==="
+    logmes "エラー: " + error_count + "件"
+    logmes "警告: " + warning_count + "件"
     
     if error_count == 0 && warning_count == 0 {
-        mes "[SUCCESS] リストは完全に正常です！"
+        logmes "[SUCCESS] リストは完全に正常です！"
         return 0  // 正常
     } else: if error_count == 0 {
-        mes "[WARNING] 軽微な問題がありますが、動作に支障はありません"
+        logmes "[WARNING] 軽微な問題がありますが、動作に支障はありません"
         return 1  // 警告あり
     } else {
-        mes "[CRITICAL] 重大な問題が検出されました！"
+        logmes "[CRITICAL] 重大な問題が検出されました！"
         return 2  // エラーあり
     }
 

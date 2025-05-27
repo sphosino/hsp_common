@@ -1,42 +1,89 @@
 #include "../memory_allocator.hsp"
+#include "nodmod/scrollbarmodule.hsp"
 #addition "WrapCall.as"
 screen 0,1900,1000,,0,0
-randomize
-init_memory_pool 10000
 
+mes "速度調整のスクロールバーです"
+scbaScrollbar 0, 600,30
+scbaSetrange stat, 1, 15 //1-15までの値
+scbaOnScroll *sc　//動かすたびに変数mに反映させる
+randomize
+init_memory_pool 64 ;プールサイズ自動拡張の確認のため小さく確保
+
+m = 1
 repeat 
-	title"作成準備中":await 2000
+	title"作成準備中"
+	draw_memory_pool_with_labels  100,150 * 1, idx
+	await 2000/m
+	
 	title"作成開始"
 	dim idlist
 	repeat 10
 		
-		size2 = 10 + rnd(70)
+		size2 = 30 + rnd(30)
 		t = get_new_block(size2)
 		idlist(cnt) = t
 		debug_check_link_integrity "作成後のリンク整合性チェック"
 		if stat {
-			draw_memory_pool_with_labels  100,150 * 2, idlist
+			draw_memory_pool_with_labels 100,150 * 1, idlist
 			stop
 		}
 		redraw 2
-		draw_memory_pool_with_labels 100,150*2,idx
+		draw_memory_pool_with_labels 100,150 * 1,idx
 		redraw
-		await 1000
+		await 1000/m
 	loop
 
-;/*
-	// 一部を拡張書き込みしてみる（3個ランダム選出）
-	draw_memory_pool_with_labels 100,150*3,idx
-	title "拡張準備中":await 2000
-	title "拡張開始"
+
+	// 一部を書き込みしてみる（右のスペースを使い無理なら左のスペースもみる。それでも無理なら、自動的に移動と解放が行われる。）
+	title "書き込み準備中"
+	draw_memory_pool_with_labels 100,150*2,idx
+	await 2000/m
+	
+	title "書き込み開始"
 	dim idx
-	repeat 6
+	repeat 14
 		
 		idx(cnt) = idlist(rnd(length(idlist)))
 		// 拡張を引き起こすように長い文字列を書く
-		append_str idx(cnt), "にゃんにゃんにゃんにゃんにゃんにゃん"
+
+		s = ""
+		repeat 4 + rnd(3)
+		s += "にゃん"
+		loop
+		
+		append_str idx(cnt), s
 		
 		debug_check_link_integrity "拡張後のリンク整合性チェック"
+		if stat {
+			draw_memory_pool_with_labels  100,150 * 2, idx
+			stop
+		}
+		redraw 2
+		draw_memory_pool_with_labels  100,150 * 2, idx
+		redraw
+		await 1000/m
+	loop
+
+	title "削除準備中"
+	draw_memory_pool_with_labels  100,150 * 3, idx
+	await 2000/m
+	
+	title "削除開始"
+	dim idx
+	count = 0
+	in = 0
+	repeat 20
+		
+		c = get_block_count()
+		if c = 0 : break
+		
+		idx(in) = rnd(c)
+		free_block idx(in)
+		count++
+		if stat == 0:await: continue
+		in++
+		debug_check_link_integrity "解放後のリンク整合性チェック"
 		if stat {
 			draw_memory_pool_with_labels  100,150 * 3, idx
 			stop
@@ -44,32 +91,12 @@ repeat
 		redraw 2
 		draw_memory_pool_with_labels  100,150 * 3, idx
 		redraw
-		await 1000
-	loop
-
-//*/
-	draw_memory_pool_with_labels  100,150 * 4, idx
-	title "削除準備中":await 2000
-	title "削除開始"
-	dim idx
-	repeat 10
-		
-		c = get_used_block_count()
-		if c = 0 : break
-		idx(cnt) = rnd(c)
-		id_to_free = idx(cnt)
-		free_block id_to_free
-		debug_check_link_integrity "解放後のリンク整合性チェック"
-		if stat {
-			draw_memory_pool_with_labels  100,150 * 4, idx
-			stop
-		}
-		redraw 2
-		draw_memory_pool_with_labels  100,150 * 4, idx
-		redraw
-		await 1000
+		if count == 7 + rnd(8): break
+		await 1000/m
 		
 	loop
-
-	draw_memory_pool_with_labels  100,150 * 2, idx
 loop
+
+*sc
+	m = lparam
+	return
