@@ -33,13 +33,38 @@
 	
 	return
 	
+#deffunc debug_check_free_list_integrity
+
+	dim id_check, get_id_length(mem_id_manager) //発行したIDの最大値分確保
+	
+	repeat CLASS_NUM
+		class = cnt
+		repeat free_list_num(class)
+			vvid = free_list(class, cnt)
+			id_check(vvid)++
+			if id_check(vvid) >= 2 {
+				logmes "重複登録されたIDを検出: ID=" + vvid
+				stop
+			}
+			assert next_mem_id(vvid) >= 0//有効
+			assert is_free(next_mem_id(vvid)) == 0//且つ使用中
+		loop
+	loop
+	return
+	
 #defcfunc get_free_block int size
+
+	//探して見つかったら取り出す（フリーリストから消えます！！
+
+	debug_check_free_list_integrity
+
 	class = get_class_index(size)
 	found_id = -1
 	repeat CLASS_NUM - class, class
 		for i,,free_list_num(cnt)
 			if mem_size(free_list(cnt, i)) >= size{
 				found_id = free_list(cnt, i)
+				is_free(found_id) == 0 ; 取り出したらすぐに使用中とする(フリーリストに存在しないから)
 				free_list_num(cnt)--
 				for j,i,free_list_num(cnt)
 					free_list(cnt,j) = free_list(cnt,j+1)
@@ -50,6 +75,37 @@
 	loop
 	return found_id
 	
+#deffunc shrink_block int target_id, int size
+
+	//指定サイズに縮小する(内容維持)
+
+	if is_id_alive(mem_id_manager, target_id) == 0: return
+	if is_free(target_id): return
+	
+	if get_block_size(target_id) - size > FREELIST_THRESHOLD{
+		
+		//新たな空き空間を作成
+		new_free_id = get_new_id(mem_id_manager)
+
+		back_mem_id(new_free_id) = target_id //新ブロックの後ろを今のブロックに接続
+		next_mem_id(new_free_id) = next_mem_id(target_id) //新ブロックの後ろを元のブロックの次につなげる
+		back_mem_id(next_mem_id(target_id)) = new_free_id //元のブロックの次のブロックの後ろを新ブロックに接続
+		next_mem_id(target_id) = new_free_id //元ブロックの右を新ブロックに接続
+
+		offset(new_free_id) = offset(target_id) + size
+		mem_size(new_free_id) = mem_size(target_id) - size
+
+		//フリーリストに登録
+		new_free_class = get_class_index_by_id(new_free_id)
+		free_list(new_free_class, free_list_num(new_free_class)) = new_free_id
+		free_list_num(new_free_class)++
+		is_free(new_free_id) = 1
+		
+	}
+	
+	mem_size(target_id) = size
+	
+	return
 #defcfunc get_new_block int size
 	if size <= 0{
 		logmes "サイズ０以下では確保できません! 【 get_new_block() 】"
@@ -60,31 +116,9 @@
 	newid = get_free_block(size)
 	
 	if newid >= 0{
-		//見つかったIDで割り当てる
-		if get_block_size(newid) - size > FREELIST_THRESHOLD{
-			
-			//新たな空き空間を作成
-			new_free_id = get_new_id(mem_id_manager)
 
-			back_mem_id(new_free_id) = newid //新ブロックの後ろを今のブロックに接続
-			next_mem_id(new_free_id) = next_mem_id(newid) //新ブロックの後ろを元のブロックの次につなげる
-			back_mem_id(next_mem_id(newid)) = new_free_id //元のブロックの次のブロックの後ろを新ブロックに接続
-			next_mem_id(newid) = new_free_id //元ブロックの右を新ブロックに接続
-
-			offset(new_free_id) = offset(newid) + size
-			mem_size(new_free_id) = mem_size(newid) - size
-
-			//フリーリストに登録
-			new_free_class = get_class_index_by_id(new_free_id)
-			free_list(new_free_class, free_list_num(new_free_class)) = new_free_id
-			free_list_num(new_free_class)++
-			is_free(new_free_id) = 1
-			
-		}
+		shrink_block newid, size //必要な分だけにセット
 		
-		mem_size(newid) = size
-		
-		is_free(newid) = 0
 		memset memory_pool,0, mem_size(newid), offset(newid)
 		return newid
 		
@@ -219,6 +253,7 @@
 
 		release_id mem_id_manager, id //idは消失
 	swbreak
+	
 	case 2 //右にのみ統合
 		assert next_mem_id(next_id) >= 0 //最初のロジックで保証（右は、フリーリストに登録されているから、last_block_idではない＝右がある。
 		left = offset(id)
@@ -235,6 +270,7 @@
 
 		release_id mem_id_manager, id //idは消失
 	swbreak
+	
 	case 3 //左右に統合 -> prev_idに統一する
 		assert next_mem_id(next_id) >= 0
 		left = offset(prev_id)
@@ -257,6 +293,7 @@
 #deffunc resize_free_block int id, int newsize
 
 	newclass = get_class_index(newsize)
+	
 	flag=""
 	if get_class_index(mem_size(id)) != newclass {
 		move_id_free_list id, newclass
@@ -264,27 +301,33 @@
 	}
 	mem_size(id) = newsize
 	debug_check_link_integrity "resize_free_block" + flag
+	
 	return
 
-#defcfunc get_class_index int size
+#defcfunc local get_class_index int size
 	#ifdef _debug
-	if size < 0: logmes "警告！サイズがマイナスで呼ばれた"+pattern_flag + ": " + right + ":" + left:stop
+	if size < 0{
+		logmes "ERROR！サイズがマイナスで呼ばれました。想定していない処理です\nコールスタックを確認して原因を特定してください" + pattern_flag + " : " + right + " : " + left
+		stop
+	}
 	#endif
 	if size <= 0: return 0
-	return limit(logf(size)/logf(2) - 2,, CLASS_NUM - 1)
+	return limit(logf(size)/logf(2) - 2,0, CLASS_NUM - 1)
 	
 #defcfunc get_class_index_by_id int id
 	return get_class_index(mem_size(id))
 
 #deffunc remove_from_free_list int id
+
+	debug_check_free_list_integrity
+
 	class_id = get_class_index(mem_size(id))
 	repeat free_list_num(class_id)
 		if free_list(class_id, cnt) == id {
 			free_list_num(class_id)--
 			for i,cnt,free_list_num(class_id)
-				free_list(class_id,i) = free_list(class_id,i+1)
+				free_list(class_id,i) = free_list(class_id, i + 1)
 			next
-			found = 1
 			break
 		}
 	loop
@@ -297,19 +340,7 @@
 	debug_check_link_integrity "move_id_free_list"
 	return
 	
-#deffunc debug_check_free_list_duplicates
-	dim id_check, get_using_count(mem_id_manager)
-	repeat CLASS_NUM
-		class = cnt
-		repeat free_list_num(class)
-			vvid = free_list(class, cnt)
-			id_check(vvid)++
-			if id_check(vvid) >= 2 {
-				logmes "重複登録されたIDを検出: ID=" + vvid
-			}
-		loop
-	loop
-	return
+
 
 	
 #deffunc debug_check_link_integrity str lab
@@ -541,27 +572,7 @@ return tryrelocate_block(oldid, newsize, offset_original, size_original)
 		}
 		
 	}else{
-		newspacesize = mem_size(newid) - newsize
-		if newspacesize > FREELIST_THRESHOLD{
-			//新たな空き空間を作成
-			new_free_id = get_new_id(mem_id_manager)
-			logmes "new_free_id =>" + new_free_id + "  newid => " + newid + " oldid => " + oldid
-	
-			back_mem_id(new_free_id) = newid //新ブロックの後ろを今のブロックに接続
-			next_mem_id(new_free_id) = next_mem_id(newid) //新ブロックの後ろを元のブロックの次につなげる
-			back_mem_id(next_mem_id(newid)) = new_free_id //元のブロックの次のブロックの後ろを新ブロックに接続
-			next_mem_id(newid) = new_free_id //元ブロックの右を新ブロックに接続
-	
-			offset(new_free_id) = offset(newid) + newsize
-			mem_size(new_free_id) = mem_size(newid) - newsize
-			
-			//フリーリストに登録
-			new_free_class = get_class_index_by_id(new_free_id)
-			free_list(new_free_class, free_list_num(new_free_class)) = new_free_id
-			free_list_num(new_free_class)++
-			is_free(new_free_id) = 1
-		}
-		mem_size(newid) = newsize
+		shrink_block newid, newsize
 	}
 	
 	//構造交換
