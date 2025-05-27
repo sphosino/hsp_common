@@ -1,5 +1,5 @@
 #ifndef static_manager
-#include "../hsp_common/id_manager.hsp"
+#addition "../../hsp_common/id_manager.hsp"
 #module static_manager
 #deffunc init_static_manager
 	newmod static_id_manager, id_manager

@@ -12,7 +12,7 @@
 	}else{
 		dim nextid, MAX_SIZE
 		dim backid, MAX_SIZE
-		newmod id_man, id_manager, MAX_SIZE
+		newmod id_man, id_manager, MAX_SIZE + 1
 	}
 	lastid = get_new_id(id_man) //id_managerは０～の値を返すので初期化直後は必ず０
 	backid(0) = -1
@@ -53,7 +53,6 @@
 	if nextid(TOPNODE) == -1: return
 
 	//ソートしてから再接続
-	backid(nextid(TOPNODE)) = -1
 
 	nextid(TOPNODE) = _sort_list_by_value_array(thismod, a, nextid(TOPNODE))　
 	
@@ -133,6 +132,291 @@
 	
 	return top
 
+#modcfunc is_list_id_alive int id
+	if id == TOPNODE: return 0
+	return is_id_alive(id_man, id)
+	
+#modcfunc link_ids int pre, int nex
+    nextid(pre) = nex
+    if nex >= 0: backid(nex) = pre_
+	return
+#modfunc remove_list_id int id
+	if is_list_id_alive(thismod,id){
+		link_ids thismod, prev_id
+		release_id id_man, id
+	}
+	return
+
+#modcfunc find_all_by_condition array values, int min_val, int max_val, array result_ids
+    // 結果カウンタ
+    found_count = 0    
+    // リストを順番にチェック
+    current_id = nextid(TOPNODE)
+    while current_id >= 0
+        // 値が条件範囲内かチェック
+        if values(current_id) >= min_val && values(current_id) <= max_val {
+            result_ids(found_count) = current_id
+            found_count++
+        }
+        current_id = nextid(current_id)
+    wend
+    
+    return found_count
+
+// おまけ：単一値検索版
+#modcfunc find_by_value array values, int target_value
+    current_id = nextid(TOPNODE)
+    while current_id >= 0
+        if values(current_id) == target_value {
+            return current_id
+        }
+        current_id = nextid(current_id)
+    wend
+    return -1  // 見つからない場合
+
+// おまけ：条件に一致する個数をカウント
+#modcfunc count_by_condition array values, int min_val, int max_val
+    count = 0
+    current_id = nextid(TOPNODE)
+    while current_id >= 0
+        if values(current_id) >= min_val && values(current_id) <= max_val {
+            count++
+        }
+        current_id = nextid(current_id)
+    wend
+    return count
+#modfunc validate_list_integrity str call_location
+    // 整合性チェック結果
+    error_count = 0
+    warning_count = 0
+    
+    mes "=== リスト整合性チェック開始 [" + call_location + "] ==="
+    
+    // 1. 基本的な循環チェック（ウサギとカメアルゴリズム）
+    slow = TOPNODE
+    fast = TOPNODE
+    has_cycle = 0
+    
+    while nextid(fast) >= 0 && nextid(nextid(fast)) >= 0
+        slow = nextid(slow)
+        fast = nextid(nextid(fast))
+        if slow == fast {
+            mes "[ERROR] 循環リストが検出されました！"
+            error_count++
+            has_cycle = 1
+            _break
+        }
+    wend
+    
+    if has_cycle == 0 {
+        mes "[OK] 循環チェック: 循環なし"
+    }
+    
+    // 2. 前方向リンクのチェック
+    now_point = TOPNODE
+    forward_count = 0
+    max_iterations = get_using_count(id_man) + 10  // 無限ループ防止
+    
+    while now_point >= 0 && forward_count < max_iterations
+        next_point = nextid(now_point)
+        
+        // 次のポイントが有効かチェック
+        if next_point >= 0 {
+            if is_id_alive(id_man, next_point) == 0 {
+                mes "[ERROR] 無効なIDへのリンクを発見: " + now_point + " -> " + next_point
+                error_count++
+            }
+        }
+        
+        now_point = next_point
+        forward_count++
+    wend
+    
+    if forward_count >= max_iterations {
+        mes "[ERROR] 前方向チェックで無限ループの可能性"
+        error_count++
+    } else {
+        mes "[OK] 前方向リンク: " + forward_count + "個のノードを確認"
+    }
+    
+    // 3. 後方向リンクのチェック
+    now_point = TOPNODE
+    backward_errors = 0
+    
+    while now_point >= 0
+        next_point = nextid(now_point)
+        if next_point >= 0 {
+            // 次のノードのbackが現在のノードを指しているかチェック
+            if backid(next_point) != now_point {
+                mes "[ERROR] 後方向リンク不整合: " + next_point + "のback=" + backid(next_point) + " (期待値:" + now_point + ")"
+                backward_errors++
+            }
+        }
+        now_point = next_point
+    wend
+    
+    if backward_errors == 0 {
+        mes "[OK] 後方向リンク: 整合性確認"
+    } else {
+        error_count += backward_errors
+    }
+    
+    // 4. lastidの整合性チェック
+    // 実際の最後のIDを探す
+    actual_last = TOPNODE
+    while nextid(actual_last) >= 0
+        actual_last = nextid(actual_last)
+    wend
+    
+    if actual_last != lastid {
+        mes "[ERROR] lastid不整合: 実際=" + actual_last + " 記録=" + lastid
+        error_count++
+    } else {
+        mes "[OK] lastid整合性: 正常"
+    }
+    
+    // 5. IDマネージャーとの整合性チェック
+    using_count = get_using_count(id_man) - 1  // TOPNODEを除く
+    list_count = get_list_count(thismod)
+    
+    if using_count != list_count {
+        mes "[WARNING] IDマネージャーとリストカウントの不一致: IDMgr=" + using_count + " List=" + list_count
+        warning_count++
+    } else {
+        mes "[OK] カウント整合性: " + list_count + "個"
+    }
+    
+    // 6. 孤立ノードのチェック
+    orphaned_nodes = 0
+    repeat get_using_count(id_man)
+        check_id = cnt
+        if is_id_alive(id_man, check_id) && check_id != TOPNODE {
+            // このIDがリストに含まれているかチェック
+            found_in_list = 0
+            scan_point = TOPNODE
+            while nextid(scan_point) >= 0
+                scan_point = nextid(scan_point)
+                if scan_point == check_id {
+                    found_in_list = 1
+                    break
+                }
+            wend
+            
+            if found_in_list == 0 {
+                mes "[WARNING] 孤立ノード発見: ID=" + check_id
+                orphaned_nodes++
+            }
+        }
+    loop
+    
+    if orphaned_nodes == 0 {
+        mes "[OK] 孤立ノード: なし"
+    } else {
+        warning_count += orphaned_nodes
+    }
+    
+    // 7. メモリ使用効率のチェック
+    total_allocated = get_using_count(id_man)
+    if total_allocated > 0 {
+        efficiency = (list_count * 100) / total_allocated
+        mes "[INFO] メモリ効率: " + efficiency + "% (" + list_count + "/" + total_allocated + ")"
+        if efficiency < 70 {
+            mes "[WARNING] メモリ効率が低下しています（70%未満）"
+            warning_count++
+        }
+    }
+    
+    // 結果サマリー
+    mes "=== チェック結果サマリー ==="
+    mes "エラー: " + error_count + "件"
+    mes "警告: " + warning_count + "件"
+    
+    if error_count == 0 && warning_count == 0 {
+        mes "[SUCCESS] リストは完全に正常です！"
+        return 0  // 正常
+    } else: if error_count == 0 {
+        mes "[WARNING] 軽微な問題がありますが、動作に支障はありません"
+        return 1  // 警告あり
+    } else {
+        mes "[CRITICAL] 重大な問題が検出されました！"
+        return 2  // エラーあり
+    }
+
+// デバッグ用のリスト可視化関数も追加
+#modfunc debug_print_list array values, str title
+    mes "=== " + title + " ==="
+    if get_list_count(thismod) == 0 {
+        mes "リストは空です"
+        return
+    }
+    
+    mes "TOPNODE(0) -> ",
+    now_point = nextid(TOPNODE)
+    node_count = 0
+    
+    while now_point >= 0 && node_count < 50  // 表示制限
+        mes "ID:" + now_point + "(val:" + values(now_point) + ") -> ",
+        now_point = nextid(now_point)
+        node_count++
+    wend
+    
+    if node_count >= 50 {
+        mes "... (省略)"
+    } else {
+        mes "NULL"
+    }
+    
+    mes "総ノード数: " + get_list_count(thismod)
+    mes "最後のID: " + lastid
+    return
+#modfunc swap_adjust int id1, int id2
+	if id1 == id2: return
+	if is_list_id_alive(thismod,id1) == 0 || is_list_id_alive(thismod,id2) == 0: return ;無効なID
+
+	// 前後のIDを取得
+	prev1 = backid(id1)
+	next1 = nextid(id1)
+	prev2 = backid(id2)
+	next2 = nextid(id2)
+
+	// ID1とID2の前後を入れ替え
+	if prev1 >= 0: nextid(prev1) = id2
+	if next1 >= 0: backid(next1) = id2
+	if prev2 >= 0: nextid(prev2) = id1
+	if next2 >= 0: backid(next2) = id1
+
+	// ID1とID2のnextとbackを入れ替え
+	nextid(id1) = next2
+	backid(id1) = prev2
+	nextid(id2) = next1
+	backid(id2) = prev1
+
+	return
+#modfunc それぞれ任意の位置の二つのIDを入れ替える int id1, int id2
+	if id1 == id2: return
+	if is_list_id_alive(thismod,id1) == 0 || is_list_id_alive(thismod,id2) == 0: return ;無効なID
+	
+	if nextid(id1) == id2 || nextid(id2) == id1{
+		swap_adjust id1, id2
+		return
+	}
+
+	// それぞれの前後のIDを取得
+	prev1 = backid(id1)
+	prev2 = backid(id2)
+	next1 = nextid(id1)
+	next2 = nextid(id2)
+	// ID1の前後をID2に入れ替え
+	if prev1 >= 0: nextid(prev1) = id2
+	if next1 >= 0: backid(next1) = id2
+	if prev2 >= 0: nextid(prev2) = id1
+	if next2 >= 0: backid(next2) = id1
+	// ID1とID2のnextとbackを入れ替え
+	nextid(id1) = next2
+	backid(id1) = prev2
+	nextid(id2) = next1
+	backid(id2) = prev1
+	return
 
 #modcfunc get_list_count
 	return get_using_count(id_man) - 1
@@ -159,192 +443,17 @@
 
 #endif
 
+
+//テストゾーン
 #if 00
-
-
-newmod a,list_id_manager, 100
-#include "keyfps.hsp"
-
 #undef mes
-#define global mes(%1) mes@hsp(%1):logmes %1
-// テスト用のデータ構造を定義
-#module
-#deffunc test_header str ti
-    mes "========================================"
-    mes ti
-    mes "========================================"
-return
-
-#deffunc print_list_with_values array list_manager, array values, str label
-    mes label + ":"
-    foreach_list list_manager, id
-        mes strf("ID: %d, Value: %d", id, values(id))
-    foreach_list_end
-    mes ""
-return
-#global
-
-// メイン処理開始
-newmod manager1, list_id_manager, 200
-newmod manager2, list_id_manager, 200
-newmod manager3, list_id_manager, 200
-
-// テスト1: 基本的なランダムソート（大きなデータセット）
-test_header "テスト1: 大きなデータセットの基本ソート"
-dim values1, 200
-repeat 50
-    node_id = get_new_list_id(manager1)
-    values1(node_id) = rnd(1000)
-loop
-
-mes "ソート前:"
-foreach_list manager1, id
-    mes strf("ID: %d, Value: %d", id, values1(id))
-    if cnt >= 10 : mes "... (以下省略)" : _break
-foreach_list_end
-
-sort_list_by_value_array manager1, values1
-mes "\nソート後:"
-foreach_list manager1, id
-    mes strf("ID: %d, Value: %d", id, values1(id))
-    if cnt >= 10 : mes "... (以下省略)" : _break
-foreach_list_end
-mes ""
-// テスト2: 同じ値を持つ要素のソート（安定ソートのテスト）
-test_header "テスト2: 同じ値を持つ要素の安定ソート"
-dim values2, 200
-dim secondary_key, 200
-
-// 意図的に同じ値を持つ要素を作成
-repeat 15
-    node_id = get_new_list_id(manager2)
-    values2(node_id) = cnt \ 5 + 1  // 0,1,2,3,4,0,1,2,3,4... のパターン
-    secondary_key(node_id) = (cnt + 1) // 元の順序を記録
-loop
-
-print_list_with_values manager2, values2, "ソート前（主キー値で同じ値が複数存在）"
-
-sort_list_by_value_array manager2, values2
-
-mes "ソート後（同じ値の要素の順序に注目）:"
-foreach_list manager2, id
-    mes strf("ID: %d, Primary: %d, Original_Order: %d", id, values2(id), secondary_key(id))
-foreach_list_end
-mes ""
-
-// テスト3: 逆順ソート（大きい値から小さい値へ）
-test_header "テスト3: 逆順ソート実装"
-dim values3, 200
-dim inverted_values3, 200
-
-repeat 20
-    node_id = get_new_list_id(manager3)
-    values3(node_id) = rnd(100) + 1
-    inverted_values3(node_id) = -values3(node_id)  // 負の値にして逆順を実現
-loop
-
-print_list_with_values manager3, values3, "元のデータ"
-
-sort_list_by_value_array manager3, inverted_values3
-
-mes "逆順ソート後:"
-foreach_list manager3, id
-    mes strf("ID: %d, Value: %d", id, values3(id))
-foreach_list_end
-mes ""
-
-// テスト4: 複合ソート（文字列の長さでソート）
-test_header "テスト4: 文字列データの長さによるソート"
-newmod str_manager, list_id_manager, 100
-dim str_lengths, 100
-sdim test_strings, 64, 100
-
-// テスト用文字列データ
-test_data = "apple,cat,elephant,dog,butterfly,ant,rhinoceros,bee,crocodile,fish"
-split test_data, ",", temp_array
-
-repeat length(temp_array)
-    if temp_array(cnt) != "" {
-        node_id = get_new_list_id(str_manager)
-        test_strings(node_id) = temp_array(cnt)
-        str_lengths(node_id) = strlen(test_strings(node_id))
-    }
-loop
-
-mes "ソート前（文字列とその長さ）:"
-foreach_list str_manager, id
-    mes strf("ID: %d, String: '%s', Length: %d", id, test_strings(id), str_lengths(id))
-foreach_list_end
-
-sort_list_by_value_array str_manager, str_lengths
-
-mes "\n文字列長さでソート後:"
-foreach_list str_manager, id
-    mes strf("ID: %d, String: '%s', Length: %d", id, test_strings(id), str_lengths(id))
-foreach_list_end
-mes ""
-
-// テスト5: エッジケースのテスト
-test_header "テスト5: エッジケース"
-newmod edge_manager, list_id_manager, 50
-dim edge_values, 50
-
-// 単一要素
-node_single = get_new_list_id(edge_manager)
-edge_values(node_single) = 42
-
-mes "単一要素のソート:"
-print_list_with_values edge_manager, edge_values, "ソート前"
-sort_list_by_value_array edge_manager, edge_values
-print_list_with_values edge_manager, edge_values, "ソート後"
-
-// 既にソート済みデータ
-repeat 9
-    node_id = get_new_list_id(edge_manager)
-    edge_values(node_id) = cnt + 1
-loop
-
-mes "既にソートされたデータ:"
-print_list_with_values edge_manager, edge_values, "ソート前（既にソート済み）"
-sort_list_by_value_array edge_manager, edge_values
-print_list_with_values edge_manager, edge_values, "ソート後"
-
-// テスト6: パフォーマンステスト
-test_header "テスト6: パフォーマンステスト"
-newmod perf_manager, list_id_manager, 500
-dim perf_values, 500
-
-// 大量データでのソートテスト
-data_size = 10000
-repeat data_size
-    node_id = get_new_list_id(perf_manager)
-    perf_values(node_id) = rnd(10000)
-loop
-
-start_time = keyfpstimer
-sort_list_by_value_array perf_manager, perf_values
-end_time = keyfpstimer
-
-mes strf("%d個の要素のソートにかかった時間: %dms", data_size, end_time - start_time)
-
-// 結果の検証（正しくソートされているかチェック）
-mes "ソート結果の検証:"
-prev_value = -1
-error_count = 0
-foreach_list perf_manager, id
-    if perf_values(id) < prev_value {
-        error_count++
-    }
-    prev_value = perf_values(id)
-foreach_list_end
-
-if error_count = 0 {
-    mes "? ソートが正しく実行されました"
-} else {
-    mes strf("? ソートエラーが%d箇所で発生しました", error_count)
-}
-
-mes "\n全てのテストが完了しました。"
+#define mes(%1) mes@hsp %1:logmes %1
+/////////////////////
 
 
+
+
+
+
+/////////////////////
 #endif

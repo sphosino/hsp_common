@@ -5,50 +5,55 @@ randomize
 init_memory_pool 10000
 
 repeat 
-	redraw 2
+	title"作成準備中":await 2000
+	title"作成開始"
 	dim idlist
-	repeat 5
+	repeat 10
+		
 		size2 = 10 + rnd(70)
 		t = get_new_block(size2)
 		idlist(cnt) = t
 		debug_check_link_integrity "作成後のリンク整合性チェック"
 		if stat {
 			draw_memory_pool_with_labels  100,150 * 2, idlist
-			redraw
 			stop
 		}
+		redraw 2
+		draw_memory_pool_with_labels 100,150*2,idx
+		redraw
+		await 1000
 	loop
 
-	// 可視化（確保直後）
-	draw_memory_pool_with_labels  100,150 * 2, idlist
-	redraw
-	await 100
 ;/*
 	// 一部を拡張書き込みしてみる（3個ランダム選出）
-	redraw 2
+	draw_memory_pool_with_labels 100,150*3,idx
+	title "拡張準備中":await 2000
+	title "拡張開始"
 	dim idx
-	repeat 3
+	repeat 6
+		
 		idx(cnt) = idlist(rnd(length(idlist)))
 		// 拡張を引き起こすように長い文字列を書く
-		append_str idx(cnt), "にゃんにゃんにゃんにゃんにゃんにゃ"
+		append_str idx(cnt), "にゃんにゃんにゃんにゃんにゃんにゃん"
 		
 		debug_check_link_integrity "拡張後のリンク整合性チェック"
 		if stat {
 			draw_memory_pool_with_labels  100,150 * 3, idx
-			redraw
 			stop
 		}
+		redraw 2
+		draw_memory_pool_with_labels  100,150 * 3, idx
+		redraw
+		await 1000
 	loop
 
-	//拡張後の可視化
-	draw_memory_pool_with_labels  100,150 * 3, idx
-	redraw
-	await 100
 //*/
-
-	redraw 2
+	draw_memory_pool_with_labels  100,150 * 4, idx
+	title "削除準備中":await 2000
+	title "削除開始"
 	dim idx
-	repeat 7
+	repeat 10
+		
 		c = get_used_block_count()
 		if c = 0 : break
 		idx(cnt) = rnd(c)
@@ -57,14 +62,14 @@ repeat
 		debug_check_link_integrity "解放後のリンク整合性チェック"
 		if stat {
 			draw_memory_pool_with_labels  100,150 * 4, idx
-			redraw
 			stop
 		}
+		redraw 2
+		draw_memory_pool_with_labels  100,150 * 4, idx
+		redraw
+		await 1000
+		
 	loop
 
-	// ?? 削除後の状態
-	draw_memory_pool_with_labels  100,150 * 4, idx
-	redraw
-	await 100
-
+	draw_memory_pool_with_labels  100,150 * 2, idx
 loop

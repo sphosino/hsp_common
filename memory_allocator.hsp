@@ -2,8 +2,8 @@
 #addition "id_manager.hsp"
 #module memory_allocator
 
-#const CLASS_NUM 6
-#const MIN_SPLIT_SIZE 32
+#const CLASS_NUM 10
+#const FREELIST_THRESHOLD 32
 #const DEFAULT_POOL_SIZE 10000
 #const MAX_DIV 10000 //断片化許可数
 #const MAX_EXPAND_LIMIT 4000000
@@ -59,7 +59,7 @@
 	if newid >= 0{
 		//見つかったIDで割り当てる
 		空きサイズ = 0
-		if get_block_size(newid) - size >= MIN_SPLIT_SIZE{
+		if get_block_size(newid) - size > FREELIST_THRESHOLD{
 			空きサイズ = get_block_size(newid) - size
 		}
 		if 空きサイズ > 0{
@@ -196,7 +196,7 @@
 		
 		offset(id) = left
 		mem_size(id) = right - left
-		if mem_size(id) >= MIN_SPLIT_SIZE{
+		if mem_size(id) > FREELIST_THRESHOLD{
 			//フリーリストに登録
 			class = get_class_index(mem_size(id))
 			free_list(class, free_list_num(class)) = id
@@ -221,8 +221,8 @@
 		right = offset(next_id)
 		//連結更新
 		resize_free_block prev_id, right - left
-		next_mem_id(prev_id) = next_mem_id(id)
-		back_mem_id(next_id) = prev_id
+		
+		link_blocks prev_id, next_mem_id(id)
 
 		release_id mem_id_manager, id //idは消失
 	swbreak
@@ -251,8 +251,7 @@
 		resize_free_block prev_id, right - left
 
 		//連結更新
-		next_mem_id(prev_id) = next_mem_id(next_id)
-		back_mem_id(next_mem_id(next_id)) = prev_id
+		link_blocks prev_id, next_mem_id(next_id)
 		
 		remove_from_free_list next_id //nextはフリーリストに存在するはずなので削除
 
@@ -276,12 +275,8 @@
 	return
 
 #defcfunc get_class_index int size
-	if size <= 32 : return 0
-	if size <= 64 : return 1
-	if size <= 128 : return 2
-	if size <= 256 : return 3
-	if size <= 512 : return 4
-	return 5
+	if size <= 0: return 0
+	return limit(logf(size)/logf(2) - 2,, CLASS_NUM - 1)
 	
 #defcfunc get_class_index_by_id int id
 	return get_class_index(mem_size(id))
@@ -430,7 +425,7 @@ return tryrelocate_block(oldid, newsize, offset_original, size_original)
 	if nid >= 0{
 		if is_free(nid){
 			if newsize <= offset(next_mem_id(nid)) - originaloffset{
-				if offset(next_mem_id(nid)) - (originaloffset + newsize)  < MIN_SPLIT_SIZE{
+				if offset(next_mem_id(nid)) - (originaloffset + newsize)  <= FREELIST_THRESHOLD{
 					remove_free_block nid
 				}else{
 					//右オフセット移動＆サイズ縮小
@@ -468,7 +463,7 @@ return tryrelocate_block(oldid, newsize, offset_original, size_original)
 			//オフセットを左に詰める
 				offset(oldid) = left_offset
 				memcpy memory_pool, memory_pool, newsize, left_offset, originaloffset + originalsize
-				if right - (originaloffset + newsize) >= MIN_SPLIT_SIZE{
+				if right - (originaloffset + newsize) > FREELIST_THRESHOLD{
 
 					swap_adjacent_blocks oldid //隣接ブロックのリンクを入れ替え(指定IDとその左隣のブロックのリンクを入れ替える)
 
@@ -537,7 +532,7 @@ return tryrelocate_block(oldid, newsize, offset_original, size_original)
 	debug_check_link_integrity "move_block 解放前 "
 
 	//メモリコピー
-	memcpy memory_pool, memory_pool, originaloffset, offset(newid), originaloffset
+	memcpy memory_pool, memory_pool, originalsize, offset(newid), originaloffset
 	swap offset(newid), offset(oldid)
 	swap mem_size(newid), mem_size(oldid)
 
@@ -605,7 +600,7 @@ return 1 // 成功
 			color col>>16&255,col>>8&255,col&255
 		}
 		boxf ofs*PIXEL+1,yoffset, (ofs + _size)*PIXEL, yoffset+ysize
-		; サイズ表示（ある程度大きいときだけ）
+		; サイズ表示
 		;if _size >= 12 {
 			color 0,0,0
 			pos (ofs + 2 ) * PIXEL, yoffset + 2
@@ -622,6 +617,7 @@ return 1 // 成功
 	case 3 : return $ffcc66 ; 黄オレンジ系
 	case 4 : return $cc66ff ; 紫系
 	case 5 : return $999999 ; 灰色（でかすぎクラスタ）
+	case 6 : return $FAc0cb ; ピンク
 	default: return $333333 ; 黒っぽい（不明クラス）
 	swbreak
 	swend
@@ -640,6 +636,7 @@ return
 
 //文字列として操作
 #deffunc write_mem_str int id, str value, int offset_in_block
+	if offseet_in_block < 0: return
 	if is_id_alive(mem_id_manager, id) == 0: return
 	if is_free(id): return
 	
@@ -653,13 +650,17 @@ return
 	return
 
 #defcfunc read_mem_str int id, int offset_in_block
+	if offset_in_block < 0: return ""
 	if is_id_alive(mem_id_manager, id) == 0: return ""
 	if is_free(id): return ""
+
+	copy_size = mem_size(id) - offset_in_block
+	if copy_size <= 0: return ""
 	
 	sdim s, mem_size(id)
-	memcpy s, memory_pool, mem_size(id) - offset_in_block, 0, offset(id) + offset_in_block
+	memcpy s, memory_pool, copy_size, 0, offset(id) + offset_in_block
 
-	return strmid(s, 0, mem_size(id)) //ごみを除く
+	return strmid(s, 0, copy_size) //ごみを除く
 	
 #define global append_str(%1,%2 = "", %3 = -1) _append_str %1,%2,%3
 
@@ -673,8 +674,10 @@ return
 
 //バイナリ操作
 #deffunc poke_block int id, var a, int offset_in_block
+	if offseet_in_block < 0: return
 	if is_id_alive(mem_id_manager, id) == 0: return
 	if is_free(id): return
+
 
 	v_size = varsize(a)
 	required = offset_in_block + size
@@ -685,14 +688,26 @@ return
 	usable = mem_size(id) - offset_in_block
 	memcpy memory_pool, a, limit(v_size,,usable), offset(id) + offset_in_block, 0
 	return
+	
+#deffunc peek_block int id, var a, int offset_in_block
+	if offseet_in_block < 0: return
+	if is_id_alive(mem_id_manager, id) == 0: return
+	if is_free(id): return
+
+	memcpy a,memory_pool,limit(mem_size(a)-offset_in_block,,varsize(a)),0,offset(id) + offset_in_block
+	return
+	
 #global
 init_memory_pool
+
 #module
+#ifndef swap
 #deffunc swap var a, var b
-	//変数の値を入れ替える
 	tmp = a
 	a = b
 	b = tmp
 	return
+#endif
 #global
+
 #endif

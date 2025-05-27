@@ -134,12 +134,14 @@
 	
 #modcfunc get_value_scroll_bar
 	return value
-	
+
+#ifndef swap
 #deffunc local swap var a, var b
 	tmp = a
 	a = b
 	b = tmp
 	return
+#endif
 #modcfunc get_scroll_bar_width
 	return tickness
 

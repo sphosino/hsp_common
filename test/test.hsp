@@ -1,31 +1,8 @@
-#include "../../hsp_common/keyfps.hsp"
-
-//基本命令の拡張
-#include "../color_manager.hsp"
-#include "../centering_mes.hsp"
-#include "../rboxf.hsp
-
+#include "../all_include"
 //動きモジュール
-#include "../draw_obj/ease.hsp"
-#include "../draw_obj/physis.hsp"
-#include "../draw_obj/static.hsp"
-
-//「描画タイプ→ラベル」管理モジュール
-#include "../label_set.hsp"
-
-//レンダラ
-#include "../renderer.hsp"
-
-
+#include "../draw_obj/all_include"
 //描画タイプ定義集
-#include "../draw_type/boxf.hsp"
-#include "../draw_type/circle.hsp"
-
-#include "../draw_type/str.hsp"
-
-#include "../draw_type/rboxf.hsp"
-
-#include "../draw_type/line.hsp"
+#include "../draw_type/all_include"
 
 		                                         ; life           , x    , y    , w  , h  , ohter_params
 bg_id = make_draw_object(MOVE_TYPE_STATIC, "BOXF", LIFE_FOREVER   , 640/2, 480/2, 640, 480, "$000000")
@@ -43,8 +20,7 @@ set_ease_posy get_entity_id(circle_id), 640/2, 480/2 - 200
 
 l = make_draw_object(MOVE_TYPE_EASE,"LINE"      , LIFE_FOREVER, 100,200, 70,70,"$00FFFF,")
 set_ease_angle get_entity_id(l), 0,deg2rad(360), ease_quad_inout　//一応各パラごとに調整可能　省略で現状維持 ==１秒
-set_ease_posx get_entity_id(l), 000, 200, ease_quad_inout,4 
-//回転した後滑ってくる。　仕様と合致だよね？
+set_ease_posx get_entity_id(l), 000, 200, ease_quad_inout,2
 
 *main
 	manage_keyfps

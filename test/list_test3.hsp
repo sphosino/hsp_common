@@ -1,0 +1,21 @@
+#include "../list.hsp"
+// テストデータ準備
+// テストデータ準備
+newmod my_list, list_id_manager, 100
+dim hp_values, 100
+
+// キャラクターデータ作成
+id1 = get_new_list_id(my_list) : hp_values(id1) = 45
+id2 = get_new_list_id(my_list) : hp_values(id2) = 78  
+id3 = get_new_list_id(my_list) : hp_values(id3) = 120
+id4 = get_new_list_id(my_list) : hp_values(id4) = 89
+id5 = get_new_list_id(my_list) : hp_values(id5) = 156
+
+// HP50-100のキャラクターを検索
+dim result_ids, 50
+count = find_all_by_condition(my_list, hp_values, 50, 100, result_ids)
+
+mes "HP50-100のキャラクター: " + count + "体"
+repeat count
+    mes "ID:" + result_ids(cnt) + " HP:" + hp_values(result_ids(cnt))
+loop
