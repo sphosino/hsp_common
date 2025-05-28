@@ -10,7 +10,6 @@
 
 #deffunc init_memory_pool int size
 	
-
 	if size <= 0{
 		sdim memory_pool, DEFAULT_POOL_SIZE
 	}else{
@@ -170,8 +169,10 @@
 	return newid
 
 
-	
 #deffunc free_block int id
+
+	//使用中のブロックを解放する。左右の領域を吸収して、フリーブロックに返す。
+
 	if is_id_alive(mem_id_manager, id) == 0: return 0
 	if is_free(id): return 0//既に開放済みのブロック
 	
@@ -307,6 +308,8 @@
 	mem_size(id) = newsize
 	debug_check_link_integrity "resize_free_block" + flag
 	
+	debug_check_free_list_integrity
+	
 	return
 
 #defcfunc local get_class_index int size
@@ -347,9 +350,6 @@
 	debug_check_free_list_integrity
 	
 	return
-	
-
-
 	
 #deffunc debug_check_link_integrity str lab
 
@@ -409,9 +409,6 @@
 	
 	return 0
 
-#defcfunc get_mem_offset int id
-	return offset(id)
-	
 #defcfunc get_used_block_count
 
 	total_ids = get_using_count(mem_id_manager) ; ← IDマネージャ全体の生存ID数
@@ -728,6 +725,7 @@ return
 
 #defcfunc get_block_offset int id
 	return offset(id)
+	
 #defcfunc get_block_size int id
     return mem_size(id)
     
@@ -785,9 +783,8 @@ return
 	if is_id_alive(mem_id_manager, id) == 0: return
 	if is_free(id): return
 
-
 	v_size = varsize(a)
-	required = offset_in_block + size
+	required = offset_in_block + v_size
 	if mem_size(id) < required {
 		move_block id, required
 	}
