@@ -88,6 +88,8 @@
 	if mem_size(target_id) - size > FREELIST_THRESHOLD{
 
 		if last_block_id != target_id{
+
+			assert next_mem_id(target_id) >= 0
 		
 			//V‚½‚È‹ó‚«‹óŠÔ‚ğì¬
 			new_free_id = get_new_id(mem_id_manager)
