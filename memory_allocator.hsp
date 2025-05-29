@@ -108,7 +108,6 @@
 
 	logmes "remove完了"
 	debug_check_free_list_integrity
-	
 	return
 #deffunc resize_free_block int id, int newsize
 
@@ -402,7 +401,6 @@
 	debug_check_free_list_integrity
 	;logmes "削除成功しています"
 	debug_check_memory_pool_integrity
-	logmes "プールは正常です"
 	return 1
 	
 
@@ -468,11 +466,11 @@
 
 	//開始点から最後まで到達できるか、バックリンクと循環も含めてチェック
 	count = 0
-	_prev_id = -1
+	__prev_id = -1
 	
 	while start_point != -1
-		if back_mem_id(start_point) != _prev_id {
-			logmes "[リンクチェック失敗] " + strf("%d > (%d=%d) < %d", _prev_id, start_point, back_mem_id(start_point), start_point) + "次の前がリンクしていません\n" + lab
+		if back_mem_id(start_point) != __prev_id {
+			logmes "[リンクチェック失敗] " + strf("%d > (%d=%d) < %d", __prev_id, start_point, back_mem_id(start_point), start_point) + "次の前がリンクしていません\n" + lab
 			return 1
 		}
 		count++
@@ -480,7 +478,7 @@
 			logmes "[リンクチェック失敗] 循環検出: " + lab
 			return 1
 		}
-		_prev_id = start_point
+		__prev_id = start_point
 		start_point = next_mem_id(start_point)
 	wend
 	
@@ -490,7 +488,7 @@
 	}
 	
 	//管理している最後のブロックIDとリンクの最後のブロックIDが一致するか確認
-	if _prev_id != last_block_id{
+	if __prev_id != last_block_id{
 		logmes "[リンクチェック失敗] 最後のブロックが不正：" + lab
 		return 1
 	}
@@ -573,7 +571,6 @@
 	result = tryrelocate_block(oldid, newsize, offset_original, size_original)
 	
 	debug_check_free_list_integrity
-	logmes "（新規ブロック作成して移動）の結果 →" + result + ": フリーリストの整合性→　OK !!" 
 	debug_check_link_integrity "拡張終了後"
 	return result
 
@@ -585,8 +582,9 @@
 	nid = next_mem_id(oldid)
 	if nid >= 0{
 		if is_free(nid){
-			if newsize <= offset(next_mem_id(nid)) - (originaloffset + newsize){
-				if offset(next_mem_id(nid)) - (originaloffset + newsize)  <= FREELIST_THRESHOLD{
+			gap = offset(next_mem_id(nid)) - (originaloffset)
+			if newsize <= gap{
+				if gap <= FREELIST_THRESHOLD + newsize{
 					remove_free_block nid
 				}else{
 					//右オフセット移動
@@ -602,7 +600,7 @@
 			//右のフリーブロックを削除
 			remove_free_block nid
 		}else{
-			if newsize <= offset(nid) - originaloffset{//右ブロックまでの隙間でOK
+			if newsize <= offset(nid) - (originaloffset + newsize){//右ブロックまでの隙間でOK
 				debug_check_link_integrity "右側拡張成功 used"
 				return 1
 			}
@@ -611,6 +609,8 @@
 	return 0
 #defcfunc try_expand_left int oldid, int newsize, int originaloffset, int originalsize
 
+	if is_free(oldid): end
+
 	//左拡張を試みる。不可能だった場合、フリーブロックの吸収だけ行う。
 
 	debug_check_link_integrity "左拡張試行"
@@ -618,22 +618,22 @@
 
 	//左側のチェック開始
 	bid = back_mem_id(oldid)
+	
 	right = offset(next_mem_id(oldid))
 	if bid >= 0{
 		if is_free(bid){
-			if newsize <= right - offset(bid){//拡張可能
+			gap = right - offset(bid)
+			if newsize <= gap{//拡張可能
 			
 				//左の位置を自分のものにする
 				offset(oldid) = offset(bid) 
 				memcpy memory_pool, memory_pool, originalsize, offset(oldid), originaloffset
-				
-				if right - (originaloffset + newsize) <= FREELIST_THRESHOLD{
+
+				if gap <= FREELIST_THRESHOLD + newsize{
 					
 					remove_free_block bid //左ブロックを削除
 
-
 				}else{
-					
 					swap_adjacent_blocks oldid //隣接ブロックのリンクを入れ替え(指定IDとその左隣のブロックのリンクを入れ替える)
 
 					//左ブロックのオフセットをIDブロックの右端にセット
@@ -647,6 +647,7 @@
 				debug_check_link_integrity "左側拡張成功 free"
 				return 1
 			}
+			
 			remove_free_block bid
 			
 		}else{
@@ -734,6 +735,7 @@
 	next_mem_id(oldid) = nnewid: if nnewid >= 0: back_mem_id(nnewid) = oldid
 
 	//構造交換完了
+	
 
 	//解放前のリンク構造チェック
 	debug_check_link_integrity "move_block 解放前 "
@@ -743,11 +745,18 @@
 	swap offset(newid), offset(oldid)
 	swap mem_size(newid), mem_size(oldid)
 
+	debug_check_memory_pool_integrity
+
 		
 	free_block newid //解放
 
+
 	//解放後のリンク構造を確認
 	debug_check_link_integrity "move_block 解放後"
+
+
+	debug_check_memory_pool_integrity
+	logmes "拡張後のプールの状態OK" + oldid + ":" + newid
 	return 1
 
 #deffunc remove_free_block int target_id
@@ -767,10 +776,10 @@ return 1 // 成功
 	if is_id_alive(mem_id_manager, nowid) == 0: return ; IDが無効なら何もしない
 	_prev_id = back_mem_id(nowid)
 	if _prev_id < 0 : return ; 左隣がなければ何もしない
-	debug_check_link_integrity "swap_adjacent_blocks 実行前"
+	;debug_check_link_integrity "swap_adjacent_blocks 実行前"
 
-	if is_free(nowid):logmes "想定外の処理": return
-	if is_free(_prev_id) = 0:logmes "想定外の処理": return
+	if is_free(nowid):logmes "想定外の処理現在のIDがフリー": return
+	if is_free(_prev_id) = 0:logmes "想定外の処理左のIDが使用中" + _prev_id+ ":" + nowid + "-- " + back_mem_id(nowid)
 	
 	// つながり（リンク情報）のみ入れ替え
 	
@@ -818,6 +827,10 @@ return 1 // 成功
 		}
 		
 		boxf ofs*PIXEL+1,yoffset, (ofs + _size)*PIXEL-1, yoffset+ysize
+
+		color 0,0,0
+		pos ofs*PIXEL+1,yoffset + ysize/3
+		mes _size
 		
 		//文字列で使用中ならそれを可視化
 		color 255,0,0
