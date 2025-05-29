@@ -32,19 +32,39 @@
 	
 	return
 	
-#deffunc debug_check_free_list_integrity
+#deffunc debug_check_free_list_integrity local vvid, local __class
 
 	dim id_check, get_id_length(mem_id_manager) //発行したIDの最大値分確保
 	
 	repeat CLASS_NUM
-		class = cnt
-		repeat free_list_num(class)
-		
-			vvid = free_list(class, cnt)
+		__class = cnt
+		repeat free_list_num(__class)			
+			vvid = free_list(__class, cnt)
+			 ; id_check をインクリメントする前に、現在の vvid の id_check 値を出力する
+            ;logmes "debug_check: 走査中 vvid=" + vvid + " (クラス:" + __class + ", インデックス:" + cnt + "), id_check(vvid)の現在値=" + id_check(vvid)
+
 			id_check(vvid)++
 			
 			if id_check(vvid) >= 2 {
 				logmes "重複登録されたIDを検出: ID=" + vvid
+				;logmes "  mem_size(ID)=" + mem_size(vvid) + ", is_free(ID)=" + is_free(vvid)
+				;logmes "  重複検出されたクラス: " + __class
+				stop
+			}
+
+			; IDのmem_sizeから計算されるクラスIDを取得
+			current_class_id_from_get_func = get_class_index_by_id(vvid)
+			
+			if current_class_id_from_get_func != __class{
+				
+				logmes "間違ったクラスに登録されています"
+				/*
+				logmes "  vvid = " + vvid
+				logmes "  mem_size(vvid) = " + mem_size(vvid)
+				logmes "  is_free(vvid) = " + is_free(vvid)
+				logmes "  expected class (フリーリスト登録クラス) = " + __class
+				logmes "  actual class (get_class_index_by_id結果) = " + current_class_id_from_get_func
+				*/
 				stop
 			}
 			
@@ -53,6 +73,64 @@
 			
 		loop
 	loop
+	return
+	
+#deffunc remove_from_free_list int id, local class_id 
+
+	//フリーリストから削除する、それだけなので、前後の結合は呼び出し元で行うこと。
+
+	logmes "remove開始前"
+	debug_check_free_list_integrity
+
+	id_to_remove = id
+
+	class_id = get_class_index_by_id(id_to_remove)
+	repeat free_list_num(class_id)
+		if free_list(class_id, cnt) == id_to_remove {
+            
+            free_list_num(class_id)--
+            is_free(id_to_remove) = 0 
+            ; --- 要素をずらすループ ---]
+            
+            for i, cnt, free_list_num(class_id)
+                ; free_listの代入操作の直前
+                ;logmes "代入直前 (i=" + i + "): vvid=11, mem_size(11)=" + mem_size(11) + ", free_list(" + class_id + "," + i + ")=" + free_list(class_id, i) + ", free_list(" + class_id + "," + (i+1) + ")=" + free_list(class_id, i+1)
+
+                free_list(class_id, i) = free_list(class_id, i + 1)
+                
+                ; free_listの代入操作の直後
+                ;logmes "代入直後 (i=" + i + "): vvid=11, mem_size(11)=" + mem_size(11) + ", is_free(11)=" + is_free(11)
+            next
+
+			break
+		}
+	loop
+
+	logmes "remove完了"
+	debug_check_free_list_integrity
+	
+	return
+#deffunc resize_free_block int id, int newsize
+
+	//指定されたフリーブロックのサイズを変更する
+
+	if is_free(id) == 0: return
+
+	;debug_check_free_list_integrity
+
+	_newclass = get_class_index(newsize)
+
+	if get_class_index_by_id(id) != _newclass {
+		move_id_free_list id, newsize
+		flag = " (クラス変更)"
+	}else{
+		mem_size(id) = newsize ;;ついに真犯人を見つけた。。。else節がなかったので設定されていなかった。
+	}
+	
+	
+	;debug_check_link_integrity "resize_free_block" + flag
+	;debug_check_free_list_integrity
+	
 	return
 	
 #defcfunc get_free_block int size
@@ -68,19 +146,25 @@
 			if mem_size(free_list(cnt, i)) >= size{
 				found_id = free_list(cnt, i)
 				free_list_num(cnt)--
-				is_free(found_id) == 0 ; 取り出したらすぐに使用中とする(フリーリストに存在しないから)
+				is_free(found_id) == 0 ; 取り出したらすぐに使用中とする
 				for j,i,free_list_num(cnt)
 					free_list(cnt,j) = free_list(cnt,j + 1)
 				next
+				
+				assert next_mem_id(found_id) >= 0//有効
+				assert is_free(next_mem_id(found_id)) == 0//且つ使用中
+				
 				break
 			}
 		next
 	loop
+	;logmes "取り出し後"
+	debug_check_free_list_integrity
 	return found_id
 	
 #deffunc shrink_block int target_id, int size
 
-	//指定サイズに縮小する(単純縮小なので内容が削られることもある)
+	//有効なブロックを指定サイズに縮小する(単純縮小なので内容が削られることもある)
 
 	if is_id_alive(mem_id_manager, target_id) == 0: return 1
 	if is_free(target_id): return 2
@@ -89,31 +173,31 @@
 
 		if last_block_id != target_id{
 
+			元のブロックサイズ = mem_size(target_id)
+
 			assert next_mem_id(target_id) >= 0
 		
 			//新たな空き空間を作成
 			new_free_id = get_new_id(mem_id_manager)
 	
-			back_mem_id(new_free_id) = target_id //新ブロックの後ろを今のブロックに接続
-			next_mem_id(new_free_id) = next_mem_id(target_id) //新ブロックの後ろを元のブロックの次につなげる
-			back_mem_id(next_mem_id(target_id)) = new_free_id //元のブロックの次のブロックの後ろを新ブロックに接続
-			next_mem_id(target_id) = new_free_id //元ブロックの右を新ブロックに接続
+			link_blocks new_free_id, next_mem_id(target_id)
+			link_blocks target_id, new_free_id
 	
 			offset(new_free_id) = offset(target_id) + size
 			mem_size(new_free_id) = mem_size(target_id) - size
 	
 			//フリーリストに登録
-			new_free_class = get_class_index_by_id(new_free_id)
-			free_list(new_free_class, free_list_num(new_free_class)) = new_free_id
-			free_list_num(new_free_class)++
-			is_free(new_free_id) = 1
+			add_to_free_list new_free_id
+
+			assert 元のブロックサイズ = (mem_size(new_free_id) + size)
 			
+
 		}
 		
-	}else: if mem_size(target_id) <= size: return 3
+	}else: if mem_size(target_id) < size: return 3
 	
 	mem_size(target_id) = size
-	
+	debug_check_memory_pool_integrity
 	return 0
 	
 #defcfunc get_new_block int size
@@ -130,9 +214,9 @@
 		shrink_block newid, size //必要な分だけにセット
 		
 		memset memory_pool,0, mem_size(newid), offset(newid) //get_new_blockなのでお掃除
+		debug_check_memory_pool_integrity
 		
 		return newid
-		
 	}
 	//以下新規発行
 
@@ -161,19 +245,33 @@
 	}
 	
 	back_mem_id(newid) = last_block_id
-	last_block_id = newid
 	next_mem_id(newid) = -1
-
 	is_free(newid) = 0
-	
+
+	last_block_id = newid
+
 	memexpand memory_pool, offset(newid) + size
 	memset memory_pool,0, mem_size(newid), offset(newid)
+
+	debug_check_memory_pool_integrity
+	
 	return newid
 
+#deffunc add_to_free_list int id, local _class_
+	debug_check_free_list_integrity
+	
+	_class_ = get_class_index(mem_size(id))
+	free_list(_class_, free_list_num(_class_)) = id
+	free_list_num(_class_)++
+	is_free(id) = 1
 
+	;logmes "登録後のチェック中"
+	debug_check_free_list_integrity
+	
+	return
 #deffunc free_block int id
 
-	//使用中のブロックを解放する。左右の領域を吸収して、フリーブロックに返す。
+	//使用中のブロックを解放する。左右の領域を吸収して、フリーリストに返す。
 
 	if is_id_alive(mem_id_manager, id) == 0: return 0
 	if is_free(id): return 0//既に開放済みのブロック
@@ -207,7 +305,7 @@
 		return 1
 	}
 
-	assert next_id >= 0 //上のロジックで保証
+	assert next_id >= 0 
 
 	pattern_flag = 0
 
@@ -225,8 +323,12 @@
 	if is_free(next_id){
 		pattern_flag |= 2 ;右側がフリー
 	}
+	
 	debug_check_link_integrity "free_block pattern_flag -> " + pattern_flag
-
+	debug_check_free_list_integrity
+	
+	debug_check_memory_pool_integrity
+	logmes "削除実行前は正常　実行パターン => " + pattern_flag
 	switch pattern_flag
 	case 0 //どちらにも統合なし
 		left = offset(id)
@@ -236,17 +338,15 @@
 		
 		offset(id) = left
 		mem_size(id) = right - left
+		
 		if mem_size(id) > FREELIST_THRESHOLD{
 			//フリーリストに登録
-			class = get_class_index(mem_size(id))
-			free_list(class, free_list_num(class)) = id
-			free_list_num(class)++
-			is_free(id) = 1
+			add_to_free_list id
 			
 		}else{
+			end ;デバッグ用通るはずがない
 			//小断片なので無視し、前後を連結する
 			link_blocks prev_id, next_id
-			
 			release_id mem_id_manager, id //id返却
 		}
 	swbreak
@@ -261,7 +361,7 @@
 
 		release_id mem_id_manager, id //idは消失
 	swbreak
-	
+
 	case 2 //右にのみ統合
 		assert next_mem_id(next_id) >= 0 //フリーリストに登録されているから、さらに右がある。
 		left = offset(id)
@@ -269,12 +369,13 @@
 		if prev_id >= 0{
 			left = offset(prev_id) + mem_size(prev_id)
 		}
-		resize_free_block next_id, right - left
 		
+		resize_free_block next_id, right - left
+
+		offset(next_id) = left
 		//連結更新
 		link_blocks prev_id, next_id
 		
-		offset(next_id) = left
 
 		release_id mem_id_manager, id //idは消失
 	swbreak
@@ -286,38 +387,30 @@
 
 		resize_free_block prev_id, right - left
 
+		remove_from_free_list next_id //nextはフリーリストに存在するはずなので削除
+
 		//連結更新
 		link_blocks prev_id, next_mem_id(next_id)
-		
-		remove_from_free_list next_id //nextはフリーリストに存在するはずなので削除
 
 		//消失idを返却
 		release_id mem_id_manager, id
 		release_id mem_id_manager, next_id
-	swbreak
+		swbreak
 	swend
+	
+	;logmes "削除後のチェック中"
+	debug_check_free_list_integrity
+	;logmes "削除成功しています"
+	debug_check_memory_pool_integrity
+	logmes "プールは正常です"
 	return 1
 	
-#deffunc resize_free_block int id, int newsize
 
-	newclass = get_class_index(newsize)
-	
-	flag=""
-	if get_class_index(mem_size(id)) != newclass {
-		move_id_free_list id, newclass
-		flag = " (クラス変更)"
-	}
-	mem_size(id) = newsize
-	debug_check_link_integrity "resize_free_block" + flag
-	
-	debug_check_free_list_integrity
-	
-	return
 
 #defcfunc local get_class_index int size
 	#ifdef _debug
 	if size < 0{
-		logmes "ERROR！サイズがマイナスで呼ばれました。想定していない処理です\nコールスタックを確認して原因を特定してください" + pattern_flag + " : " + right + " : " + left
+		logmes "ERROR！サイズがマイナスで呼ばれました。想定していない処理です\nコールスタックを確認して原因を特定してください\n" + pattern_flag + " : " + right + " : " + left
 		stop
 	}
 	#endif
@@ -325,40 +418,35 @@
 	return limit(logf(size)/logf(2) - 2, 0, CLASS_NUM - 1)
 	
 #defcfunc get_class_index_by_id int id
+	if is_id_alive(mem_id_manager, id) == 0: logmes "存在しないID":stop
+	if id < 0: logmes "想定外の呼び出し":stop
 	return get_class_index(mem_size(id))
 
-#deffunc remove_from_free_list int id
+
+#deffunc move_id_free_list int id, int newsize
 
 	debug_check_free_list_integrity
-
-	class_id = get_class_index(mem_size(id))
-	repeat free_list_num(class_id)
-		if free_list(class_id, cnt) == id {
-			free_list_num(class_id)--
-			for i,cnt,free_list_num(class_id)
-				free_list(class_id,i) = free_list(class_id, i + 1)
-			next
-			break
-		}
-	loop
-	return
-
-#deffunc move_id_free_list int id, int new_class
 
 	remove_from_free_list id
-	free_list(new_class, free_list_num(new_class)) = id
-	free_list_num(new_class)++
+
+	mem_size(id) = newsize
+	
+	add_to_free_list id
 
 	debug_check_free_list_integrity
-	
 	return
 	
 #deffunc debug_check_link_integrity str lab
 
-	if get_using_count(mem_id_manager) == 0 {
+	list_count = get_block_count()
+
+	if list_count == 0 {
 		return 0
 	}
-	
+
+	//開始点捜索
+
+	count = 0; そもそものカウントチェック
 	start_point = -1
 	foreach_id mem_id_manager, vid
 		if back_mem_id(vid) == -1 {
@@ -367,50 +455,80 @@
 				return 1
 			}
 			start_point = vid
-		} 
+		}
+		count++
 	foreach_end
+
+	if count != list_count: logmes "カウントバグ":stop
 
 	if start_point == -1 {
 		logmes "[リンクチェック失敗] 開始点が見つからない：" + lab
 		return 1
 	}
-	
+
+	//開始点から最後まで到達できるか、バックリンクと循環も含めてチェック
 	count = 0
 	_prev_id = -1
-	repeat get_using_count(mem_id_manager)
-		if start_point < 0: break
+	
+	while start_point != -1
+		if back_mem_id(start_point) != _prev_id {
+			logmes "[リンクチェック失敗] " + strf("%d > (%d=%d) < %d", _prev_id, start_point, back_mem_id(start_point), start_point) + "次の前がリンクしていません\n" + lab
+			return 1
+		}
 		count++
-		if start_point != start_point && back_mem_id(start_point) != _prev_id {
-			logmes "[リンクチェック失敗] " + start_point + " の前のブロックが不正：" + lab
+		if count > list_count{
+			logmes "[リンクチェック失敗] 循環検出: " + lab
 			return 1
 		}
 		_prev_id = start_point
 		start_point = next_mem_id(start_point)
-		if start_point >= 0{
-			if back_mem_id(start_point) != _prev_id {
-				logmes "[リンクチェック失敗] " + strf("%d > (%d=%d) < %d", _prev_id, start_point, back_mem_id(start_point), start_point) + "次の前がリンクしていません\n" + lab
-				return 1
-			}
-		}
-	loop
+	wend
 	
-	//最後のブロックのチェック　(_prev_idは最後のブロックのID)
-	if _prev_id < 0 {
-		logmes "[リンクチェック失敗] 最後のブロックが不正：" + lab
-		return 1
-	}
-	if count != get_using_count(mem_id_manager) {
+	if count != list_count {
 		logmes "[リンクチェック失敗] 使用中のブロック数とリンク数が一致しない：" + lab
 		return 1
 	}
+	
 	//管理している最後のブロックIDとリンクの最後のブロックIDが一致するか確認
-	if _prev_id != last_block_id {
+	if _prev_id != last_block_id{
 		logmes "[リンクチェック失敗] 最後のブロックが不正：" + lab
 		return 1
 	}
 	
 	return 0
+	//簡易テストを描きました。　
+#deffunc debug_check_memory_pool_integrity
+	if last_block_id == -1: return
 
+	//右からチェック、ブロックがオーバーラップしたり、離れすぎていないか？
+	start_point = last_block_id
+	
+	while start_point >= 0
+		//サイズ分左に移動
+		offset_point = offset(start_point) 
+		
+		if offset_point < 0: logmes "バグ"
+		if offset(start_point) == 0: _break
+
+		pre_point = start_point
+		start_point = back_mem_id(start_point) //左のブロックに移動
+
+		if start_point < 0: logmes "左端に行方不明空間があります":_break
+
+		gap = (offset_point) - (offset(start_point) + mem_size(start_point))
+		if gap < 0{
+			logmes "オーバーラップ :: " + start_point + " <> " + pre_point + " ::\n"  + strf("(%d,%d) <-> (%d,%d)", offset(start_point), offset(start_point) + mem_size(start_point) , offset(pre_point), offset(pre_point) + mem_size(pre_point)) 
+			stop
+		}
+		if gap > FREELIST_THRESHOLD{
+			logmes "行方不明空間あり :: " + start_point + " <> " + pre_point + " ::\n"  + strf("(%d,%d) <-> (%d,%d)", offset(start_point), offset(start_point)+ mem_size(start_point) , offset(pre_point), offset(pre_point) + mem_size(pre_point)) 
+			stop
+		}
+		
+	wend
+		
+	return
+	
 #defcfunc get_used_block_count
 
 	total_ids = get_using_count(mem_id_manager) ; ← IDマネージャ全体の生存ID数
@@ -419,6 +537,7 @@
 		free_count += free_list_num(cnt)
 	loop
 	return total_ids - free_count
+	
 #defcfunc get_block_count
 	return get_using_count(mem_id_manager)
 
@@ -451,8 +570,12 @@
 
 	if try_expand_right(oldid, newsize,offset_original, size_original): return 1
 	if try_expand_left(oldid, newsize,offset_original, size_original): return 1
-
-return tryrelocate_block(oldid, newsize, offset_original, size_original)
+	result = tryrelocate_block(oldid, newsize, offset_original, size_original)
+	
+	debug_check_free_list_integrity
+	logmes "（新規ブロック作成して移動）の結果 →" + result + ": フリーリストの整合性→　OK !!" 
+	debug_check_link_integrity "拡張終了後"
+	return result
 
 #defcfunc try_expand_right int oldid, int newsize, int originaloffset, int originalsize
 
@@ -470,6 +593,7 @@ return tryrelocate_block(oldid, newsize, offset_original, size_original)
 					offset(nid) = originaloffset + newsize
 					//右のサイズ変更
 					resize_free_block nid, offset(next_mem_id(nid)) - offset(nid)
+					assert mem_size(nid) > FREELIST_THRESHOLD
 
 				}
 				debug_check_link_integrity "右側拡張成功 free"
@@ -491,39 +615,47 @@ return tryrelocate_block(oldid, newsize, offset_original, size_original)
 
 	debug_check_link_integrity "左拡張試行"
 
-	right = offset(nid)
 
 	//左側のチェック開始
 	bid = back_mem_id(oldid)
+	right = offset(next_mem_id(oldid))
 	if bid >= 0{
 		if is_free(bid){
-			if newsize <= offset(nid) - offset(bid){//拡張可能
-				//オフセットを左に詰める
-				offset(oldid) = offset(bid)
-				memcpy memory_pool, memory_pool, originalsize, offset(bid), originaloffset
-				if right - (originaloffset + newsize) > FREELIST_THRESHOLD{
+			if newsize <= right - offset(bid){//拡張可能
+			
+				//左の位置を自分のものにする
+				offset(oldid) = offset(bid) 
+				memcpy memory_pool, memory_pool, originalsize, offset(oldid), originaloffset
+				
+				if right - (originaloffset + newsize) <= FREELIST_THRESHOLD{
+					
+					remove_free_block bid //左ブロックを削除
 
+
+				}else{
+					
 					swap_adjacent_blocks oldid //隣接ブロックのリンクを入れ替え(指定IDとその左隣のブロックのリンクを入れ替える)
 
 					//左ブロックのオフセットをIDブロックの右端にセット
-					offset(bid) = left_offset + newsize
+					offset(bid) = offset(oldid) + newsize
 					//左ブロックのサイズ変更
-					resize_free_block bid, right - (originaloffset + newsize)
-
-				}else{
-					remove_free_block bid //左ブロックをフリーリストから削除
+					resize_free_block bid, right - offset(bid)
+					assert mem_size(bid) > FREELIST_THRESHOLD
+					
 				}
+				
 				debug_check_link_integrity "左側拡張成功 free"
 				return 1
-			}else{
-				remove_free_block bid
 			}
+			remove_free_block bid
+			
 		}else{
 			if newsize <= right - (offset(bid) + mem_size(bid)){ //左ブロックまでの隙間で収まる
+			
 				//オフセットを左に詰める
 				offset(oldid) = offset(bid) + mem_size(bid)
-				//メモリコピー
-				memcpy memory_pool, memory_pool, newsize, offset(oldid), originaloffset + originalsize
+				memcpy memory_pool, memory_pool, originalsize, offset(oldid), originaloffset
+				
 				debug_check_link_integrity "左側拡張成功 used"
 				return 1
 			}
@@ -587,6 +719,7 @@ return tryrelocate_block(oldid, newsize, offset_original, size_original)
 		}
 		
 	}else{
+		assert mem_size(newid) >= newsize
 		shrink_block newid, newsize
 	}
 	
@@ -610,7 +743,6 @@ return tryrelocate_block(oldid, newsize, offset_original, size_original)
 	swap offset(newid), offset(oldid)
 	swap mem_size(newid), mem_size(oldid)
 
-	assert mem_size(oldid) == newsize
 		
 	free_block newid //解放
 
@@ -621,6 +753,7 @@ return tryrelocate_block(oldid, newsize, offset_original, size_original)
 #deffunc remove_free_block int target_id
     if is_id_alive(mem_id_manager, target_id) == 0: return 0 // 無効なID
     if is_free(target_id) == 0: return 0 // 使用中ブロックの削除を許可しない
+    
     debug_check_link_integrity "remove_free_block 実行前"
     remove_from_free_list target_id // フリーリストから削除
     link_blocks back_mem_id(target_id), next_mem_id(target_id) // 前後のブロックをリンク
@@ -635,8 +768,12 @@ return 1 // 成功
 	_prev_id = back_mem_id(nowid)
 	if _prev_id < 0 : return ; 左隣がなければ何もしない
 	debug_check_link_integrity "swap_adjacent_blocks 実行前"
+
+	if is_free(nowid):logmes "想定外の処理": return
+	if is_free(_prev_id) = 0:logmes "想定外の処理": return
 	
 	// つながり（リンク情報）のみ入れ替え
+	
 	_next_id = next_mem_id(nowid)
 	link_blocks back_mem_id(_prev_id), nowid
 	link_blocks nowid, _prev_id
@@ -648,6 +785,7 @@ return 1 // 成功
 	} 
 	debug_check_link_integrity "swap_adjacent_blocks 実行後"
 	return
+	
 #deffunc link_blocks int _prev_id_, int _next_id_
     if _prev_id_ >= 0: next_mem_id(_prev_id_) = _next_id_
     if _next_id_ >= 0: back_mem_id(_next_id_) = _prev_id_
@@ -699,6 +837,7 @@ return 1 // 成功
 		
 	foreach_end
 	return
+	
 #defcfunc get_color_by_class int _class
 	switch _class
 	case 0 : return $ff6666

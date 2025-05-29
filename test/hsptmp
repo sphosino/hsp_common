@@ -4,13 +4,15 @@
 screen 0,1900,1000,,0,0
 
 mes "速度調整のスクロールバーです"
-scbaScrollbar 0, 600,30
-scbaSetrange stat, 1, 15 //1-15までの値
 scbaOnScroll *sc　//動かすたびに変数mに反映させる
-randomize
+scbaScrollbar 0, 600,30
+scbaSetrange stat, 1, 20 //1-15までの値
+scbaSetPos stat, 15
+m = 15
+randomize 123
 init_memory_pool 64 ;プールサイズ自動拡張の確認のため小さく確保
 
-m = 1
+
 repeat 
 	title"作成準備中"
 	draw_memory_pool_with_labels  100,150 * 1, idx
@@ -20,7 +22,7 @@ repeat
 	dim idlist
 	repeat 10
 		
-		size2 = 1 + rnd(40)
+		size2 = 30 + rnd(20)
 		t = get_new_block(size2)
 		idlist(cnt) = t
 		debug_check_link_integrity "作成後のリンク整合性チェック"
@@ -34,7 +36,7 @@ repeat
 		await 1000/m
 	loop
 
-
+/*
 	// 一部を書き込みしてみる（右のスペースを使い無理なら左のスペースもみる。それでも無理なら、自動的に移動と解放が行われる。）
 	title "書き込み準備中"
 	draw_memory_pool_with_labels 100,150*2,idx
@@ -64,6 +66,7 @@ repeat
 		redraw
 		await 1000/m
 	loop
+//*/
 
 	title "削除準備中"
 	draw_memory_pool_with_labels  100,150 * 3, idx
@@ -91,7 +94,7 @@ repeat
 		redraw 2
 		draw_memory_pool_with_labels  100,150 * 3, idx
 		redraw
-		if count == 7 + rnd(8): break
+		if count == 8 + rnd(8): break
 		await 1000/m
 		
 	loop
