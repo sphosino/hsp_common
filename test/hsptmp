@@ -22,7 +22,7 @@ repeat
 	dim idlist
 	repeat 10
 		
-		size2 = 30 + rnd(20)
+		size2 = 4 + rnd(20)
 		t = get_new_block(size2)
 		idlist(cnt) = t
 		debug_check_link_integrity "作成後のリンク整合性チェック"
@@ -51,7 +51,7 @@ repeat
 
 		s = ""
 		repeat 4 + rnd(3)
-		s += "にゃん"
+		s += "にゃ"
 		loop
 		
 		append_str idx(cnt), s
@@ -94,7 +94,7 @@ repeat
 		redraw 2
 		draw_memory_pool_with_labels  100,150 * 3, idx
 		redraw
-		if count == 8 + rnd(8): break
+		if count == 10 + rnd(10): break
 		await 1000/m
 		
 	loop

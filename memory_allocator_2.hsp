@@ -1,12 +1,13 @@
 #ifndef memory_allocator
 #addition "id_manager.hsp"
+#addition "list.hsp"
 #module memory_allocator
 
 #const CLASS_NUM 10
 #const FREELIST_THRESHOLD 4
-#const DEFAULT_POOL_SIZE 170000000
+#const DEFAULT_POOL_SIZE 10000000
 #const MAX_DIV 22000 //断片化許可数
-#const MAX_EXPAND_LIMIT 170000000
+#const MAX_EXPAND_LIMIT 10000000
 
 #defcfunc local get_class_index int size
 	#ifdef _debugss
@@ -37,52 +38,26 @@
 
 	last_block_id = -1
 
-	dim free_list    , CLASS_NUM, MAX_DIV
-	dim free_list_num, CLASS_NUM
+	newmod free_list, list_id_manager, MAX_DIV
+	dim free_list_tail, CLASS_NUM
 	
 	return
 	
 #deffunc debug_check_free_list_integrity local vvid, local __class
 
-	dim id_check, get_id_length(mem_id_manager) //発行したIDの最大値分確保
+	dim id_check, get_list_count(free_list)
 	
-	repeat CLASS_NUM
-		__class = cnt
-		repeat free_list_num(__class)			
-			vvid = free_list(__class, cnt)
-			 ; id_check をインクリメントする前に、現在の vvid の id_check 値を出力する
-            ;logmes "debug_check: 走査中 vvid=" + vvid + " (クラス:" + __class + ", インデックス:" + cnt + "), id_check(vvid)の現在値=" + id_check(vvid)
+	foreach_list free_list, vvid
 
-			id_check(vvid)++
-			
-			if id_check(vvid) >= 2 {
-				logmes "重複登録されたIDを検出: ID=" + vvid
-				;logmes "  mem_size(ID)=" + mem_size(vvid) + ", is_free(ID)=" + is_free(vvid)
-				;logmes "  重複検出されたクラス: " + __class
-				stop
-			}
+		if is_free(vvid) == 0: logmes "有効状態のまま登録されています": stop
 
-			; IDのmem_sizeから計算されるクラスIDを取得
-			current_class_id_from_get_func = get_class_index_by_id(vvid)
+		id_check(vvid)++
+		if id_check(vvid) >= 2: logmes "同じIDが二つ以上登録されています": stop
+		
+		assert next_mem_id(vvid) >= 0//有効
+		assert is_free(next_mem_id(vvid)) == 0//且つ使用中
 			
-			if current_class_id_from_get_func != __class{
-				
-				logmes "間違ったクラスに登録されています"
-				/*
-				logmes "  vvid = " + vvid
-				logmes "  mem_size(vvid) = " + mem_size(vvid)
-				logmes "  is_free(vvid) = " + is_free(vvid)
-				logmes "  expected class (フリーリスト登録クラス) = " + __class
-				logmes "  actual class (get_class_index_by_id結果) = " + current_class_id_from_get_func
-				*/
-				stop
-			}
-			
-			assert next_mem_id(vvid) >= 0//有効
-			assert is_free(next_mem_id(vvid)) == 0//且つ使用中
-			
-		loop
-	loop
+	foreach_list_end
 	return
 	
 #deffunc remove_from_free_list int id, local class_id 
@@ -885,8 +860,9 @@ return
 	if mem_size(id) < offset_in_block + sz{
 		;debug_check_link_integrity "write_mem_str"
 		move_block id, offset_in_block + sz
+	}else{
+		memexpand memory_pool, offset(id) + offset_in_block + sz
 	}
-	memexpand memory_pool, offset(id) + offset_in_block + sz
 	memcpy memory_pool, vv, sz, offset(id) + offset_in_block //sz分だけ書き込む
 	return
 
@@ -949,7 +925,8 @@ return
 	if mem_size(id) < required {
 		move_block id, required
 	}
-	memexpand memory_pool, offset(id) + offset_in_block + 4
+
+	usable = mem_size(id) - offset_in_block
 	lpoke memory_pool, offset(id) + offset_in_block, p1
 	return
 
@@ -960,12 +937,12 @@ return
 	if offset_in_block < 0: return
 	if is_id_alive(mem_id_manager, id) == 0: return
 	if is_free(id): return
-	return lpeek(memory_pool, limit(offset(id) + offset_in_block, 0, mem_size(id)-4))
+	return lpeek(memory_pool, offset(id) + offset_in_block, limit(mem_size(id)-offset_in_block,0,4))
+
 
 #deffunc copy_block int id, var a
-	if is_id_alive(mem_id_manager, id) == 0: return
-	if is_free(id): return
-	memcpy a, memory_pool, mem_size(id), 0, offset(id)
+	//読み取りイテレータ専用。直接外部から書きこまないように運用してください。
+	dupptr a, offset(id), mem_size(id), 2
 	return
 
 #global

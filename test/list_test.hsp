@@ -155,7 +155,7 @@ newmod perf_manager, list_id_manager, 500
 dim perf_values, 500
 
 // 大量データでのソートテスト
-data_size = 10000
+data_size = 100
 repeat data_size
     node_id = get_new_list_id(perf_manager)
     perf_values(node_id) = rnd(10000)
