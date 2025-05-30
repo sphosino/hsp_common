@@ -1,7 +1,9 @@
+// @noautoinclude - exclude from auto header list
 #ifndef generate_all_include
 #packopt name "generate_headers"
 #module
-#define savename "all_include"
+#define SAVENAME "all_include"
+#define SKIP_MARKER "@noautoinclude" //この文字列が先頭行に含まれている場合そのファイルは含まれない
 #deffunc generate_all_include str dirname
 
 	startdir = dir_cur
@@ -21,11 +23,20 @@
 			if t == __FILE__: continue //このファイル無視
 			if instr(t,0,"test") >= 0: continue
 			if instr(t,0,"logmes") >= 0: continue
+
+			; 除外マーカーが先頭にあるか確認
+			notesel file_data
+				noteload t, 256
+				noteget header_line, 0
+			noteunsel
+			if instr(header_line, 0, SKIP_MARKER) >= 0 : continue
+			
+
 			data += "\n" + strf("#include \"%s\"", t)
 		loop
 
 		notesel data
-			notesave savename
+			notesave SAVENAME
 		noteunsel
 		
 		dirlist s,"*",5
