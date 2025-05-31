@@ -5,10 +5,22 @@ screen 0,1900,1000,,0,0
 
 mes "速度調整のスクロールバーです"
 scbaOnScroll *sc　//動かすたびに変数mに反映させる
+
 scbaScrollbar 0, 600,30
-scbaSetrange stat, 1, 20 //1-15までの値
-scbaSetPos stat, 15
-m = 15
+makeID = stat
+scbaSetrange makeID, 1, 20 //1-15までの値
+scbaSetPos makeID, 15
+m1 = 15
+scbaScrollbar 0,600,30
+writeID = stat
+scbaSetrange writeID, 1, 20
+scbaSetPos writeID,15
+m2 = 15
+scbaScrollbar 0, 600, 30
+delID = stat
+scbaSetrange delID, 1, 20
+scbaSetPos delID, 15
+m3 = 15
 randomize 123
 init_memory_pool 64 ;プールサイズ自動拡張の確認のため小さく確保
 
@@ -16,7 +28,7 @@ init_memory_pool 64 ;プールサイズ自動拡張の確認のため小さく確保
 repeat 
 	title"作成準備中"
 	draw_memory_pool_with_labels  100,150 * 1, idx
-	await 2000/m
+	await 2000/m1
 	
 	title"作成開始"
 	dim idlist
@@ -30,17 +42,15 @@ repeat
 			draw_memory_pool_with_labels 100,150 * 1, idlist
 			stop
 		}
-		redraw 2
 		draw_memory_pool_with_labels 100,150 * 1,idx
-		redraw
-		await 1000/m
+		await 1000/m1
 	loop
 
 ;/*
 	// 一部を書き込みしてみる（右のスペースを使い無理なら左のスペースもみる。それでも無理なら、自動的に移動と解放が行われる。）
 	title "書き込み準備中"
 	draw_memory_pool_with_labels 100,150*2,idx
-	await 2000/m
+	await 2000/m2
 	
 	title "書き込み開始"
 	dim idx
@@ -61,16 +71,14 @@ repeat
 			draw_memory_pool_with_labels  100,150 * 2, idx
 			stop
 		}
-		redraw 2
 		draw_memory_pool_with_labels  100,150 * 2, idx
-		redraw
-		await 1000/m
+		await 1000/m2
 	loop
 //*/
 
 	title "削除準備中"
 	draw_memory_pool_with_labels  100,150 * 3, idx
-	await 2000/m
+	await 2000/m3
 	
 	title "削除開始"
 	dim idx
@@ -91,15 +99,23 @@ repeat
 			draw_memory_pool_with_labels  100,150 * 3, idx
 			stop
 		}
-		redraw 2
 		draw_memory_pool_with_labels  100,150 * 3, idx
-		redraw
 		if count == 10 + rnd(10): break
-		await 1000/m
+		await 1000/m3
 		
 	loop
 loop
 
 *sc
-	m = lparam
+	switch wparam
+	case makeID
+	m1 = lparam
+	swbreak
+	case writeID
+	m2 = lparam
+	swbreak
+	case delID
+	m3 = lparam
+	swbreak
+	swend
 	return

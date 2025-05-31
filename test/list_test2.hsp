@@ -1,4 +1,8 @@
 #include "../list.hsp"
+
+#undef mes
+#define mes(%1): mes@hsp %1:logmes %1
+
 // テスト結果表示用
 test_count = 0
 pass_count = 0
@@ -108,7 +112,7 @@ swap_id2 = get_new_list_id(swap_test) : swap_values(swap_id2) = 200
 swap_id3 = get_new_list_id(swap_test) : swap_values(swap_id3) = 300
 
 // ID1とID3を入れ替え
-それぞれ任意の位置の二つのIDを入れ替える swap_test, swap_id1, swap_id3
+swap_left_right swap_test, swap_id1, swap_id3
 
 // 入れ替え後の順序確認
 first_next = get_next_id(swap_test, 0)  // TOPNODEの次
