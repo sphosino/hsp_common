@@ -3,7 +3,9 @@
 
 #const DEFAULT_SIZE 32
 #const EXP_RATE 2.0
+#ifndef ceil
 #define ctype ceil(%1) ((%1 > int(%1)) + %1)
+#endif
 
 #modinit int p1
 
@@ -74,12 +76,15 @@
 	memcpy a, used_list, used_list_num << 2
 	return used_list_num
 
+//現在発行中のID数
 #modcfunc get_using_count
 	return used_list_num
-	
+
+//確保しているサイズ
 #modcfunc get_id_length
 	return length(id_position_in_used_list)
 
+//発行したことのある最大のID番号
 #modcfunc get_max_id
 	return using_max - 1
 	
@@ -89,21 +94,3 @@
 #define global foreach_end %tforeach_id loop
 
 #endif
-
-#if 0
-
-randomize
-newmod a,id_manager
-
-repeat 5
-tmp = get_new_id(a)
-loop
-
-repeat 3
-release_id a, rnd(get_using_count(a))
-loop
-
-foreach_id a, f
-	mes f
-foreach_end
-#endif 

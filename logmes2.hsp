@@ -40,7 +40,9 @@
 	*main
 		if selnum != pre_selnum && selnum != -1{
 			pre_selnum = selnum
-			logmes@hsp strf("ƒtƒ@ƒCƒ‹–¼y%sz: s”Ô†y%sz", logdata(1, selnum), logdata(2, selnum))
+			logstr = strf("ƒtƒ@ƒCƒ‹–¼y%sz: s”Ô†y%sz", logdata(1, selnum), logdata(2, selnum))
+			logmes@hsp logstr
+			title logstr
 		}
 		await 17
 		goto*main
