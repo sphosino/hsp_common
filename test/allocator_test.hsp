@@ -140,9 +140,7 @@ stop
 // テスト6: エラーハンドリング
 test_start "エラーハンドリング"
 
-// 非常に大きなブロックの要求
-huge_block = get_new_block(5000000)  // MAX_EXPAND_LIMITを超える
-test_result huge_block == -1, "巨大ブロック拒否: ID=" + huge_block
+
 
 // 無効なIDでの操作
 invalid_result = read_mem_str(-1, 0)

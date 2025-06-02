@@ -1,0 +1,13 @@
+#module allocator_iter blockid, index, gap
+
+#modinit int id, int _gap
+	blockid = id
+	index = get_block_offset(id) - _gap
+	gap = _gap
+	return
+#modfunc get_next
+	index += gap
+	return apeek(index)
+
+
+#global

@@ -79,6 +79,9 @@
 	
 #modcfunc get_id_length
 	return length(id_position_in_used_list)
+
+#modcfunc get_max_id
+	return using_max - 1
 	
 #global
 

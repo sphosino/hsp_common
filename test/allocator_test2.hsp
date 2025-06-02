@@ -2,13 +2,13 @@
 #include "nodmod/scrollbarmodule.hsp"
 #addition "WrapCall.as"
 screen 0,1900,1000,,0,0
-
+randomize
 mes "速度調整のスクロールバーです"
-scbaOnScroll *sc　//動かすたびに変数mに反映させる
+scbaOnScroll *sc　//動かすたびにジャンプするラベル
 
 scbaScrollbar 0, 600,30
 makeID = stat
-scbaSetrange makeID, 1, 20 //1-15までの値
+scbaSetrange makeID, 1, 20 //1-20までの値
 scbaSetPos makeID, 15
 m1 = 15
 scbaScrollbar 0,600,30
@@ -21,9 +21,10 @@ delID = stat
 scbaSetrange delID, 1, 20
 scbaSetPos delID, 15
 m3 = 15
-randomize 123
-init_memory_pool 64 ;プールサイズ自動拡張の確認のため小さく確保
 
+randomize 123
+
+init_memory_pool 200;プールサイズ自動拡張の確認のため小さく確保
 
 repeat 
 	title"作成準備中"
@@ -34,7 +35,7 @@ repeat
 	dim idlist
 	repeat 10
 		
-		size2 = 4 + rnd(20)
+		size2 = 4 + rnd(60)
 		t = get_new_block(size2)
 		idlist(cnt) = t
 		debug_check_link_integrity "作成後のリンク整合性チェック"
@@ -42,14 +43,14 @@ repeat
 			draw_memory_pool_with_labels 100,150 * 1, idlist
 			stop
 		}
-		draw_memory_pool_with_labels 100,150 * 1,idx
+		draw_memory_pool_with_labels 100,150 * 1,idlist
 		await 1000/m1
 	loop
 
 ;/*
 	// 一部を書き込みしてみる（右のスペースを使い無理なら左のスペースもみる。それでも無理なら、自動的に移動と解放が行われる。）
 	title "書き込み準備中"
-	draw_memory_pool_with_labels 100,150*2,idx
+	draw_memory_pool_with_labels 100,150*2,idlist
 	await 2000/m2
 	
 	title "書き込み開始"
@@ -60,7 +61,7 @@ repeat
 		// 拡張を引き起こすように長い文字列を書く
 
 		s = ""
-		repeat 4 + rnd(3)
+		repeat 3 + rnd(3)
 		s += "にゃ"
 		loop
 		
@@ -84,10 +85,8 @@ repeat
 	dim idx
 	count = 0
 	in = 0
-	repeat 20
-		
-		c = get_block_count()
-		if c = 0 : break
+	c = get_block_max_id() + 1
+	repeat 30
 		
 		idx(in) = rnd(c)
 		free_block idx(in)
@@ -100,7 +99,7 @@ repeat
 			stop
 		}
 		draw_memory_pool_with_labels  100,150 * 3, idx
-		if count == 10 + rnd(10): break
+		if count == 13 + rnd(10): break
 		await 1000/m3
 		
 	loop

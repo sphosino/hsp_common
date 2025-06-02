@@ -2,17 +2,18 @@
 #addition "id_manager.hsp"
 #module memory_allocator
 
+; #define DEBUG_ALLOCATOR
+
 #const CLASS_NUM 10
 #const FREELIST_THRESHOLD 4
 #const DEFAULT_POOL_SIZE 180000000
 #const MAX_DIV 25000 //総ブロック数
 #const MAX_EXPAND_LIMIT 180000000
 
-#const IS_FREE_SENTINEL -1
 #const OFFSET_SENTINEL -1234567
 #const MEM_SENTINEL_SIZE -9999999
 
-#enum STATE_SENTINEL -1
+#enum STATE_SENTINEL 0
 #enum STATE_USED
 #enum STATE_FREE
 
@@ -63,7 +64,7 @@
 	return
 
 #defcfunc local get_class_index int size
-	#ifdef _debug
+	#ifdef DEBUG_ALLOCATOR
 	if size < 0{
 		logmes "ERROR！サイズがマイナスで呼ばれました。想定していない処理です\nコールスタックを確認して原因を特定してください\n" + pattern_flag + " : " + right + " : " + left
 		stop
@@ -86,7 +87,7 @@
 		if mem_size(sentinel(cnt)) != MEM_SENTINEL_SIZE: logmes "番兵が壊れています": stop
 	loop
 
-	dim id_check, get_id_length(mem_id_manager) //発行したIDの最大値分確保
+	dim id_check, get_max_id(mem_id_manager) //発行したIDの最大値分確保
 
 	sentinel_count = 0
 	start_point = sentinel(0)
@@ -111,13 +112,24 @@
 			}
 		}
 
-		if offset(start_point) != OFFSET_SENTINEL{
-			//番兵以外のノードには以下のルールを適用
+		switch block_state(start_point)
+
+		case STATE_FREE
 			assert next_mem_id(start_point) >= 0
 			assert block_state(next_mem_id(start_point)) == STATE_USED
-		}else{
+		swbreak
+		case STATE_SENTINEL
 			sentinel_count++
-		}
+		swbreak
+		case STATE_USED
+			logmes "使用中のブロックがフリーリストに入っています\n ブロック番号→" + start_point
+			stop
+		swbreak
+		default
+			logmes "不明なブロックがフリーリストに入っています\n ブロック番号→" + start_point + "\n ブロックタイプ→" + block_stat(start_point)
+			stop
+		swbreak
+		swend
 			
 		start_point = next_free_list(start_point)
 	wend
@@ -309,7 +321,6 @@
 	return newid
 
 
-	
 #deffunc free_block int id
 
 	//使用中のブロックを解放する。左右の領域を吸収して、フリーリストに返す。
@@ -433,9 +444,12 @@
 		swbreak
 	swend
 
-	;debug_check_link_integrity "free_block pattern_flag -> " + pattern_flag
-	;debug_check_free_list_integrity
-	;debug_check_memory_pool_integrity
+	#ifdef DEBUG_ALLOCATOR
+	debug_check_link_integrity "free_block pattern_flag -> " + pattern_flag
+	debug_check_free_list_integrity
+	debug_check_memory_pool_integrity
+	#endif
+	
 	return 1
 	
 #deffunc debug_check_link_integrity str lab
@@ -451,7 +465,7 @@
 	count = 0; そもそものカウントチェック
 	start_point = -1
 	foreach_id mem_id_manager, vid
-		if mem_size(vid) == MEM_SENTINEL_SIZE: continue //番兵スキップ
+		if block_state(vid) == STATE_SENTINEL: continue //番兵スキップ
 		if back_mem_id(vid) == -1{
 			if start_point != -1 {
 				logmes "[リンクチェック失敗] 開始点が複数見つかった：" + lab
@@ -462,7 +476,10 @@
 		count++
 	foreach_end
 
-	if count != list_count: logmes "カウントバグ":stop
+	if count != list_count{
+		logmes "カウントバグ"
+		stop
+	}
 
 	if start_point == -1 {
 		logmes "[リンクチェック失敗] 開始点が見つからない：" + lab
@@ -478,16 +495,16 @@
 			logmes "[リンクチェック失敗] " + strf("%d > (%d=%d) < %d", __prev_id, start_point, back_mem_id(start_point), start_point) + "次の前がリンクしていません\n" + lab
 			return 1
 		}
-		count++
 		if count > list_count{
 			logmes "[リンクチェック失敗] 循環検出: " + lab
 			return 1
 		}
 		__prev_id = start_point
 		start_point = next_mem_id(start_point)
+		count++
 	wend
 	
-	if count != list_count {
+	if count != list_count{
 		logmes "[リンクチェック失敗] 使用中のブロック数とリンク数が一致しない：" + lab
 		return 1
 	}
@@ -507,8 +524,8 @@
 	start_point = last_block_id
 	
 	while start_point >= 0
-		//サイズ分左に移動
-		offset_point = offset(start_point) 
+	
+		offset_point = offset(start_point)
 		
 		if offset_point < 0{
 			logmes "オフセットが範囲外です（マイナス）"
@@ -539,13 +556,6 @@
 	wend
 		
 	return
-	
-#defcfunc get_used_block_count
-
-	return total_ids - free_count
-	
-#defcfunc get_block_count
-	return get_using_count(mem_id_manager) - CLASS_NUM //番兵に発行したID数分引く
 
 #deffunc move_block int oldid, int newsize
 	/*
@@ -576,9 +586,8 @@
 
 	if try_expand_right(oldid, newsize,offset_original, size_original): return 1
 	if try_expand_left(oldid, newsize,offset_original, size_original): return 1
-	result = tryrelocate_block(oldid, newsize, offset_original, size_original)
 	
-	return result
+	return tryrelocate_block(oldid, newsize, offset_original, size_original)
 
 #defcfunc try_expand_right int oldid, int newsize, int originaloffset, int originalsize
 
@@ -696,10 +705,12 @@
 	
 	*/
 
-	;debug_check_link_integrity "move_block 移動前"
+	assert next_mem_id(oldid) >= 0
+	assert block_state(next_mem_id(oldid)) == STATE_USED
 	
 	//左の隙間計算
 	if back_mem_id(oldid) >= 0{
+		assert block_state(back_mem_id(oldid)) == STATE_USED 
 		//左側のブロックがある場合
 		offset(oldid) = offset(back_mem_id(oldid)) + mem_size(back_mem_id(oldid))
 	}else{
@@ -796,9 +807,10 @@ return 1 // 成功
 	#const PIXEL 1
 	redraw 2
 	color 0,255,0 ; 使われておらず、フリーリストにも登録されていない
-	boxf 0,yoffset,ginfo(12),yoffset+ysize
+	boxf 0,yoffset, limit(get_memory_pool_size(),,ginfo(12)),yoffset+ysize
 	
 	foreach_id mem_id_manager, vid
+	
 		if block_state(vid) == STATE_SENTINEL: continue
 		ofs = offset(vid)
 		_size = mem_size(vid)
@@ -870,15 +882,27 @@ return
 
 #defcfunc get_block_offset int id
 	return offset(id)
-	
+
 #defcfunc get_block_size int id
     return mem_size(id)
-    
+
+//ブロックが操作可能かどうか
+#defcfunc is_usable_block int id
+	return block_state(id) == STATE_USED
+
+//メモリプール上に存在するブロックの数（空き含む）
+#defcfunc get_block_count
+	return get_using_count(mem_id_manager) - CLASS_NUM
+
+//発行した最大のID番号
+#defcfunc get_block_max_id
+	return get_max_id(mem_id_manager)
+
 #defcfunc get_memory_pool_size
 	return varsize(memory_pool)
+	
 #defcfunc get_memory_pool_size_max
 	return MAX_EXPAND_LIMIT
-
 
 ///////////////////	
 //////操作API//////
@@ -893,7 +917,6 @@ return
 	sz = strlen(value)
 	vv = value
 	if mem_size(id) < offset_in_block + sz{
-		;debug_check_link_integrity "write_mem_str"
 		move_block id, offset_in_block + sz
 	}
 	memexpand memory_pool, offset(id) + offset_in_block + sz
@@ -904,21 +927,18 @@ return
 	if offset_in_block < 0: return ""
 	if is_id_alive(mem_id_manager, id) == 0: return ""
 	if block_state(id) != STATE_USED: return ""
-
 	copy_size = mem_size(id) - offset_in_block
-	if copy_size <= 0: return ""
 	
-	sdim s, mem_size(id)
-	memcpy s, memory_pool, copy_size, 0, offset(id) + offset_in_block
-
+	dupptr s, varptr(memory_pool) + offset(id) + offset_in_block,mem_size(id), 2
 	return strmid(s, 0, copy_size) //ごみを除く
 	
 #define global append_str(%1,%2 = "", %3 = -1) _append_str %1,%2,%3
-#deffunc _append_str int id, str value, int offset_in_block
-	if offset_in_block == -1{
+#deffunc _append_str int id, str value, int write_pos
+	if write_pos == -1{
 		write_mem_str id, read_mem_str(id) + value
 	}else{
-		write_mem_str id, value, offset_in_block
+		tmp = read_mem_str(id)
+		write_mem_str id, strmid(tmp,0,write_pos) + value + strmid(tmp, write_pos, 65535)
 	}
 	return
 
@@ -972,8 +992,9 @@ return
 	return lpeek(memory_pool, limit(offset(id) + offset_in_block, 0, mem_size(id)-4))
 
 
-#deffunc copy_block int id, var a //イテレータ専用　　（安全チェック付きは→peek_block）
-	memcpy a, memory_pool, mem_size(id), 0, offset(id)
+#deffunc copy_block int id, var a
+	;memcpy a, memory_pool, mem_size(id), 0, offset(id)
+	dupptr a,varptr(memory_pool) + offset(id), mem_size(id), 2
 	return
 
 #global
