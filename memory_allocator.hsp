@@ -39,7 +39,7 @@
 
 	pre_sentinel = -1
 	repeat CLASS_NUM
-		sentinel(cnt) = get_new_id(mem_id_manager) + 1 //番兵用のIDを確保
+		sentinel(cnt) = get_new_id(mem_id_manager) //番兵用のIDを確保
 
 		back_free_list(sentinel(cnt)) = pre_sentinel
 		if cnt{
@@ -87,7 +87,7 @@
 		if mem_size(sentinel(cnt)) != MEM_SENTINEL_SIZE: logmes "番兵が壊れています": stop
 	loop
 
-	dim id_check, get_max_id(mem_id_manager) //発行したIDの最大値分確保
+	dim id_check, get_max_id(mem_id_manager) + 1 //発行したIDの最大値分確保
 
 	sentinel_count = 0
 	start_point = sentinel(0)
