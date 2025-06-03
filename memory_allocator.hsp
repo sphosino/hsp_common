@@ -7,7 +7,7 @@
 #const CLASS_NUM 5
 #const FREELIST_THRESHOLD 32
 #const DEFAULT_POOL_SIZE 180000000
-#const MAX_DIV 25000 //‘ƒuƒƒbƒN”
+#const MAX_DIV 25000 //ç·ãƒ–ãƒ­ãƒE‚¯æ•°
 #const MAX_EXPAND_LIMIT 180000000
 
 #const OFFSET_SENTINEL -1234567
@@ -25,11 +25,11 @@
 		sdim memory_pool, size
 	}
 	
-	dim offset, MAX_DIV //ƒƒ‚ƒŠƒv[ƒ‹ã‚ÌƒIƒtƒZƒbƒg
-	dim mem_size, MAX_DIV //ƒƒ‚ƒŠ‚ÌƒTƒCƒY
-	dim block_state, MAX_DIV //‚±‚ÌƒuƒƒbƒN‚ª‹ó‚«‚©‚Ç‚¤‚©
-	dim back_mem_id, MAX_DIV@//‘O‚ÌƒuƒƒbƒNid
-	dim next_mem_id, MAX_DIV@//Ÿ‚ÌƒuƒƒbƒNid
+	dim offset, MAX_DIV //ãƒ¡ãƒ¢ãƒªãƒ—ãEãƒ«ä¸ŠãEã‚ªãƒ•ã‚»ãƒEƒˆ
+	dim mem_size, MAX_DIV //ãƒ¡ãƒ¢ãƒªã®ã‚µã‚¤ã‚º
+	dim block_state, MAX_DIV //ã“ãEãƒ–ãƒ­ãƒE‚¯ãŒç©ºãã‹ã©ãE‹
+	dim back_mem_id, MAX_DIVã€€//å‰ãEãƒ–ãƒ­ãƒE‚¯id
+	dim next_mem_id, MAX_DIVã€€//æ¬¡ã®ãƒ–ãƒ­ãƒE‚¯id
 
 	dim next_free_list, MAX_DIV
 	dim back_free_list, MAX_DIV
@@ -39,7 +39,7 @@
 
 	pre_sentinel = -1
 	repeat CLASS_NUM
-		sentinel(cnt) = get_new_id(mem_id_manager) //”Ô•º—p‚ÌID‚ğŠm•Û
+		sentinel(cnt) = get_new_id(mem_id_manager) //ç•ªå…µç”¨ã®IDã‚’ç¢ºä¿E
 
 		back_free_list(sentinel(cnt)) = pre_sentinel
 		if cnt{
@@ -58,7 +58,7 @@
 	next_free_list(sentinel(CLASS_NUM-1)) = -1
 
 
-	//ÅŒã‚ÌƒuƒƒbƒNŠÇ—•Ï”
+	//æœ€å¾ŒãEãƒ–ãƒ­ãƒE‚¯ç®¡çE¤‰æ•°
 	last_block_id = -1
 	
 	return
@@ -66,7 +66,7 @@
 #defcfunc local get_class_index int size
 	#ifdef DEBUG_ALLOCATOR
 	if size < 0{
-		logmes "ERRORIƒTƒCƒY‚ªƒ}ƒCƒiƒX‚ÅŒÄ‚Î‚ê‚Ü‚µ‚½B‘z’è‚µ‚Ä‚¢‚È‚¢ˆ—‚Å‚·\nƒR[ƒ‹ƒXƒ^ƒbƒN‚ğŠm”F‚µ‚ÄŒ´ˆö‚ğ“Á’è‚µ‚Ä‚­‚¾‚³‚¢\n" + pattern_flag + " : " + right + " : " + left
+		logmes "ERROREã‚µã‚¤ã‚ºãŒãEã‚¤ãƒŠã‚¹ã§å‘¼ã°ã‚Œã¾ã—ãŸã€‚æƒ³å®šã—ã¦ãEªãEEçE§ã™\nã‚³ãƒ¼ãƒ«ã‚¹ã‚¿ãƒE‚¯ã‚’ç¢ºèªã—ã¦åŸå› ã‚’ç‰¹å®šã—ã¦ãã ã•ã„\n" + pattern_flag + " : " + right + " : " + left
 		stop
 	}
 	#endif
@@ -78,16 +78,17 @@
 	
 #deffunc debug_check_free_list_integrity
 
-	//”Ô•º’P•iŒŸ¸iŒÅ’è‚Ìî•ñ‚ª‚¢‚¶‚ç‚ê‚Ä‚¢‚È‚¢‚©Hj
+	//ç•ªå…µå˜å“æ¤œæŸ»Eˆå›ºå®šãEæƒE ±ãŒã„ã˜ã‚‰ã‚Œã¦ãEªãE‹EŸï¼E
 	repeat CLASS_NUM
-		if BLOCK_STATE(sentinel(cnt)) != STATE_SENTINEL: logmes "”Ô•º‚ª‰ó‚ê‚Ä‚Ü‚·": stop
-		if back_mem_id(sentinel(cnt)) != -1: logmes "”Ô•º‚ª‰ó‚ê‚Ä‚¢‚Ü‚·": stop
-		if next_mem_id(sentinel(cnt)) != -1: logmes "”Ô•º‚ª‰ó‚ê‚Ä‚¢‚Ü‚·": stop
-		if offset(sentinel(cnt)) != OFFSET_SENTINEL: logmes "”Ô•º‚ª‰ó‚ê‚Ä‚¢‚Ü‚·": stop
-		if mem_size(sentinel(cnt)) != MEM_SENTINEL_SIZE: logmes "”Ô•º‚ª‰ó‚ê‚Ä‚¢‚Ü‚·": stop
+		if BLOCK_STATE(sentinel(cnt)) != STATE_SENTINEL: logmes "ç•ªå…µãŒå£Šã‚Œã¦ã¾ãE: stop
+		if back_mem_id(sentinel(cnt)) != -1: logmes "ç•ªå…µãŒå£Šã‚Œã¦ãE¾ãE: stop
+		if next_mem_id(sentinel(cnt)) != -1: logmes "ç•ªå…µãŒå£Šã‚Œã¦ãE¾ãE: stop
+		if offset(sentinel(cnt)) != OFFSET_SENTINEL: logmes "ç•ªå…µãŒå£Šã‚Œã¦ãE¾ãE: stop
+		if mem_size(sentinel(cnt)) != MEM_SENTINEL_SIZE: logmes "ç•ªå…µãŒå£Šã‚Œã¦ãE¾ãE: stop
 	loop
 
 	dim id_check, get_max_id(mem_id_manager) + 1 //”­s‚µ‚½ID‚ÌÅ‘å’l•ªŠm•Û
+
 
 	sentinel_count = 0
 	start_point = sentinel(0)
@@ -95,19 +96,19 @@
 
 		id_check(start_point)++
 		if id_check(start_point) >= 2{
-			logmes "d•¡“o˜^‚ğ”­Œ©‚µ‚Ü‚µ‚½"
+			logmes "é‡è¤E™»éŒ²ã‚’ç™ºè¦‹ã—ã¾ã—ãŸ"
 			stop
 		}
 
 		if next_free_list(start_point) >= 0 {
 			if back_free_list(next_free_list(start_point)) != start_point {
-				logmes "next¨back ‚ªˆê’v‚µ‚Ü‚¹‚ñ at ID=" + start_point
+				logmes "nextâ†’back ãŒä¸€è‡´ã—ã¾ã›ã‚“ at ID=" + start_point
 				stop
 			}
 		}
 		if back_free_list(start_point) >= 0 {
 			if next_free_list(back_free_list(start_point)) != start_point {
-				logmes "back¨next ‚ªˆê’v‚µ‚Ü‚¹‚ñ at ID=" + start_point
+				logmes "backâ†’next ãŒä¸€è‡´ã—ã¾ã›ã‚“ at ID=" + start_point
 				stop
 			}
 		}
@@ -122,11 +123,11 @@
 			sentinel_count++
 		swbreak
 		case STATE_USED
-			logmes "g—p’†‚ÌƒuƒƒbƒN‚ªƒtƒŠ[ƒŠƒXƒg‚É“ü‚Á‚Ä‚¢‚Ü‚·\n ƒuƒƒbƒN”Ô†¨" + start_point
+			logmes "ä½¿ç”¨ä¸­ã®ãƒ–ãƒ­ãƒE‚¯ãŒãƒ•ãƒªãƒ¼ãƒªã‚¹ãƒˆã«å…¥ã£ã¦ãE¾ã™\n ãƒ–ãƒ­ãƒE‚¯ç•ªå·â†E + start_point
 			stop
 		swbreak
 		default
-			logmes "•s–¾‚ÈƒuƒƒbƒN‚ªƒtƒŠ[ƒŠƒXƒg‚É“ü‚Á‚Ä‚¢‚Ü‚·\n ƒuƒƒbƒN”Ô†¨" + start_point + "\n ƒuƒƒbƒNƒ^ƒCƒv¨" + block_stat(start_point)
+			logmes "ä¸æEãªãƒ–ãƒ­ãƒE‚¯ãŒãƒ•ãƒªãƒ¼ãƒªã‚¹ãƒˆã«å…¥ã£ã¦ãE¾ã™\n ãƒ–ãƒ­ãƒE‚¯ç•ªå·â†E + start_point + "\n ãƒ–ãƒ­ãƒE‚¯ã‚¿ã‚¤ãƒ—âE" + block_stat(start_point)
 			stop
 		swbreak
 		swend
@@ -135,7 +136,7 @@
 	wend
 
 	if sentinel_count != CLASS_NUM{
-		logmes "ƒtƒŠ[ƒŠƒXƒg“à‚Ì”Ô•º‚Ì”‚ªˆÙí‚Å‚·\n expected = " + CLASS_NUM + "\n actual = " + sentinel_count
+		logmes "ãƒ•ãƒªãƒ¼ãƒªã‚¹ãƒˆåEã®ç•ªå…µã®æ•°ãŒç•°å¸¸ã§ã™\n expected = " + CLASS_NUM + "\n actual = " + sentinel_count
 		stop
 	}
 
@@ -143,12 +144,12 @@
 	
 #deffunc remove_from_free_list int id, local class_id
 
-	//ƒtƒŠ[ƒŠƒXƒg‚©‚çíœ‚·‚éA‚»‚ê‚¾‚¯‚È‚Ì‚ÅA‘S‘Ì‚Ì‘OŒã‚ÌŒ‹‡‚ÍŒÄ‚Ño‚µŒ³‚Ås‚¤‚±‚ÆB
+	//ãƒ•ãƒªãƒ¼ãƒªã‚¹ãƒˆã‹ã‚‰å‰Šé™¤ã™ã‚‹ã€ãã‚Œã ã‘ãªã®ã§ã€åEä½“ãEå‰å¾ŒãEçµåˆã¯å‘¼ã³å‡ºã—åEã§è¡Œã†ã“ã¨ã€E
 	if block_state(id) != STATE_FREE {
 		if block_state(id) == STATE_SENTINEL {
-			logmes "”Ô•º‚ğíœ‚µ‚æ‚¤‚Æ‚µ‚Ü‚µ‚½III"
+			logmes "ç•ªå…µã‚’å‰Šé™¤ã—ã‚ˆãE¨ã—ã¾ã—ãŸEE¼E¼E
 		} else {
-			logmes "g—p’†ƒuƒƒbƒN‚ğíœ‚µ‚æ‚¤‚Æ‚µ‚Ü‚µ‚½"
+			logmes "ä½¿ç”¨ä¸­ãƒ–ãƒ­ãƒE‚¯ã‚’å‰Šé™¤ã—ã‚ˆãE¨ã—ã¾ã—ãŸ"
 		}
 		stop
 	}
@@ -160,25 +161,25 @@
 	
 #deffunc resize_free_block int id, int newsize
 
-	//w’è‚³‚ê‚½ƒtƒŠ[ƒuƒƒbƒN‚ÌƒTƒCƒY‚ğ•ÏX‚·‚é
+	//æŒE®šã•ã‚ŒãŸãƒ•ãƒªãƒ¼ãƒ–ãƒ­ãƒE‚¯ã®ã‚µã‚¤ã‚ºã‚’å¤‰æ›´ã™ã‚‹
 
 	if block_state(id) != STATE_FREE{
-		logmes "ƒtƒŠ[ƒuƒƒbƒN‚Å‚È‚¢ƒuƒƒbƒN‚Å‚·!!yresize_free_blockz"
+		logmes "ãƒ•ãƒªãƒ¼ãƒ–ãƒ­ãƒE‚¯ã§ãªãEƒ–ãƒ­ãƒE‚¯ã§ãE!ã€resize_free_blockã€E
 		return
 	}
 	
 	_newclass = get_class_index(newsize)
 
 	if get_class_index_by_id(id) == _newclass {
-		//ƒNƒ‰ƒX•Ï“®‚È‚µ
+		//ã‚¯ãƒ©ã‚¹å¤‰å‹•ãªãE
 		mem_size(id) = newsize
 		return
 	}
 	
-	//íœ‚µ‚Ä
+	//å‰Šé™¤ã—ã¦
 	remove_from_free_list id
 
-	//V‚½‚ÈƒTƒCƒY‚ÉXV‚µ‚ÄÄ“o˜^
+	//æ–°ãŸãªã‚µã‚¤ã‚ºã«æ›´æ–°ã—ã¦å†ç™»éŒ²
 	mem_size(id) = newsize
 	add_to_free_list id
 	
@@ -190,7 +191,7 @@
 
 	class_top = sentinel( get_class_index(mem_size(id)) )
 
-	//id‚ğŠ„‚è‚Ü‚¹‚é
+	//idã‚’å‰²ã‚Šè¾¼ã¾ã›ã‚‹
 	link_free_list id, next_free_list(class_top)
 	link_free_list class_top, id
 
@@ -202,12 +203,12 @@
 	
 #defcfunc get_free_block int size
 
-	//’T‚µ‚ÄŒ©‚Â‚©‚Á‚½‚çæ‚èo‚·
-	//w’èƒTƒCƒY‚ÌƒNƒ‰ƒXˆÈã‚Ì‹ó‚«ƒuƒƒbƒN‚ğ’T‚·‚æ
+	//æ¢ã—ã¦è¦‹ã¤ã‹ã£ãŸã‚‰å–ã‚Šå‡ºãE
+	//æŒE®šã‚µã‚¤ã‚ºã®ã‚¯ãƒ©ã‚¹ä»¥ä¸ŠãEç©ºããƒ–ãƒ­ãƒE‚¯ã‚’æ¢ã™ã‚ˆ
 	
 	start_node = next_free_list(sentinel(get_class_index(size)))
 	
-	//ŒŸõŠJnAŠeƒNƒ‰ƒX‚Ì”Ô•º‚ÌƒTƒCƒY‚Íƒ}ƒCƒiƒX‚È‚Ì‚ÅƒŠƒXƒg‚ÌÅŒã‚Ü‚Å‚¢‚¯‚éB
+	//æ¤œç´¢é–‹å§‹ã€å„ã‚¯ãƒ©ã‚¹ã®ç•ªå…µã®ã‚µã‚¤ã‚ºã¯ãƒã‚¤ãƒŠã‚¹ãªã®ã§ãƒªã‚¹ãƒˆãEæœ€å¾Œã¾ã§ãE‘ã‚‹ã€E
 
 	while start_node >= 0 
 		if mem_size(start_node) >= size{
@@ -225,7 +226,7 @@
 	
 #deffunc shrink_block int target_id, int size
 
-	//—LŒø‚ÈƒuƒƒbƒN‚ğw’èƒTƒCƒY‚Ék¬‚·‚é(’Pƒk¬‚È‚Ì‚Å“à—e‚ªí‚ç‚ê‚é‚±‚Æ‚à‚ ‚é)
+	//æœ‰åŠ¹ãªãƒ–ãƒ­ãƒE‚¯ã‚’æŒ‡å®šã‚µã‚¤ã‚ºã«ç¸®å°ã™ã‚Eå˜ç´”ç¸®å°ãªã®ã§å†E®¹ãŒå‰Šã‚‰ã‚Œã‚‹ã“ã¨ã‚‚ã‚ã‚E
 
 	if block_state(target_id) != STATE_USED: return 1 
 	if size <= 0: return 2
@@ -239,13 +240,13 @@
 			
 			assert next_mem_id(next_block_id) >= 0
 
-			//Ÿ‚ÌƒuƒƒbƒN‚ªƒtƒŠ[‚È‚çAŸ‚ÌƒuƒƒbƒN‚ÌƒIƒtƒZƒbƒg‚ÆƒTƒCƒY‚ğ•ÏXB
+			//æ¬¡ã®ãƒ–ãƒ­ãƒE‚¯ãŒãƒ•ãƒªãƒ¼ãªã‚‰ã€æ¬¡ã®ãƒ–ãƒ­ãƒE‚¯ã®ã‚ªãƒ•ã‚»ãƒEƒˆã¨ã‚µã‚¤ã‚ºã‚’å¤‰æ›´ã€E
 			offset(next_block_id) = offset(target_id) + size
 			resize_free_block next_block_id, offset(next_mem_id(next_block_id)) - offset(next_block_id)
 			
 		}else: if offset(next_block_id) - offset(target_id) - size > FREELIST_THRESHOLD{
 	
-			//V‚½‚È‹ó‚«‹óŠÔ‚ğì¬
+			//æ–°ãŸãªç©ºãç©ºé–“ã‚’ä½œæE
 			new_free_id = get_new_id(mem_id_manager)
 	
 			link_blocks new_free_id, next_block_id
@@ -254,7 +255,7 @@
 			offset(new_free_id) = offset(target_id) + size
 			mem_size(new_free_id) = mem_size(target_id) - size
 	
-			//ƒtƒŠ[ƒŠƒXƒg‚É“o˜^
+			//ãƒ•ãƒªãƒ¼ãƒªã‚¹ãƒˆã«ç™»éŒ²
 			add_to_free_list new_free_id
 			
 		}
@@ -266,7 +267,7 @@
 	
 #defcfunc get_new_block int size
 	if size <= 0{
-		logmes "ƒTƒCƒY‚OˆÈ‰º‚Å‚ÍŠm•Û‚Å‚«‚Ü‚¹‚ñ! y get_new_block() z"
+		logmes "ã‚µã‚¤ã‚ºEä»¥ä¸‹ã§ã¯ç¢ºä¿ã§ãã¾ã›ã‚“! ã€Eget_new_block() ã€E
 		
 		return -1
 	}
@@ -274,13 +275,13 @@
 	newid = get_free_block(size)
 	
 	if newid >= 0{
-		shrink_block newid, size //•K—v‚È•ª‚¾‚¯‚ÉƒZƒbƒg
-		memset memory_pool,0, mem_size(newid), offset(newid) //get_new_block‚È‚Ì‚Å‚¨‘|œ
+		shrink_block newid, size //å¿E¦ãªåˆE ã‘ã«ã‚»ãƒEƒˆ
+		memset memory_pool,0, mem_size(newid), offset(newid) //get_new_blockãªã®ã§ãŠæƒé™¤
 		return newid
 	}
-	//ˆÈ‰ºV‹K”­s
+	//ä»¥ä¸‹æ–°è¦ç™ºè¡E
 
-	//V‚½‚ÉID‚ğŠm•ÛBˆê”Ô‰E‚ÌƒuƒƒbƒNˆÊ’u‚Æ‚»‚ÌƒTƒCƒY‚Ìæ‚ÉV‚µ‚¢ƒuƒƒbƒN‚ğŠ„‚è“–‚Ä‚é
+	//æ–°ãŸã«IDã‚’ç¢ºä¿ã€‚ä¸€ç•ªå³ã®ãƒ–ãƒ­ãƒE‚¯ä½ç½®ã¨ããEã‚µã‚¤ã‚ºã®å…ˆã«æ–°ã—ã„ãƒ–ãƒ­ãƒE‚¯ã‚’å‰²ã‚Šå½“ã¦ã‚E
 	newid = get_new_id(mem_id_manager)
 	
 	mem_size(newid) = size
@@ -294,13 +295,13 @@
 
 	if offset(newid) + size > MAX_EXPAND_LIMIT{
 
-		//ƒ[ƒ‹ƒoƒbƒN
+		//ãƒ­ãƒ¼ãƒ«ãƒãƒƒã‚¯
 		if last_block_id >= 0{
 			next_mem_id(last_block_id) = -1
 		}
 		release_id mem_id_manager, newid
 		
-		logmes "ƒƒ‚ƒŠ‚ª‚Æ‚ê‚È‚©‚Á‚½‚æEEEyget_new_block()z"
+		logmes "ãƒ¡ãƒ¢ãƒªãŒã¨ã‚Œãªã‹ã£ãŸã‚ˆãƒ»ãƒ»ãƒ»ã€get_new_block()ã€E
 		stop
 		return -1
 	}
@@ -319,20 +320,20 @@
 
 #deffunc free_block int id
 
-	//g—p’†‚ÌƒuƒƒbƒN‚ğ‰ğ•ú‚·‚éB¶‰E‚Ì—Ìˆæ‚ğ‹zû‚µ‚ÄAƒtƒŠ[ƒŠƒXƒg‚É•Ô‚·B
+	//ä½¿ç”¨ä¸­ã®ãƒ–ãƒ­ãƒE‚¯ã‚’è§£æ”¾ã™ã‚‹ã€‚å·¦å³ã®é ˜åŸŸã‚’å¸åã—ã¦ã€ãƒ•ãƒªãƒ¼ãƒªã‚¹ãƒˆã«è¿”ã™ã€E
 
 	if is_id_alive(mem_id_manager, id) == 0: return 0
-	if block_state(id) != STATE_USED: return 0//g—p’†‚Å‚Í‚È‚¢ƒuƒƒbƒN
+	if block_state(id) != STATE_USED: return 0//ä½¿ç”¨ä¸­ã§ã¯ãªãEƒ–ãƒ­ãƒE‚¯
 	
-	prev_id = back_mem_id(id) //‘O‚ÌƒuƒƒbƒNid
-	next_id = next_mem_id(id) //Ÿ‚ÌƒuƒƒbƒNid
+	prev_id = back_mem_id(id) //å‰ãEãƒ–ãƒ­ãƒE‚¯id
+	next_id = next_mem_id(id) //æ¬¡ã®ãƒ–ãƒ­ãƒE‚¯id
 	
-	//ƒtƒŠ[ƒŠƒXƒg‚Élast_block_id‚ğ“o˜^‚µ‚È‚¢d—l‚ğ•ÛØ‚·‚é‚½‚ß‚ÌƒƒWƒbƒNB
+	//ãƒ•ãƒªãƒ¼ãƒªã‚¹ãƒˆã«last_block_idã‚’ç™»éŒ²ã—ãªãE»•æ§˜ã‚’ä¿è¨¼ã™ã‚‹ãŸã‚ã®ãƒ­ã‚¸ãƒE‚¯ã€E
 	if id == last_block_id{
-		//last_block_id‚ğ‰ğ•ú‚·‚éê‡
+		//last_block_idã‚’è§£æ”¾ã™ã‚‹å ´åE
 		if prev_id >= 0{
 			if block_state(prev_id) != STATE_USED{
-				//¶‚àƒtƒŠ[
+				//å·¦ã‚‚ãƒ•ãƒªãƒ¼
 				remove_from_free_list prev_id
 				if back_mem_id(prev_id) >= 0{
 					next_mem_id(back_mem_id(prev_id)) = -1
@@ -340,15 +341,15 @@
 				last_block_id = back_mem_id(prev_id)
 				release_id mem_id_manager, prev_id
 			}else{
-				//¶‚Íg—p’†
+				//å·¦ã¯ä½¿ç”¨ä¸­
 				last_block_id = prev_id
 				next_mem_id(prev_id) = -1
 			}
 		}else{
-			//©•ª‚¾‚¯‚Ì‚Ìˆ—
+			//è‡ªåˆE ã‘ãEæ™‚ãEå‡¦çE
 			last_block_id = -1
 		}
-		//‹¤’Êˆ—
+		//å…±é€šåEçE
 		release_id mem_id_manager, id
 		return 1
 	}
@@ -359,21 +360,21 @@
 
 	if prev_id >= 0 {
 		if block_state(prev_id) == STATE_FREE{
-			pattern_flag |= 1 ;¶‘¤‚ªƒtƒŠ[
+			pattern_flag |= 1 ;å·¦å´ãŒãƒ•ãƒªãƒ¼
 		}
 	}else{
-		//@¶‚ÉƒuƒƒbƒN‚ª‚È‚­‚Ä‚à¬’f•Ğ‰»‚µ‚Ä‚¢‚é‰Â”\«‚ª‚ ‚éB@ƒuƒƒbƒN‚ª¶‚É‚È‚¢‚Ì‚Å‚ ‚ê‚Î¶’[‚Ü‚Å‚ğ—Ìˆæ‚Æ‚·‚ê‚Î‚æ‚¢B
-		//i‰E’[‚ª•Ï‚í‚ç‚È‚¢‚æ‚¤‚ÉŒ„ŠÔ‚ğ‹zûj
+		//ã€€å·¦ã«ãƒ–ãƒ­ãƒE‚¯ãŒãªãã¦ã‚‚å°æ–­ç‰EŒ–ã—ã¦ãE‚‹å¯èƒ½æ€§ãŒã‚ã‚‹ã€‚ã€€ãƒ–ãƒ­ãƒE‚¯ãŒå·¦ã«ãªãEEã§ã‚ã‚Œã°å·¦ç«¯ã¾ã§ã‚’é ˜åŸŸã¨ã™ã‚Œã°ã‚ˆã„ã€E
+		//Eˆå³ç«¯ãŒå¤‰ã‚ã‚‰ãªãE‚ˆãE«éš™é–“ã‚’å¸åï¼E
 		mem_size(id) += offset(id)
 		offset(id) = 0
 	}
 
 	if block_state(next_id) == STATE_FREE{
-		pattern_flag |= 2 ;‰E‘¤‚ªƒtƒŠ[
+		pattern_flag |= 2 ;å³å´ãŒãƒ•ãƒªãƒ¼
 	}
 		
 	switch pattern_flag
-	case 0 //‚Ç‚¿‚ç‚É‚à“‡‚È‚µ
+	case 0 //ã©ã¡ã‚‰ã«ã‚‚çµ±åˆãªãE
 		left = offset(id)
 		right = offset(next_id)
 		
@@ -383,29 +384,29 @@
 		mem_size(id) = right - left
 		
 		if mem_size(id) > FREELIST_THRESHOLD{
-			//ƒtƒŠ[ƒŠƒXƒg‚É“o˜^
+			//ãƒ•ãƒªãƒ¼ãƒªã‚¹ãƒˆã«ç™»éŒ²
 			add_to_free_list id
 			
 		}else{
-			//¬’f•Ğ‚È‚Ì‚Å–³‹‚µA‘OŒã‚ğ˜AŒ‹‚·‚é
+			//å°æ–­ç‰Eªã®ã§ç„¡è¦–ã—ã€å‰å¾Œã‚’é€£çµã™ã‚E
 			link_blocks prev_id, next_id
-			release_id mem_id_manager, id //id•Ô‹p
+			release_id mem_id_manager, id //idè¿”å´
 		}
 	swbreak
 				
-	case 1 //¶‚É‚Ì‚İ“‡
+	case 1 //å·¦ã«ã®ã¿çµ±åE
 		left = offset(prev_id)
 		right = offset(next_id)
-		//˜AŒ‹XV
+		//é€£çµæ›´æ–°
 		resize_free_block prev_id, right - left
 		
 		link_blocks prev_id, next_id
 
-		release_id mem_id_manager, id //id‚ÍÁ¸
+		release_id mem_id_manager, id //idã¯æ¶ˆå¤±
 	swbreak
 
-	case 2 //‰E‚É‚Ì‚İ“‡
-		assert next_mem_id(next_id) >= 0 //ƒtƒŠ[ƒŠƒXƒg‚É“o˜^‚³‚ê‚Ä‚¢‚é‚©‚çA‚³‚ç‚É‰E‚ª‚ ‚éB
+	case 2 //å³ã«ã®ã¿çµ±åE
+		assert next_mem_id(next_id) >= 0 //ãƒ•ãƒªãƒ¼ãƒªã‚¹ãƒˆã«ç™»éŒ²ã•ã‚Œã¦ãE‚‹ã‹ã‚‰ã€ã•ã‚‰ã«å³ãŒã‚ã‚‹ã€E
 		left = offset(id)
 		right = offset(next_mem_id(next_id))
 		if prev_id >= 0{
@@ -415,26 +416,26 @@
 		resize_free_block next_id, right - left
 
 		offset(next_id) = left
-		//˜AŒ‹XV
+		//é€£çµæ›´æ–°
 		link_blocks prev_id, next_id
 		
 
-		release_id mem_id_manager, id //id‚ÍÁ¸
+		release_id mem_id_manager, id //idã¯æ¶ˆå¤±
 	swbreak
 	
-	case 3 //¶‰E‚É“‡ -> prev_id‚É“ˆê‚·‚é
+	case 3 //å·¦å³ã«çµ±åE-> prev_idã«çµ±ä¸€ã™ã‚‹
 		assert next_mem_id(next_id) >= 0
 		left = offset(prev_id)
 		right = offset(next_mem_id(next_id))
 
 		resize_free_block prev_id, right - left
 
-		remove_from_free_list next_id //next‚ÍƒtƒŠ[ƒŠƒXƒg‚É‘¶İ‚·‚é‚Í‚¸‚È‚Ì‚Åíœ
+		remove_from_free_list next_id //nextã¯ãƒ•ãƒªãƒ¼ãƒªã‚¹ãƒˆã«å­˜åœ¨ã™ã‚‹ã¯ãšãªã®ã§å‰Šé™¤
 
-		//˜AŒ‹XV
+		//é€£çµæ›´æ–°
 		link_blocks prev_id, next_mem_id(next_id)
 
-		//Á¸id‚ğ•Ô‹p
+		//æ¶ˆå¤±idã‚’è¿”å´
 		release_id mem_id_manager, id
 		release_id mem_id_manager, next_id
 		swbreak
@@ -456,15 +457,15 @@
 		return 0
 	}
 
-	//ŠJn“_‘{õ
+	//é–‹å§‹ç‚¹æœç´¢
 
-	count = 0; ‚»‚à‚»‚à‚ÌƒJƒEƒ“ƒgƒ`ƒFƒbƒN
+	count = 0; ãã‚‚ãã‚‚ã®ã‚«ã‚¦ãƒ³ãƒˆãƒã‚§ãƒE‚¯
 	start_point = -1
 	foreach_id mem_id_manager, vid
-		if block_state(vid) == STATE_SENTINEL: continue //”Ô•ºƒXƒLƒbƒv
+		if block_state(vid) == STATE_SENTINEL: continue //ç•ªå…µã‚¹ã‚­ãƒEE
 		if back_mem_id(vid) == -1{
 			if start_point != -1 {
-				logmes "[ƒŠƒ“ƒNƒ`ƒFƒbƒN¸”s] ŠJn“_‚ª•¡”Œ©‚Â‚©‚Á‚½F" + lab
+				logmes "[ãƒªãƒ³ã‚¯ãƒã‚§ãƒE‚¯å¤±æ•—] é–‹å§‹ç‚¹ãŒè¤E•°è¦‹ã¤ã‹ã£ãŸï¼E + lab
 				return 1
 			}
 			start_point = vid
@@ -473,26 +474,26 @@
 	foreach_end
 
 	if count != list_count{
-		logmes "ƒJƒEƒ“ƒgƒoƒO"
+		logmes "ã‚«ã‚¦ãƒ³ãƒˆãƒã‚°"
 		stop
 	}
 
 	if start_point == -1 {
-		logmes "[ƒŠƒ“ƒNƒ`ƒFƒbƒN¸”s] ŠJn“_‚ªŒ©‚Â‚©‚ç‚È‚¢F" + lab
+		logmes "[ãƒªãƒ³ã‚¯ãƒã‚§ãƒE‚¯å¤±æ•—] é–‹å§‹ç‚¹ãŒè¦‹ã¤ã‹ã‚‰ãªãE¼E + lab
 		return 1
 	}
 
-	//ŠJn“_‚©‚çÅŒã‚Ü‚Å“’B‚Å‚«‚é‚©AƒoƒbƒNƒŠƒ“ƒN‚ÆzŠÂ‚àŠÜ‚ß‚Äƒ`ƒFƒbƒN
+	//é–‹å§‹ç‚¹ã‹ã‚‰æœ€å¾Œã¾ã§åˆ°é”ã§ãã‚‹ã‹ã€ãƒãƒE‚¯ãƒªãƒ³ã‚¯ã¨å¾ªç’°ã‚‚å«ã‚ã¦ãƒã‚§ãƒE‚¯
 	count = 0
 	__prev_id = -1
 	
 	while start_point != -1
 		if back_mem_id(start_point) != __prev_id {
-			logmes "[ƒŠƒ“ƒNƒ`ƒFƒbƒN¸”s] " + strf("%d > (%d=%d) < %d", __prev_id, start_point, back_mem_id(start_point), start_point) + "Ÿ‚Ì‘O‚ªƒŠƒ“ƒN‚µ‚Ä‚¢‚Ü‚¹‚ñ\n" + lab
+			logmes "[ãƒªãƒ³ã‚¯ãƒã‚§ãƒE‚¯å¤±æ•—] " + strf("%d > (%d=%d) < %d", __prev_id, start_point, back_mem_id(start_point), start_point) + "æ¬¡ã®å‰ãŒãƒªãƒ³ã‚¯ã—ã¦ãE¾ã›ã‚“\n" + lab
 			return 1
 		}
 		if count > list_count{
-			logmes "[ƒŠƒ“ƒNƒ`ƒFƒbƒN¸”s] zŠÂŒŸo: " + lab
+			logmes "[ãƒªãƒ³ã‚¯ãƒã‚§ãƒE‚¯å¤±æ•—] å¾ªç’°æ¤œåE: " + lab
 			return 1
 		}
 		__prev_id = start_point
@@ -501,22 +502,22 @@
 	wend
 	
 	if count != list_count{
-		logmes "[ƒŠƒ“ƒNƒ`ƒFƒbƒN¸”s] g—p’†‚ÌƒuƒƒbƒN”‚ÆƒŠƒ“ƒN”‚ªˆê’v‚µ‚È‚¢F" + lab
+		logmes "[ãƒªãƒ³ã‚¯ãƒã‚§ãƒE‚¯å¤±æ•—] ä½¿ç”¨ä¸­ã®ãƒ–ãƒ­ãƒE‚¯æ•°ã¨ãƒªãƒ³ã‚¯æ•°ãŒä¸€è‡´ã—ãªãE¼E + lab
 		return 1
 	}
 	
-	//ŠÇ—‚µ‚Ä‚¢‚éÅŒã‚ÌƒuƒƒbƒNID‚ÆƒŠƒ“ƒN‚ÌÅŒã‚ÌƒuƒƒbƒNID‚ªˆê’v‚·‚é‚©Šm”F
+	//ç®¡çE—ã¦ãE‚‹æœ€å¾ŒãEãƒ–ãƒ­ãƒE‚¯IDã¨ãƒªãƒ³ã‚¯ã®æœ€å¾ŒãEãƒ–ãƒ­ãƒE‚¯IDãŒä¸€è‡´ã™ã‚‹ã‹ç¢ºèªE
 	if __prev_id != last_block_id{
-		logmes "[ƒŠƒ“ƒNƒ`ƒFƒbƒN¸”s] ÅŒã‚ÌƒuƒƒbƒN‚ª•s³F" + lab
+		logmes "[ãƒªãƒ³ã‚¯ãƒã‚§ãƒE‚¯å¤±æ•—] æœ€å¾ŒãEãƒ–ãƒ­ãƒE‚¯ãŒä¸æ­£EE + lab
 		return 1
 	}
 	
 	return 0
-	@
+	ã€€
 #deffunc debug_check_memory_pool_integrity
 	if last_block_id == -1: return
 
-	//‰E‚©‚çƒ`ƒFƒbƒNAƒuƒƒbƒN‚ªƒI[ƒo[ƒ‰ƒbƒv‚µ‚½‚èA—£‚ê‚·‚¬‚Ä‚¢‚È‚¢‚©H
+	//å³ã‹ã‚‰ãƒã‚§ãƒE‚¯ã€ãƒ–ãƒ­ãƒE‚¯ãŒã‚ªãƒ¼ãƒãEãƒ©ãƒEEã—ãŸã‚Šã€E›¢ã‚Œã™ãã¦ãEªãE‹EE
 	start_point = last_block_id
 	
 	while start_point >= 0
@@ -524,16 +525,16 @@
 		offset_point = offset(start_point)
 		
 		if offset_point < 0{
-			logmes "ƒIƒtƒZƒbƒg‚ª”ÍˆÍŠO‚Å‚·iƒ}ƒCƒiƒXj"
+			logmes "ã‚ªãƒ•ã‚»ãƒEƒˆãŒç¯E›²å¤–ã§ã™ï¼ˆãEã‚¤ãƒŠã‚¹EE
 			stop
 		}
 
 		pre_point = start_point
-		start_point = back_mem_id(start_point) //¶‚ÌƒuƒƒbƒN‚ÉˆÚ“®
+		start_point = back_mem_id(start_point) //å·¦ã®ãƒ–ãƒ­ãƒE‚¯ã«ç§»å‹E
 
 		if start_point < 0{
 			if offset_point > FREELIST_THRESHOLD{
-				logmes "¶’[‚És•û•s–¾‹óŠÔ‚ª‚ ‚è‚Ü‚·"
+				logmes "å·¦ç«¯ã«è¡Œæ–¹ä¸æEç©ºé–“ãŒã‚ã‚Šã¾ãE
 				stop
 			}
 			_break
@@ -541,11 +542,11 @@
 
 		gap = (offset_point) - (offset(start_point) + mem_size(start_point))
 		if gap < 0{
-			logmes "—Ìˆæ‚ªƒI[ƒo[ƒ‰ƒbƒv‚µ‚Ä‚¢‚Ü‚· :: " + start_point + " <> " + pre_point + " ::\n"  + strf("(%d,%d) <-> (%d,%d)", offset(start_point), offset(start_point) + mem_size(start_point) , offset(pre_point), offset(pre_point) + mem_size(pre_point)) 
+			logmes "é ˜åŸŸãŒã‚ªãƒ¼ãƒãEãƒ©ãƒEEã—ã¦ãE¾ãE:: " + start_point + " <> " + pre_point + " ::\n"  + strf("(%d,%d) <-> (%d,%d)", offset(start_point), offset(start_point) + mem_size(start_point) , offset(pre_point), offset(pre_point) + mem_size(pre_point)) 
 			stop
 		}
 		if gap > FREELIST_THRESHOLD{
-			logmes "s•û•s–¾‹óŠÔ‚ ‚è :: " + start_point + " <> " + pre_point + " ::\n"  + strf("(%d,%d) <-> (%d,%d)", offset(start_point), offset(start_point)+ mem_size(start_point) , offset(pre_point), offset(pre_point) + mem_size(pre_point)) 
+			logmes "è¡Œæ–¹ä¸æEç©ºé–“ã‚ã‚E:: " + start_point + " <> " + pre_point + " ::\n"  + strf("(%d,%d) <-> (%d,%d)", offset(start_point), offset(start_point)+ mem_size(start_point) , offset(pre_point), offset(pre_point) + mem_size(pre_point)) 
 			stop
 		}
 		
@@ -555,19 +556,19 @@
 
 #deffunc expand_block int oldid, int newsize
 	/*
-	ƒuƒƒbƒN‚ÌŠg’£‚ğ‚İ‚éB
-	¶‰E‚ÌƒuƒƒbƒN‚ğŠm”F‚µAŠg’£‰Â”\‚Å‚ ‚ê‚ÎŠg’£‚·‚éB
-	Šg’£‚Å‚«‚È‚©‚Á‚½ê‡‚ÍA¶‰E‚Ì—Ìˆæ‚ğ‹zû‚µ‚ÄAƒuƒƒbƒN‚ğˆÚ“®‚·‚éB
+	ãƒ–ãƒ­ãƒE‚¯ã®æ‹¡å¼µã‚’è©¦ã¿ã‚‹ã€E
+	å·¦å³ã®ãƒ–ãƒ­ãƒE‚¯ã‚’ç¢ºèªã—ã€æ‹¡å¼µå¯èƒ½ã§ã‚ã‚Œã°æ‹¡å¼µã™ã‚‹ã€E
+	æ‹¡å¼µã§ããªã‹ã£ãŸå ´åˆãEã€å·¦å³ã®é ˜åŸŸã‚’å¸åã—ã¦ã€ãƒ–ãƒ­ãƒE‚¯ã‚’ç§»å‹•ã™ã‚‹ã€E
 	*/
 	if is_id_alive(mem_id_manager, oldid) == 0: return 0
 	if block_state(oldid) != STATE_USED: return 0
 	if newsize <= 0: return 0
 
-	//©•ª‚ªÅŒã‚ÌƒuƒƒbƒN‚Ìê‡
+	//è‡ªåˆEŒæœ€å¾ŒãEãƒ–ãƒ­ãƒE‚¯ã®å ´åE
 	if last_block_id == oldid {
 		end_required = offset(oldid) + newsize
 		if end_required > MAX_EXPAND_LIMIT {
-			dialog strf("ƒv[ƒ‹Šg’£ŒÀŠE‚ğ’´‚¦‚Ä‚¢‚Ü‚·I\n Šg’£ŒÀŠE = %d\n sƒTƒCƒY = %d \n —v‹ƒTƒCƒY = %d", MAX_EXPAND_LIMIT, end_required, newsize)
+			dialog strf("ãƒ—ãEãƒ«æ‹¡å¼µé™ç•Œã‚’è¶Eˆã¦ãE¾ã™ï¼\n æ‹¡å¼µé™ç•Œ = %d\n è©¦è¡Œã‚µã‚¤ã‚º = %d \n è¦æ±‚ã‚µã‚¤ã‚º = %d", MAX_EXPAND_LIMIT, end_required, newsize)
 			end
 			return 0
 		}
@@ -578,7 +579,7 @@
 
 	offset_original = offset(oldid)
 	size_original = mem_size(oldid)
-	mem_size(oldid) = newsize //V‚µ‚¢ƒTƒCƒY‚ğƒZƒbƒg
+	mem_size(oldid) = newsize //æ–°ã—ã„ã‚µã‚¤ã‚ºã‚’ã‚»ãƒEƒˆ
 
 	if try_expand_right(oldid, newsize,offset_original, size_original): return 1
 	if try_expand_left(oldid, newsize,offset_original, size_original): return 1
@@ -587,7 +588,7 @@
 
 #defcfunc try_expand_right int oldid, int newsize, int originaloffset, int originalsize
 
-	//‰EŠg’£‚ğ‚İ‚éB•s‰Â”\‚¾‚Á‚½ê‡AƒtƒŠ[ƒuƒƒbƒN‚Ì‹zû‚¾‚¯s‚¤B
+	//å³æ‹¡å¼µã‚’è©¦ã¿ã‚‹ã€‚ä¸å¯èƒ½ã ã£ãŸå ´åˆã€ãƒ•ãƒªãƒ¼ãƒ–ãƒ­ãƒE‚¯ã®å¸åã ã‘è¡Œã†ã€E
 	
 	nid = next_mem_id(oldid)
 	if nid >= 0{
@@ -597,21 +598,22 @@
 				if gap <= FREELIST_THRESHOLD + newsize{
 					remove_free_block nid
 				}else{
-					//‰EƒIƒtƒZƒbƒgˆÚ“®
+					//å³ã‚ªãƒ•ã‚»ãƒEƒˆç§»å‹E
 					offset(nid) = originaloffset + newsize
-					//‰E‚ÌƒTƒCƒY•ÏX
+					//å³ã®ã‚µã‚¤ã‚ºå¤‰æ›´
 					resize_free_block nid, offset(next_mem_id(nid)) - offset(nid)
 					assert mem_size(nid) > FREELIST_THRESHOLD
 
 				}
-				;debug_check_link_integrity "‰E‘¤Šg’£¬Œ÷ free"
+				;debug_check_link_integrity "å³å´æ‹¡å¼µæˆåŠŸ free"
 				return 1
 			}
-			//‰E‚ÌƒtƒŠ[ƒuƒƒbƒN‚ğíœ
+			//å³ã®ãƒ•ãƒªãƒ¼ãƒ–ãƒ­ãƒE‚¯ã‚’å‰Šé™¤
 			remove_free_block nid
 		}else{
 			if newsize <= offset(nid) - originaloffset{//‰EƒuƒƒbƒN‚Ü‚Å‚ÌŒ„ŠÔ‚ÅOK
 				;debug_check_link_integrity "‰E‘¤Šg’£¬Œ÷ used"
+
 				return 1
 			}
 		}
@@ -619,50 +621,50 @@
 	return 0
 #defcfunc try_expand_left int oldid, int newsize, int originaloffset, int originalsize
 
-	//¶Šg’£‚ğ‚İ‚éB•s‰Â”\‚¾‚Á‚½ê‡AƒtƒŠ[ƒuƒƒbƒN‚Ì‹zû‚¾‚¯s‚¤B
+	//å·¦æ‹¡å¼µã‚’è©¦ã¿ã‚‹ã€‚ä¸å¯èƒ½ã ã£ãŸå ´åˆã€ãƒ•ãƒªãƒ¼ãƒ–ãƒ­ãƒE‚¯ã®å¸åã ã‘è¡Œã†ã€E
 
-	//¶‘¤‚Ìƒ`ƒFƒbƒNŠJn
+	//å·¦å´ã®ãƒã‚§ãƒE‚¯é–‹å§E
 	bid = back_mem_id(oldid)
 	
 	right = offset(next_mem_id(oldid))
 	if bid >= 0{
 		if block_state(bid) == STATE_FREE{
 			gap = right - offset(bid)
-			if newsize <= gap{//Šg’£‰Â”\
+			if newsize <= gap{//æ‹¡å¼µå¯èƒ½
 			
-				//¶‚ÌˆÊ’u‚ğ©•ª‚Ì‚à‚Ì‚É‚·‚é
+				//å·¦ã®ä½ç½®ã‚’èEåˆEEã‚‚ãEã«ã™ã‚‹
 				offset(oldid) = offset(bid) 
 				memcpy memory_pool, memory_pool, originalsize, offset(oldid), originaloffset
 
 				if gap <= FREELIST_THRESHOLD + newsize{
 					
-					remove_free_block bid //¶ƒuƒƒbƒN‚ğíœ
+					remove_free_block bid //å·¦ãƒ–ãƒ­ãƒE‚¯ã‚’å‰Šé™¤
 
 				}else{
-					swap_adjacent_blocks oldid //—×ÚƒuƒƒbƒN‚ÌƒŠƒ“ƒN‚ğ“ü‚ê‘Ö‚¦(w’èID‚Æ‚»‚Ì¶—×‚ÌƒuƒƒbƒN‚ÌƒŠƒ“ƒN‚ğ“ü‚ê‘Ö‚¦‚é)
+					swap_adjacent_blocks oldid //éš£æ¥ãƒ–ãƒ­ãƒE‚¯ã®ãƒªãƒ³ã‚¯ã‚’åEã‚Œæ›¿ãEæŒE®šIDã¨ããEå·¦éš£ã®ãƒ–ãƒ­ãƒE‚¯ã®ãƒªãƒ³ã‚¯ã‚’åEã‚Œæ›¿ãˆã‚‹)
 
-					//¶ƒuƒƒbƒN‚ÌƒIƒtƒZƒbƒg‚ğIDƒuƒƒbƒN‚Ì‰E’[‚ÉƒZƒbƒg
+					//å·¦ãƒ–ãƒ­ãƒE‚¯ã®ã‚ªãƒ•ã‚»ãƒEƒˆã‚’IDãƒ–ãƒ­ãƒE‚¯ã®å³ç«¯ã«ã‚»ãƒEƒˆ
 					offset(bid) = offset(oldid) + newsize
-					//¶ƒuƒƒbƒN‚ÌƒTƒCƒY•ÏX
+					//å·¦ãƒ–ãƒ­ãƒE‚¯ã®ã‚µã‚¤ã‚ºå¤‰æ›´
 					resize_free_block bid, right - offset(bid)
 					assert mem_size(bid) > FREELIST_THRESHOLD
 					
 				}
 				
-				;debug_check_link_integrity "¶‘¤Šg’£¬Œ÷ free"
+				;debug_check_link_integrity "å·¦å´æ‹¡å¼µæˆåŠŸ free"
 				return 1
 			}
 			
 			remove_free_block bid
 			
 		}else{
-			if newsize <= right - (offset(bid) + mem_size(bid)){ //¶ƒuƒƒbƒN‚Ü‚Å‚ÌŒ„ŠÔ‚Åû‚Ü‚é
+			if newsize <= right - (offset(bid) + mem_size(bid)){ //å·¦ãƒ–ãƒ­ãƒE‚¯ã¾ã§ã®éš™é–“ã§åã¾ã‚E
 			
-				//ƒIƒtƒZƒbƒg‚ğ¶‚É‹l‚ß‚é
+				//ã‚ªãƒ•ã‚»ãƒEƒˆã‚’å·¦ã«è©°ã‚ã‚‹
 				offset(oldid) = offset(bid) + mem_size(bid)
 				memcpy memory_pool, memory_pool, originalsize, offset(oldid), originaloffset
 				
-				;debug_check_link_integrity "¶‘¤Šg’£¬Œ÷ used"
+				;debug_check_link_integrity "å·¦å´æ‹¡å¼µæˆåŠŸ used"
 				return 1
 			}
 		}
@@ -672,53 +674,53 @@
 	
 #defcfunc tryrelocate_block int oldid, int newsize, int originaloffset, int originalsize
 	/*	
-	‚S‚ÆA‹ó‚«ƒXƒy[ƒXi‚Xj‚ğ“ü‚ê‘Ö‚¦‚é‚Æ‚«A
+	E”ã¨ã€ç©ºãã‚¹ãƒšãEã‚¹Eˆï¼™ï¼‰ã‚’å…¥ã‚Œæ›¿ãˆã‚‹ã¨ãã€E
 	
 	1,2,3,(3,4,5),5,6,7,8,(8,9,10),10,11,11
-					«
+					â†E
 	1,2,3,(3,9,5),5,6,7,8,(8,4,10),10,11,11
 
-	‚±‚Ì‚æ‚¤‚É‘g‚İ‘Ö‚¦‚ê‚Î‚æ‚¢B
+	ã“ãEã‚ˆã†ã«çµE¿æ›¿ãˆã‚Œã°ã‚ˆã„ã€E
 
-	‚±‚Ì‘€ì‚Íƒƒ‚ƒŠƒv[ƒ‹ã‚É‚ÍAˆêØ‰e‹¿‚ğ—^‚¦‚È‚¢‚½‚ßAƒƒ‚ƒŠƒRƒs[‘€ì‚Í•ÊŸŒ³‚Ål‚¦‚Ä‚æ‚¢B
-	ƒƒ‚ƒŠã‚ÌƒIƒtƒZƒbƒg‚âƒTƒCƒY‚Í’Pƒ‚Èswap‘€ì‚ÅOK
+	ã“ãEæ“ä½œãEãƒ¡ãƒ¢ãƒªãƒ—ãEãƒ«ä¸Šã«ã¯ã€ä¸€åˆE½±éŸ¿ã‚’ä¸ãˆãªãEŸã‚ã€ãƒ¡ãƒ¢ãƒªã‚³ãƒ”ãEæ“ä½œãEåˆ¥æ¬¡å…E§è€Eˆã¦ã‚ˆã„ã€E
+	ãƒ¡ãƒ¢ãƒªä¸ŠãEã‚ªãƒ•ã‚»ãƒEƒˆã‚E‚µã‚¤ã‚ºã¯å˜ç´”ãªswapæ“ä½œã§OK
 
-	Š®‘S‚Éî•ñ‚ğŒğŠ·‚µ‚½ŒãA
-	Œ³‹‚½ƒŠƒ“ƒNã‚ÌêŠA‚Â‚Ü‚èV‚µ‚­Šm•Û‚µ‚½ƒuƒƒbƒNID‚ğíœ‚·‚éB
+	å®ŒåEã«æƒE ±ã‚’äº¤æ›ã—ãŸå¾Œã€E
+	å…E±EŸãƒªãƒ³ã‚¯ä¸ŠãEå ´æ‰€ã€ã¤ã¾ã‚Šæ–°ã—ãç¢ºä¿ã—ãŸãƒ–ãƒ­ãƒE‚¯IDã‚’å‰Šé™¤ã™ã‚‹ã€E
 
 	1,2,3,(3,9,5),5,6,7,8,(8,4,10),10,11,12
-			ª‚X‚ªƒtƒŠ[ƒŠƒXƒg‚É“ü‚éB
+			â†‘ï¼™ãŒãƒ•ãƒªãƒ¼ãƒªã‚¹ãƒˆã«å…¥ã‚‹ã€E
 
-	‚±‚ê‚ÅŠ®—¹B
+	ã“ã‚Œã§å®ŒäºE€E
 
-	last_block_id ‚ÍƒŠƒ“ƒN‚ÌÅŒã‚ğ•\‚·B
-	oldid == last_block‚¾‚Á‚½‚Æ‚«A\‘¢ŒğŠ·Œã‚Ínewid‚ªƒŠƒ“ƒN‚ÌÅŒã‚ğ•\‚·Bíœ‚·‚é‚Ì‚Å–â‘è‚È‚µ
-	newid == last_block‚Ì‚Æ‚«‚ÍA\‘¢ŒğŠ·Œã‚Ílastblock‚Íoldid‚É‚È‚é‚½‚ßA•ÏX‚ª•K—vB
+	last_block_id ã¯ãƒªãƒ³ã‚¯ã®æœ€å¾Œã‚’è¡¨ã™ã€E
+	oldid == last_blockã ã£ãŸã¨ãã€æ§‹é€ äº¤æ›å¾ŒãEnewidãŒãƒªãƒ³ã‚¯ã®æœ€å¾Œã‚’è¡¨ã™ã€‚å‰Šé™¤ã™ã‚‹ã®ã§å•é¡ŒãªãE
+	newid == last_blockã®ã¨ããEã€æ§‹é€ äº¤æ›å¾ŒãElastblockã¯oldidã«ãªã‚‹ãŸã‚ã€å¤‰æ›´ãŒå¿E¦ã€E
 	
 	*/
 
 	assert next_mem_id(oldid) >= 0
 	assert block_state(next_mem_id(oldid)) == STATE_USED
 	
-	//¶‚ÌŒ„ŠÔŒvZ
+	//å·¦ã®éš™é–“è¨ˆç®E
 	if back_mem_id(oldid) >= 0{
 		assert block_state(back_mem_id(oldid)) == STATE_USED 
-		//¶‘¤‚ÌƒuƒƒbƒN‚ª‚ ‚éê‡
+		//å·¦å´ã®ãƒ–ãƒ­ãƒE‚¯ãŒã‚ã‚‹å ´åE
 		offset(oldid) = offset(back_mem_id(oldid)) + mem_size(back_mem_id(oldid))
 	}else{
 		offset(oldid) = 0
 	}
 	
-	mem_size(oldid) = offset(next_mem_id(oldid)) - offset(oldid) //‰E‘¤‚ÌƒuƒƒbƒN‚Ü‚Å‚ÌƒTƒCƒY‚ğƒZƒbƒg
+	mem_size(oldid) = offset(next_mem_id(oldid)) - offset(oldid) //å³å´ã®ãƒ–ãƒ­ãƒE‚¯ã¾ã§ã®ã‚µã‚¤ã‚ºã‚’ã‚»ãƒEƒˆ
 
-	//ˆÚ“®‰Â”\ƒuƒƒbƒN‚ğ‘I‘ğ
+	//ç§»å‹•å¯èƒ½ãƒ–ãƒ­ãƒE‚¯ã‚’é¸æŠE
 	newid = get_free_block(newsize)
 	
 	if newid = -1{
-		//V‚½‚ÈƒuƒƒbƒN‚ğŠm•Û
+		//æ–°ãŸãªãƒ–ãƒ­ãƒE‚¯ã‚’ç¢ºä¿E
 		newid = get_new_block(newsize)
 		if newid == -1{
-			logmes "ƒƒ‚ƒŠƒuƒƒbƒNˆÚ“®‚É—Ìˆæ‚ÌŠm•Û‚É¸”s‚µ‚Ü‚µ‚½ -> " + newsize
+			logmes "ãƒ¡ãƒ¢ãƒªãƒ–ãƒ­ãƒE‚¯ç§»å‹•æ™‚ã«é ˜åŸŸã®ç¢ºä¿ã«å¤±æ•—ã—ã¾ã—ãŸ -> " + newsize
 			return 0
 		}
 		
@@ -731,7 +733,7 @@
 		shrink_block newid, newsize
 	}
 	
-	//\‘¢ŒğŠ·
+	//æ§‹é€ äº¤æE
 	bnewid = back_mem_id(newid)
 	nnewid = next_mem_id(newid)
 	boldid = back_mem_id(oldid)
@@ -741,29 +743,29 @@
 	back_mem_id(oldid) = bnewid: if bnewid >= 0: next_mem_id(bnewid) = oldid
 	next_mem_id(oldid) = nnewid: if nnewid >= 0: back_mem_id(nnewid) = oldid
 
-	//\‘¢ŒğŠ·Š®—¹
+	//æ§‹é€ äº¤æ›å®ŒäºE
 	
-	//‚»‚ê‚¼‚ê‚ÌƒuƒƒbƒN‚Ìu“à—ev‚ğ•œŒ³
+	//ãã‚Œãã‚Œã®ãƒ–ãƒ­ãƒE‚¯ã®ã€ŒåEå®¹ã€ã‚’å¾©å…E
 	memcpy memory_pool, memory_pool, originalsize, offset(newid), originaloffset
 	swap offset(newid), offset(oldid)
 	swap mem_size(newid), mem_size(oldid)
 		
-	free_block newid //‰ğ•ú
+	free_block newid //è§£æ”¾
 
 	return 1
 
 #deffunc remove_free_block int target_id
-    if is_id_alive(mem_id_manager, target_id) == 0: return 0 // –³Œø‚ÈID
-    if block_state(target_id) != STATE_FREE: return 0 // ƒtƒŠ[ƒuƒƒbƒN‚Ì‚İ‹–‰Â
+    if is_id_alive(mem_id_manager, target_id) == 0: return 0 // ç„¡åŠ¹ãªID
+    if block_state(target_id) != STATE_FREE: return 0 // ãƒ•ãƒªãƒ¼ãƒ–ãƒ­ãƒE‚¯ã®ã¿è¨±å¯
     
-    remove_from_free_list target_id // ƒtƒŠ[ƒŠƒXƒg‚©‚çíœ
-    link_blocks back_mem_id(target_id), next_mem_id(target_id) // ‘OŒã‚ÌƒuƒƒbƒN‚ğƒŠƒ“ƒN
-    release_id mem_id_manager, target_id// ID‚ğ•Ô‹p
+    remove_from_free_list target_id // ãƒ•ãƒªãƒ¼ãƒªã‚¹ãƒˆã‹ã‚‰å‰Šé™¤
+    link_blocks back_mem_id(target_id), next_mem_id(target_id) // å‰å¾ŒãEãƒ–ãƒ­ãƒE‚¯ã‚’ãƒªãƒ³ã‚¯
+    release_id mem_id_manager, target_id// IDã‚’è¿”å´
     
-return 1 // ¬Œ÷
+return 1 // æˆåŠŸ
 
 #deffunc swap_adjacent_blocks int nowid
-	// w’è‚³‚ê‚½ID‚ÌƒuƒƒbƒN‚Æ‚»‚Ì¶—×‚ÌƒuƒƒbƒN‚ÌƒŠƒ“ƒN‚Ì‚İ‚ğ“ü‚ê‘Ö‚¦‚é
+	// æŒE®šã•ã‚ŒãŸIDã®ãƒ–ãƒ­ãƒE‚¯ã¨ããEå·¦éš£ã®ãƒ–ãƒ­ãƒE‚¯ã®ãƒªãƒ³ã‚¯ã®ã¿ã‚’åEã‚Œæ›¿ãˆã‚‹
 	
 	_prev_id = back_mem_id(nowid)
 	_next_id = next_mem_id(nowid)
@@ -784,13 +786,13 @@ return 1 // ¬Œ÷
     return
 	
 ///////////////////
-//////‰Â‹‰»///////
+//////å¯è¦–åŒ–///////
 ///////////////////
 
 #deffunc draw_memory_pool_with_labels int ysize, int yoffset, array chenged_ids, local sclass, local col, local ofs, local _size
 	#const PIXEL 1
 	redraw 2
-	color 0,255,0 ; g‚í‚ê‚Ä‚¨‚ç‚¸AƒtƒŠ[ƒŠƒXƒg‚É‚à“o˜^‚³‚ê‚Ä‚¢‚È‚¢
+	color 0,255,0 ; ä½¿ã‚ã‚Œã¦ãŠã‚‰ãšã€ãƒ•ãƒªãƒ¼ãƒªã‚¹ãƒˆã«ã‚‚ç™»éŒ²ã•ã‚Œã¦ãEªãE
 	boxf 0,yoffset, limit(get_memory_pool_size() * PIXEL,,ginfo(12)),yoffset+ysize
 	
 	foreach_id mem_id_manager, vid
@@ -801,9 +803,9 @@ return 1 // ¬Œ÷
 		sclass = get_class_index(_size)
 		col = get_color_by_class(sclass)
 
-		//—Ìˆæ•`‰æ
+		//é ˜åŸŸæç”»
 		
-		//—Ìˆæ‚ÌF•ª‚¯
+		//é ˜åŸŸã®è‰²åˆE‘
 		if block_state(vid) == STATE_USED{
 			color $D3,$D3,$D3
 		}else: if is_in_array(vid, changed_ids){
@@ -818,19 +820,19 @@ return 1 // ¬Œ÷
 		pos ofs*PIXEL+1,yoffset + ysize/3
 		mes _size
 		
-		//•¶š—ñ‚Åg—p’†‚È‚ç‚»‚ê‚ğ‰Â‹‰»
+		//æ–E­—åEã§ä½¿ç”¨ä¸­ãªã‚‰ãã‚Œã‚’å¯è¦–åŒ–
 		color 255,0,0
-		g—p—Ê = strlen(read_mem_str(vid))
-		boxf ofs*PIXEL+1, yoffset+ysize - ysize/4, (ofs + g—p—Ê)*PIXEL-1, yoffset+ysize - ysize/9
+		ä½¿ç”¨é‡E= strlen(read_mem_str(vid))
+		boxf ofs*PIXEL+1, yoffset+ysize - ysize/4, (ofs + ä½¿ç”¨é‡E*PIXEL-1, yoffset+ysize - ysize/9
 
-		//ƒuƒƒbƒNID
+		//ãƒ–ãƒ­ãƒE‚¯ID
 		color 0,0,0
 		pos (ofs + 2 ) * PIXEL, yoffset + 2
 		mes vid
-		//ƒNƒ‰ƒX
+		//ã‚¯ãƒ©ã‚¹
 		pos (ofs + 2 ) * PIXEL, yoffset + 2 + ysize/2
 		mes sclass
-		//—¼‘¤‚Ì‹æØ‚èü
+		//ä¸¡å´ã®åŒºåˆE‚Šç·E
 		line ofs * PIXEL                 , yoffset, ofs*PIXEL, yoffset+ysize
 		line (ofs + mem_size(vid)) * PIXEL, yoffset, (ofs+mem_size(vid)) * PIXEL,yoffset+ysize
 		
@@ -861,7 +863,7 @@ return
 	return 0
 
 ////////////////////////
-/////“à•”î•ñæ“¾///////
+/////å†Eƒ¨æƒE ±å–å¾E//////
 ////////////////////////
 
 #defcfunc get_block_offset int id
@@ -870,15 +872,15 @@ return
 #defcfunc get_block_size int id
     return mem_size(id)
 
-//ƒuƒƒbƒN‚ª‘€ì‰Â”\‚©‚Ç‚¤‚©
+//ãƒ–ãƒ­ãƒE‚¯ãŒæ“ä½œå¯èƒ½ã‹ã©ãE‹
 #defcfunc is_usable_block int id
 	return block_state(id) == STATE_USED
 
-//ƒƒ‚ƒŠƒv[ƒ‹ã‚É‘¶İ‚·‚éƒuƒƒbƒN‚Ì”i‹ó‚«ŠÜ‚Şj
+//ãƒ¡ãƒ¢ãƒªãƒ—ãEãƒ«ä¸Šã«å­˜åœ¨ã™ã‚‹ãƒ–ãƒ­ãƒE‚¯ã®æ•°Eˆç©ºãå«ã‚€EE
 #defcfunc get_block_count
 	return get_using_count(mem_id_manager) - CLASS_NUM
 
-//”­s‚µ‚½Å‘å‚ÌID”Ô†
+//ç™ºè¡Œã—ãŸæœ€å¤§ã®IDç•ªå·
 #defcfunc get_block_max_id
 	return get_max_id(mem_id_manager)
 
@@ -889,10 +891,10 @@ return
 	return MAX_EXPAND_LIMIT
 
 ///////////////////	
-//////‘€ìAPI//////
+//////æ“ä½œAPI//////
 ///////////////////
 
-//•¶š—ñ‚Æ‚µ‚Ä‘€ì
+//æ–E­—åEã¨ã—ã¦æ“ä½E
 #deffunc write_mem_str int id, str value, int offset_in_block
 
 	if block_state(id) != STATE_USED: return
@@ -903,7 +905,7 @@ return
 	if mem_size(id) < offset_in_block + sz{
 		expand_block id, offset_in_block + sz
 	}
-	memcpy memory_pool, vv, sz, offset(id) + offset_in_block //sz•ª‚¾‚¯‘‚«‚Ş
+	memcpy memory_pool, vv, sz, offset(id) + offset_in_block //szåˆE ã‘æ›¸ãè¾¼ã‚€
 	return
 
 #deffunc re_write_mem_str int id, str value
@@ -927,7 +929,7 @@ return
 	copy_size = mem_size(id) - offset_in_block
 	
 	dupptr s, varptr(memory_pool) + offset(id) + offset_in_block, copy_size, 2
-	return strmid(s, 0, copy_size) //•¶š—ñ‚Æ‚µ‚ÄØ‚èo‚·
+	return strmid(s, 0, copy_size) //æ–E­—åEã¨ã—ã¦åˆE‚Šå‡ºãE
 	
 #deffunc append_str int id, str value
 	write_mem_str id, read_mem_str(id) + value
@@ -938,7 +940,7 @@ return
 	write_mem_str id, strmid(tmp, 0, write_pos) + value + strmid(tmp, write_pos, $FFFFFFF)
 	return
 
-//ƒoƒCƒiƒŠ‘€ì
+//ãƒã‚¤ãƒŠãƒªæ“ä½E
 #deffunc poke_block int id, var a, int offset_in_block
 
 	if offset_in_block < 0: return
