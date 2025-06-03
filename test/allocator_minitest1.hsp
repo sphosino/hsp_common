@@ -12,6 +12,6 @@ mes read_mem_str(block) //aABCe
 re_write_mem_str block, "ZZ" //ブロックを置き換える
 
 append_str block,"@@" //末尾に追加
-append_str block,"!!", 2 //途中に追加
+insert_str block,"!!", 2 //途中に追加
 
 mes read_mem_str(block) //ZZ!!@@
