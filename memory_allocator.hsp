@@ -4,8 +4,8 @@
 
 ; #define DEBUG_ALLOCATOR
 
-#const CLASS_NUM 10
-#const FREELIST_THRESHOLD 4
+#const CLASS_NUM 5
+#const FREELIST_THRESHOLD 32
 #const DEFAULT_POOL_SIZE 180000000
 #const MAX_DIV 25000 //総ブロック数
 #const MAX_EXPAND_LIMIT 180000000
@@ -71,7 +71,7 @@
 	}
 	#endif
 	if size <= 0: return 0
-	return limit(logf(size)/logf(2) - 2, 0, CLASS_NUM - 1)  // 4,8,16,32,64.....
+	return limit(logf(size)/logf(2) - 5, 0, CLASS_NUM - 1)
 	
 #defcfunc get_class_index_by_id int id
 	return get_class_index(mem_size(id))
@@ -155,20 +155,18 @@
 
 	class_position = next_free_list( sentinel(get_class_index_by_id(id)) ) // 開始位置取得
 
-	while　class_position >= 0 // 番兵か末尾まで探す
+	while class_position >= 0 // 番兵か末尾まで探す
 
 		if class_position == id {
 			link_free_list back_free_list(id), next_free_list(id)
 			block_state(id) = STATE_USED
-			return 0
+			return
 		}
 		class_position = next_free_list(class_position)
 	wend
 
 	logmes "存在しないIDを削除しようとした、もしくは間違ったクラスに登録されています。"
 	stop
-
-	return 2
 	
 #deffunc resize_free_block int id, int newsize
 
@@ -239,19 +237,28 @@
 
 	//有効なブロックを指定サイズに縮小する(単純縮小なので内容が削られることもある)
 
-	if is_id_alive(mem_id_manager, target_id) == 0: return 1
-	if block_state(target_id) != STATE_USED: return 2
+	if block_state(target_id) != STATE_USED: return 1 
+	if size <= 0: return 2
+	if size > mem_size(target_id): return 3
+
+	if last_block_id != target_id{
+
+		next_block_id = next_mem_id(target_id)
 	
-	if mem_size(target_id) - size > FREELIST_THRESHOLD{
+		if block_state(next_block_id) == STATE_FREE{
+			
+			assert next_mem_id(next_block_id) >= 0
 
-		if last_block_id != target_id{
-
-			assert next_mem_id(target_id) >= 0
-		
+			//次のブロックがフリーなら、次のブロックのオフセットとサイズを変更。
+			offset(next_block_id) = offset(target_id) + size
+			resize_free_block next_block_id, offset(next_mem_id(next_block_id)) - offset(next_block_id)
+			
+		}else: if offset(next_block_id) - offset(target_id) - size > FREELIST_THRESHOLD{
+	
 			//新たな空き空間を作成
 			new_free_id = get_new_id(mem_id_manager)
 	
-			link_blocks new_free_id, next_mem_id(target_id)
+			link_blocks new_free_id, next_block_id
 			link_blocks target_id, new_free_id
 	
 			offset(new_free_id) = offset(target_id) + size
@@ -259,10 +266,9 @@
 	
 			//フリーリストに登録
 			add_to_free_list new_free_id
-
+			
 		}
-		
-	}else: if mem_size(target_id) < size: return 3
+	}
 	
 	mem_size(target_id) = size
 	
@@ -557,7 +563,7 @@
 		
 	return
 
-#deffunc move_block int oldid, int newsize
+#deffunc expand_block int oldid, int newsize
 	/*
 	ブロックの拡張を試みる。
 	左右のブロックを確認し、拡張可能であれば拡張する。
@@ -593,7 +599,6 @@
 
 	//右拡張を試みる。不可能だった場合、フリーブロックの吸収だけ行う。
 	
-	;debug_check_link_integrity "右拡張試行"
 	nid = next_mem_id(oldid)
 	if nid >= 0{
 		if block_state(nid) == STATE_FREE{
@@ -625,9 +630,6 @@
 #defcfunc try_expand_left int oldid, int newsize, int originaloffset, int originalsize
 
 	//左拡張を試みる。不可能だった場合、フリーブロックの吸収だけ行う。
-
-	;debug_check_link_integrity "左拡張試行"
-
 
 	//左側のチェック開始
 	bid = back_mem_id(oldid)
@@ -771,22 +773,14 @@
 return 1 // 成功
 
 #deffunc swap_adjacent_blocks int nowid
-	// 指定されたIDのブロックとその左隣のブロックのリンクを入れ替える
-	if is_id_alive(mem_id_manager, nowid) == 0: return ; IDが無効なら何もしない
+	// 指定されたIDのブロックとその左隣のブロックのリンクのみを入れ替える
+	
 	_prev_id = back_mem_id(nowid)
-	if _prev_id < 0 : return ; 左隣がなければ何もしない
-	
-	// つながり（リンク情報）のみ入れ替え
-	
 	_next_id = next_mem_id(nowid)
+	
 	link_blocks back_mem_id(_prev_id), nowid
 	link_blocks nowid, _prev_id
 	link_blocks _prev_id, _next_id
-
-	// last_block_id の更新
-	if last_block_id == nowid{
-		last_block_id = _prev_id
-	}
 	
 	return
 	
@@ -807,7 +801,7 @@ return 1 // 成功
 	#const PIXEL 1
 	redraw 2
 	color 0,255,0 ; 使われておらず、フリーリストにも登録されていない
-	boxf 0,yoffset, limit(get_memory_pool_size(),,ginfo(12)),yoffset+ysize
+	boxf 0,yoffset, limit(get_memory_pool_size() * PIXEL,,ginfo(12)),yoffset+ysize
 	
 	foreach_id mem_id_manager, vid
 	
@@ -820,7 +814,7 @@ return 1 // 成功
 		//領域描画
 		
 		//領域の色分け
-		if block_state(vid) == STATE_FREE{
+		if block_state(vid) == STATE_USED{
 			color $D3,$D3,$D3
 		}else: if is_in_array(vid, changed_ids){
 			color 255,200,0
@@ -910,91 +904,85 @@ return
 
 //文字列として操作
 #deffunc write_mem_str int id, str value, int offset_in_block
-	if offset_in_block < 0: return
-	if is_id_alive(mem_id_manager, id) == 0: return
+
 	if block_state(id) != STATE_USED: return
+	if offset_in_block < 0: return
 	
 	sz = strlen(value)
 	vv = value
 	if mem_size(id) < offset_in_block + sz{
-		move_block id, offset_in_block + sz
+		expand_block id, offset_in_block + sz
 	}
-	memexpand memory_pool, offset(id) + offset_in_block + sz
 	memcpy memory_pool, vv, sz, offset(id) + offset_in_block //sz分だけ書き込む
 	return
 
+#deffunc re_write_mem_str int id, str value
+
+	if block_state(id) != STATE_USED: return
+	
+	sz = strlen(value)
+	vv = value
+	if mem_size(id) < sz{
+		expand_block id, sz
+	}
+	memset memory_pool, 0, mem_size(id), offset(id)
+	memcpy memory_pool, vv, sz, offset(id)
+	return
+
 #defcfunc read_mem_str int id, int offset_in_block
-	if offset_in_block < 0: return ""
-	if is_id_alive(mem_id_manager, id) == 0: return ""
 	if block_state(id) != STATE_USED: return ""
+	if offset_in_block < 0: return ""
+	if offset_in_block > mem_size(id): return ""
+
 	copy_size = mem_size(id) - offset_in_block
 	
-	dupptr s, varptr(memory_pool) + offset(id) + offset_in_block,mem_size(id), 2
-	return strmid(s, 0, copy_size) //ごみを除く
+	dupptr s, varptr(memory_pool) + offset(id) + offset_in_block, copy_size, 2
+	return strmid(s, 0, copy_size) //文字列として切り出す
 	
-#define global append_str(%1,%2 = "", %3 = -1) _append_str %1,%2,%3
-#deffunc _append_str int id, str value, int write_pos
-	if write_pos == -1{
-		write_mem_str id, read_mem_str(id) + value
-	}else{
-		tmp = read_mem_str(id)
-		write_mem_str id, strmid(tmp,0,write_pos) + value + strmid(tmp, write_pos, 65535)
-	}
+#deffunc append_str int id, str value
+	write_mem_str id, read_mem_str(id) + value
+	return
+	
+#deffunc insert_str int id, str value, int write_pos
+	tmp = read_mem_str(id)
+	write_mem_str id, strmid(tmp, 0, write_pos) + value + strmid(tmp, write_pos, $FFFFFFF)
 	return
 
 //バイナリ操作
 #deffunc poke_block int id, var a, int offset_in_block
-	if offseet_in_block < 0: return
-	if is_id_alive(mem_id_manager, id) == 0: return
+
+	if offset_in_block < 0: return
 	if block_state(id) != STATE_USED: return
 
 	v_size = varsize(a)
 	required = offset_in_block + v_size
 	if mem_size(id) < required {
-		move_block id, required
+		expand_block id, required
 	}
 
 	usable = mem_size(id) - offset_in_block
-	memcpy memory_pool, a, limit(v_size,,usable), offset(id) + offset_in_block, 0
+	memcpy memory_pool, a, limit(v_size,,usable), offset(id) + offset_in_block
 	return
 	
 #deffunc peek_block int id, var a, int offset_in_block
-	if offset_in_block < 0: return
-	if is_id_alive(mem_id_manager, id) == 0: return
 	if block_state(id) != STATE_USED: return
-	v_size = limit(mem_size(id)-offset_in_block,,varsize(a))
-	memcpy a, memory_pool,v_size,0,offset(id) + offset_in_block
-	return
+	if offset_in_block < 0: return
+	if offset_in_block > mem_size(id): return
 
+	memcpy a, memory_pool, limit(mem_size(id) - offset_in_block,, varsize(a)), 0, offset(id) + offset_in_block
+	return
+	
 #deffunc Lpoke_block int id, int p1, int offset_in_block
 
-	//４バイト書き込み
-
-	if offseet_in_block < 0: return
-	if is_id_alive(mem_id_manager, id) == 0: return
-	if block_state(id) != STATE_USED: return
-
-	required = offset_in_block + 4
-	if mem_size(id) < required {
-		move_block id, required
+	if mem_size(id) < offset_in_block + 4 {
+		expand_block id, offset_in_block + 4
 	}
-	memexpand memory_pool, offset(id) + offset_in_block + 4
+	
 	lpoke memory_pool, offset(id) + offset_in_block, p1
 	return
 
-#defcfunc Lpeek_block int id, int offset_in_block
-
-	//４バイト直接読み込み
-	
-	if offset_in_block < 0: return
-	if is_id_alive(mem_id_manager, id) == 0: return
-	if block_state(id) != STATE_USED: return
-	return lpeek(memory_pool, limit(offset(id) + offset_in_block, 0, mem_size(id)-4))
-
-
 #deffunc copy_block int id, var a
-	;memcpy a, memory_pool, mem_size(id), 0, offset(id)
-	dupptr a,varptr(memory_pool) + offset(id), mem_size(id), 2
+	dupptr a, varptr(memory_pool) + offset(id), mem_size(id), 2
 	return
 
 #global

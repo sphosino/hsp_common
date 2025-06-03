@@ -39,6 +39,6 @@ mes "‰Šú: " + read_mem_str(offset_block, 0)
 write_mem_str offset_block, "ABC", 3  // “r’†‚Éã‘‚«
 mes "ã‘‚«Œã: " + read_mem_str(offset_block, 0)  // "012ABC"‚É‚È‚éH
 
-append_str offset_block, "DEF",2
+insert_str offset_block, "DEF",2
 
 mes read_mem_str(offset_block)

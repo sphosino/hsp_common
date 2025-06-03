@@ -60,7 +60,7 @@
     gmode mode, sizex, sizey,alpha
     //コピーモード、元画像のサイズｘ、元画像のサイズｙ,alpha
     pos x, y
-    grotate int(e(0)),px,py,angle, w, h
+    grotate int(e(0)),px,py,angle, w + 1, h
     
 /* grotate
 p1=0～(0) : コピー元のウィンドウID

@@ -35,7 +35,7 @@ repeat
 	dim idlist
 	repeat 10
 		
-		size2 = 4 + rnd(60)
+		size2 = 20 + rnd(30)
 		t = get_new_block(size2)
 		idlist(cnt) = t
 		debug_check_link_integrity "作成後のリンク整合性チェック"
@@ -55,19 +55,20 @@ repeat
 	
 	title "書き込み開始"
 	dim idx
-	repeat 14
+	repeat 20
 		
 		idx(cnt) = idlist(rnd(length(idlist)))
 		// 拡張を引き起こすように長い文字列を書く
 
 		s = ""
 		repeat 3 + rnd(3)
-		s += "にゃ"
+		s += "abcde"
 		loop
 		
 		append_str idx(cnt), s
-		
+		debug_check_free_list_integrity
 		debug_check_link_integrity "拡張後のリンク整合性チェック"
+		
 		if stat {
 			draw_memory_pool_with_labels  100,150 * 2, idx
 			stop
