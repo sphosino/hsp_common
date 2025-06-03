@@ -2,7 +2,7 @@
 #addition "id_manager.hsp"
 #module memory_allocator
 
-; #define DEBUG_ALLOCATOR
+ #define DEBUG_ALLOCATOR
 
 #const CLASS_NUM 5
 #const FREELIST_THRESHOLD 32
@@ -143,7 +143,8 @@
 	
 #deffunc remove_from_free_list int id, local class_id
 
-	//フリーリストから削除する、それだけなので、全体の前後の結合は呼び出し元で行うこと。
+	//フリーリストから削除する、全体の前後の結合は呼び出し元で行う。
+
 	if block_state(id) != STATE_FREE {
 		if block_state(id) == STATE_SENTINEL {
 			logmes "番兵を削除しようとしました！！！"
@@ -153,20 +154,10 @@
 		stop
 	}
 
-	class_position = next_free_list( sentinel(get_class_index_by_id(id)) ) // 開始位置取得
+	link_free_list back_free_list(id), next_free_list(id)
+	block_state(id) = STATE_USED
 
-	while class_position >= 0 // 番兵か末尾まで探す
-
-		if class_position == id {
-			link_free_list back_free_list(id), next_free_list(id)
-			block_state(id) = STATE_USED
-			return
-		}
-		class_position = next_free_list(class_position)
-	wend
-
-	logmes "存在しないIDを削除しようとした、もしくは間違ったクラスに登録されています。"
-	stop
+	return
 	
 #deffunc resize_free_block int id, int newsize
 
@@ -328,11 +319,10 @@
 
 
 #deffunc free_block int id
-
 	//使用中のブロックを解放する。左右の領域を吸収して、フリーリストに返す。
 
-	if is_id_alive(mem_id_manager, id) == 0: return 0
-	if block_state(id) != STATE_USED: return 0//使用中ではないブロック
+	if is_id_alive(mem_id_manager, id) == 0: return 0 //二重開放チェック
+	if block_state(id) != STATE_USED: return 0 // 使用中ではないブロック
 	
 	prev_id = back_mem_id(id) //前のブロックid
 	next_id = next_mem_id(id) //次のブロックid
@@ -381,6 +371,8 @@
 	if block_state(next_id) == STATE_FREE{
 		pattern_flag |= 2 ;右側がフリー
 	}
+
+
 		
 	switch pattern_flag
 	case 0 //どちらにも統合なし
@@ -569,7 +561,6 @@
 	左右のブロックを確認し、拡張可能であれば拡張する。
 	拡張できなかった場合は、左右の領域を吸収して、ブロックを移動する。
 	*/
-	if is_id_alive(mem_id_manager, oldid) == 0: return 0
 	if block_state(oldid) != STATE_USED: return 0
 	if newsize <= 0: return 0
 
@@ -620,7 +611,8 @@
 			//右のフリーブロックを削除
 			remove_free_block nid
 		}else{
-			if newsize <= offset(nid) - (originaloffset + newsize){//右ブロックまでの隙間でOK
+			
+			if newsize <= offset(nid) - originaloffset{//右ブロックまでの隙間でOK
 				;debug_check_link_integrity "右側拡張成功 used"
 				return 1
 			}
@@ -671,6 +663,8 @@
 				//オフセットを左に詰める
 				offset(oldid) = offset(bid) + mem_size(bid)
 				memcpy memory_pool, memory_pool, originalsize, offset(oldid), originaloffset
+
+				debug_check_memory_pool_integrity
 				
 				;debug_check_link_integrity "左側拡張成功 used"
 				return 1
@@ -757,13 +751,15 @@
 	memcpy memory_pool, memory_pool, originalsize, offset(newid), originaloffset
 	swap offset(newid), offset(oldid)
 	swap mem_size(newid), mem_size(oldid)
+
 		
 	free_block newid //解放
+
 
 	return 1
 
 #deffunc remove_free_block int target_id
-    if is_id_alive(mem_id_manager, target_id) == 0: return 0 // 無効なID
+
     if block_state(target_id) != STATE_FREE: return 0 // フリーブロックのみ許可
     
     remove_from_free_list target_id // フリーリストから削除
@@ -801,7 +797,7 @@ return 1 // 成功
 	#const PIXEL 1
 	redraw 2
 	color 0,255,0 ; 使われておらず、フリーリストにも登録されていない
-	boxf 0,yoffset, limit(get_memory_pool_size() * PIXEL,,ginfo(12)),yoffset+ysize
+	boxf 0,yoffset, limit(get_memory_pool_size() * PIXEL,,ginfo(12)), yoffset+ysize
 	
 	foreach_id mem_id_manager, vid
 	
