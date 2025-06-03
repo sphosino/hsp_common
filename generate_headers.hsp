@@ -43,6 +43,7 @@
 		repeat notemax
 			noteget t,cnt
 			if instr(t, 0, "test") >= 0: continue
+			if instr(t, 0, "git") >= 0: continue
 			stack(stack_num) = dir_cur + "/" + t
 			stack_num++
 		loop
