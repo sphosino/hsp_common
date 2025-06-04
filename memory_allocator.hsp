@@ -412,6 +412,7 @@
 	if block_state(MEM_HEAD) != STATE_HEAD: logmes "”Ô•º‚ª‰ó‚ê‚Ä‚¢‚Ü‚· expected =" + STATE_HEAD + " actural ="  + block_state(MEM_HEAD) + "\n" + MEM_HEAD:stop
 	if block_state(MEM_TAIL) != STATE_TAIL: logmes "”Ô•º‚ª‰ó‚ê‚Ä‚¢‚Ü‚· expected =" + STATE_TAIL + " actural ="  + block_state(MEM_TAIL) + "\n" + MEM_TAIL:stop
 
+	if offset(MEM_HEAD) != 0: logmes "”Ô•º‚ª‰ó‚ê‚Ä‚¢‚Ü‚·": stop
 	if mem_size(MEM_HEAD) != 0: logmes "”Ô•º‚ª‰ó‚ê‚Ä‚¢‚Ü‚·": stop
 	
 	list_count = get_block_count()
