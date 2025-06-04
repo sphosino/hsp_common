@@ -79,13 +79,13 @@
 	mem_size(MEM_TAIL) = 0
 
 	//最初のフリーブロックの作成
-	first_free_block = get_new_id(mem_id_manager)
-	offset(first_free_block) = 0
-	mem_size(first_free_block) = varsize(memory_pool)
+	newid = get_new_id(mem_id_manager)
+	offset(newid) = 0
+	mem_size(newid) = varsize(memory_pool)
 
 	//メモリ上での連結を構築
-	link_blocks MEM_HEAD, first_free_block
-	link_blocks first_free_block, MEM_TAIL
+	link_blocks MEM_HEAD, newid
+	link_blocks newid, MEM_TAIL
 
 	//フリーリストに追加
 	add_to_free_list first_free_block
@@ -411,6 +411,8 @@
 	//番兵検査（固定の情報がいじられていないか？）
 	if block_state(MEM_HEAD) != STATE_HEAD: logmes "番兵が壊れています expected =" + STATE_HEAD + " actural ="  + block_state(MEM_HEAD) + "\n" + MEM_HEAD:stop
 	if block_state(MEM_TAIL) != STATE_TAIL: logmes "番兵が壊れています expected =" + STATE_TAIL + " actural ="  + block_state(MEM_TAIL) + "\n" + MEM_TAIL:stop
+
+	if mem_size(MEM_HEAD) != 0: logmes "番兵が壊れています": stop
 	
 	list_count = get_block_count()
 
@@ -645,7 +647,7 @@
 
 	return 1
 
-#deffunc remove_free_block int target_id
+#deffunc local remove_free_block int target_id
 
     if block_state(target_id) != STATE_FREE: return 0 // フリーブロックのみ許可
     
@@ -655,7 +657,7 @@
     
 return 1 // 成功
 
-#deffunc swap_adjacent_blocks int nowid
+#deffunc local swap_adjacent_blocks int nowid
 	// 指定されたIDのブロックとその左隣のブロックのリンクのみを入れ替える
 	
 	_prev_id = back_mem_id(nowid)
@@ -667,11 +669,11 @@ return 1 // 成功
 	
 	return
 	
-#deffunc link_blocks int _prev_id_, int _next_id_
+#deffunc local link_blocks int _prev_id_, int _next_id_
     next_mem_id(_prev_id_) = _next_id_
     back_mem_id(_next_id_) = _prev_id_
 	return
-#deffunc link_free_list int _prev_id_, int _next_id_
+#deffunc local link_free_list int _prev_id_, int _next_id_
     next_free_list(_prev_id_) = _next_id_
     back_free_list(_next_id_) = _prev_id_
     return
@@ -732,7 +734,7 @@ return 1 // 成功
 	redraw
 	return
 	
-#defcfunc get_color_by_class int _class
+#defcfunc local get_color_by_class int _class
 	switch _class
 	case 0 : return $ff6666
 	case 1 : return $ff9933 
@@ -748,7 +750,7 @@ return 1 // 成功
 	swbreak
 	swend
 return
-#defcfunc is_in_array int _value, array a
+#defcfunc local is_in_array int _value, array a
 	for i,, length(a)
 		if a(i) == _value : return 1
 	next
@@ -772,11 +774,11 @@ return
 #defcfunc get_block_count
 	return get_using_count(mem_id_manager) - SENTINEL_NUM - 2
 
+//操作可能なブロックのリストを取得
 #defcfunc get_usable_blocks array a
 	an = 0
 	now_node = next_mem_id(MEM_HEAD)
 	while now_node != MEM_TAIL
-
 		if block_state(now_node) == STATE_USED{
 			a(an) = now_node
 			an++
