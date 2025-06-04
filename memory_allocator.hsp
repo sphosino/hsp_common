@@ -523,6 +523,7 @@
 		}
 	}
 	return 0
+	
 #defcfunc local try_expand_left int oldid, int newsize
 
 	//左拡張を試みる。不可能だった場合、フリーブロックの吸収だけ行う。
@@ -585,8 +586,7 @@
 	この操作はメモリプール上には、一切影響を与えないため、メモリコピー操作は別次元で考えてよい。
 	メモリ上のオフセットやサイズは単純なswap操作でOK
 
-	完全に情報を交換した後、
-	元居たリンク上の場所、つまり新しく確保したブロックIDを削除する。
+	完全に情報を交換した後、元居たリンク上の場所、つまり新しく確保したブロックIDを削除する。
 
 	1,2,3,(3,9,5),5,6,7,8,(8,4,10),10,11,12
 	         ↑９がフリーリストに入る。
@@ -688,10 +688,10 @@ return 1 // 成功
 	redraw 2
 	color 0,255,0 ; 使われておらず、フリーリストにも登録されていない
 	boxf 0,yoffset, limit(get_memory_pool_size() * PIXEL,,ginfo(12)),yoffset+ysize
+
+	vid = next_mem_id(MEM_HEAD)
+	while vid != MEM_TAIL
 	
-	foreach_id mem_id_manager, vid
-	
-		if block_state(vid) == STATE_SENTINEL: continue
 		ofs = offset(vid)
 		_size = mem_size(vid)
 		sclass = get_class_index(_size)
@@ -730,8 +730,9 @@ return 1 // 成功
 		//両側の区切り線
 		line ofs * PIXEL                 , yoffset, ofs*PIXEL, yoffset+ysize
 		line (ofs + mem_size(vid)) * PIXEL, yoffset, (ofs+mem_size(vid)) * PIXEL,yoffset+ysize
-		
-	foreach_end
+
+		vid = next_mem_id(vid)
+	wend
 	redraw
 	return
 	
