@@ -2,7 +2,7 @@
 #addition "id_manager.hsp"
 #module memory_allocator
 
-; #define DEBUG_ALLOCATOR
+;#define DEBUG_ALLOCATOR
 
 #const CLASS_NUM 5
 #const FREELIST_THRESHOLD 32
@@ -12,6 +12,8 @@
 
 #const OFFSET_SENTINEL -1234567
 #const MEM_SENTINEL_SIZE -9999999
+
+#const SENTINEL_NUM CLASS_NUM + 1
 
 #enum STATE_SENTINEL 0
 #enum STATE_USED
@@ -38,7 +40,7 @@
 	newmod mem_id_manager, id_manager, MAX_DIV	
 
 	pre_sentinel = -1
-	repeat CLASS_NUM
+	repeat SENTINEL_NUM
 		sentinel(cnt) = get_new_id(mem_id_manager) //番兵用のIDを確保
 
 		back_free_list(sentinel(cnt)) = pre_sentinel
@@ -55,7 +57,7 @@
 		pre_sentinel = sentinel(cnt)
 	loop
 	
-	next_free_list(sentinel(CLASS_NUM-1)) = -1
+	next_free_list(sentinel(CLASS_NUM)) = -1
 
 
 	//最後のブロック管理変数
@@ -79,7 +81,7 @@
 #deffunc debug_check_free_list_integrity
 
 	//番兵単品検査（固定の情報がいじられていないか？）
-	repeat CLASS_NUM
+	repeat SENTINEL_NUM
 		if BLOCK_STATE(sentinel(cnt)) != STATE_SENTINEL: logmes "番兵が壊れてます": stop
 		if back_mem_id(sentinel(cnt)) != -1: logmes "番兵が壊れています": stop
 		if next_mem_id(sentinel(cnt)) != -1: logmes "番兵が壊れています": stop
@@ -115,7 +117,6 @@
 		switch block_state(start_point)
 
 		case STATE_FREE
-			assert next_mem_id(start_point) >= 0
 			assert block_state(next_mem_id(start_point)) == STATE_USED
 		swbreak
 		case STATE_SENTINEL
@@ -134,8 +135,8 @@
 		start_point = next_free_list(start_point)
 	wend
 
-	if sentinel_count != CLASS_NUM{
-		logmes "フリーリスト内の番兵の数が異常です\n expected = " + CLASS_NUM + "\n actual = " + sentinel_count
+	if sentinel_count != SENTINEL_NUM{
+		logmes "フリーリスト内の番兵の数が異常です\n expected = " + SENTINEL_NUM + "\n actual = " + sentinel_count
 		stop
 	}
 
@@ -167,9 +168,7 @@
 		return
 	}
 	
-	_newclass = get_class_index(newsize)
-
-	if get_class_index_by_id(id) == _newclass {
+	if get_class_index_by_id(id) == get_class_index(newsize) {
 		//クラス変動なし
 		mem_size(id) = newsize
 		return
@@ -405,7 +404,7 @@
 	swbreak
 
 	case 2 //右にのみ統合
-		assert next_mem_id(next_id) >= 0 //フリーリストに登録されているから、さらに右がある。
+		assert block_state(next_mem_id(next_id)) == STATE_USED //フリーリストに登録されているから、さらに右がある。
 		left = offset(id)
 		right = offset(next_mem_id(next_id))
 		if prev_id >= 0{
@@ -423,7 +422,7 @@
 	swbreak
 	
 	case 3 //左右に統合 -> prev_idに統一する
-		assert next_mem_id(next_id) >= 0
+		assert block_state(next_mem_id(next_id)) == STATE_USED
 		left = offset(prev_id)
 		right = offset(next_mem_id(next_id))
 
@@ -697,7 +696,6 @@
 	
 	*/
 
-	assert next_mem_id(oldid) >= 0
 	assert block_state(next_mem_id(oldid)) == STATE_USED
 	
 	//左の隙間計算
@@ -779,8 +777,8 @@ return 1 // 成功
     if _next_id_ >= 0: back_mem_id(_next_id_) = _prev_id_
 	return
 #deffunc link_free_list int _prev_id_, int _next_id_
-    if _prev_id_ >= 0: next_free_list(_prev_id_) = _next_id_
-    if _next_id_ >= 0: back_free_list(_next_id_) = _prev_id_
+    next_free_list(_prev_id_) = _next_id_
+    back_free_list(_next_id_) = _prev_id_
     return
 	
 ///////////////////
@@ -876,7 +874,7 @@ return
 
 //メモリプール上に存在するブロックの数（空き含む）
 #defcfunc get_block_count
-	return get_using_count(mem_id_manager) - CLASS_NUM
+	return get_using_count(mem_id_manager) - SENTINEL_NUM
 
 //発行した最大のID番号
 #defcfunc get_block_max_id
