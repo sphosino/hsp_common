@@ -88,7 +88,7 @@
 	link_blocks newid, MEM_TAIL
 
 	//フリーリストに追加
-	add_to_free_list first_free_block
+	add_to_free_list newid
 	
 	return
 
