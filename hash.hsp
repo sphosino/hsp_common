@@ -14,7 +14,7 @@
 #const FNV_PRIME 73091
 #const SEED 72889
 
-#const DEFAULT_DATA_SIZE 100
+#const DEFAULT_DATA_SIZE 25000
 #const EXPECTED_NUMBER_COLLISIONS 4
     
 #defcfunc local get_hash str s1
@@ -34,8 +34,8 @@
 	dim hashtable, MAX_KEYS, EXPECTED_NUMBER_COLLISIONS
 	dim valid_hash, MAX_KEYS
 	
-	newmod hash_id_manager, id_manager
-	newmod valid_hash_manager, id_manager
+	newmod hash_id_manager, id_manager, DEFAULT_DATA_SIZE
+	newmod valid_hash_manager, id_manager, DEFAULT_DATA_SIZE
 
 	dim valid_tableid_to_hash, DEFAULT_DATA_SIZE
 	
@@ -179,13 +179,3 @@
 	debug_summary a
 
 #endif
-
-/*
---- hash=500151 ---
-  A => B
---- hash=125848 ---
-  E => F
---- hash=626330 ---
-  z => T
-
-;*/

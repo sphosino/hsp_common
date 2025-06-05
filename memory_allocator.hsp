@@ -6,9 +6,9 @@
 
 #const CLASS_NUM 5
 #const FREELIST_THRESHOLD 32
-#const DEFAULT_POOL_SIZE 180000000
-#const MAX_DIV 25000 //総ブロック数
-#const MAX_EXPAND_LIMIT 180000000
+#const DEFAULT_POOL_SIZE 190000000
+#const MAX_DIV 12000000 //総ブロック数
+#const MAX_EXPAND_LIMIT 190000000
 
 #const OFFSET_SENTINEL -1234567
 #const MEM_SENTINEL_SIZE -9999999
@@ -116,7 +116,7 @@
 		if mem_size(SENTINEL(cnt)) != MEM_SENTINEL_SIZE: logmes "番兵が壊れています": stop
 	loop
 
-	//番兵のリンクチェック
+	//フリーリストのリンクチェック
 	dim id_check, get_max_id(mem_id_manager) + 1 //発行したIDの最大値分確保
 
 	sentinel_count = 0
@@ -145,7 +145,7 @@
 		switch block_state(start_point)
 
 		case STATE_FREE
-			assert block_state(next_mem_id(start_point)) == STATE_USED || block_state(next_mem_id(start_point)) == STATE_TAIL //フリーリストの次は使用中かテールであること
+			assert block_state(next_mem_id(start_point)) == STATE_USED || block_state(next_mem_id(start_point)) == STATE_TAIL //フリーブロックの次は使用中かテールであること
 		swbreak
 		case STATE_SENTINEL
 			sentinel_count++
@@ -299,7 +299,7 @@
 	
 	if newid >= 0{
 		shrink_block newid, size //必要な分だけにセット
-		memset memory_pool,0, mem_size(newid), offset(newid) //get_new_blockなのでお掃除
+		memset memory_pool,0, size, offset(newid) //get_new_blockなのでお掃除
 		return newid
 	}
 
@@ -656,7 +656,7 @@
     link_blocks back_mem_id(target_id), next_mem_id(target_id) // 前後のブロックをリンク
     release_id mem_id_manager, target_id// IDを返却
     
-return 1 // 成功
+return 1
 
 #deffunc local swap_adjacent_blocks int nowid
 	// 指定されたIDのブロックとその左隣のブロックのリンクのみを入れ替える
