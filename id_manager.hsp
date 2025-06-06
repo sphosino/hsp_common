@@ -7,13 +7,13 @@
 #define ctype ceil(%1) ((%1 > int(%1)) + %1)
 #endif
 
-#modinit int p1
+#modinit int size
 
-	if p1 > 0{
+	if size > 0{
 		//指定があればそのサイズで初期化
-		dim id_position_in_used_list, p1
-		dim used_list, p1
-		dim open_list, p1
+		dim id_position_in_used_list, size
+		dim used_list, size
+		dim open_list, size
 	}else{
 		//デフォルトサイズで確保
 		dim id_position_in_used_list, DEFAULT_SIZE

@@ -31,7 +31,7 @@
 	
 	dim offset, MAX_DIV //メモリプール上のオフセット
 	dim mem_size, MAX_DIV //メモリのサイズ
-	dim block_state, MAX_DIV //このブロックが空きかどうか
+	dim block_state, MAX_DIV //このブロックが空きか、使用中か、番兵か？など。
 	dim back_mem_id, MAX_DIV //前のブロックid
 	dim next_mem_id, MAX_DIV //次のブロックid
 
@@ -230,7 +230,7 @@
 #defcfunc local get_free_block int size
 
 	//フリーリストから探して見つかったら取り出す
-	//指定サイズのクラス以上の空きブロックを探すよ
+	//指定サイズのクラス以上の空きブロックを探す
 
 	start_node = next_free_list(SENTINEL(get_class_index(size)))
 
