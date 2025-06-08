@@ -1,5 +1,7 @@
+#include "hsp3_64.as"
 #include "../memory_allocator.hsp"
 #include "nodmod/scrollbarmodule.hsp"
+
 #addition "WrapCall.as"
 screen 0,1900,1000,,0,0
 randomize
@@ -44,6 +46,7 @@ repeat
 			stop
 		}
 		draw_memory_pool_with_labels 100,150 * 1,idlist
+		stop
 		await 1000/m1
 	loop
 

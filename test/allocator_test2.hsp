@@ -1,5 +1,7 @@
+#include "hsp3_64.as"
 #include "../memory_allocator.hsp"
 #include "nodmod/scrollbarmodule.hsp"
+
 #addition "WrapCall.as"
 screen 0,1900,1000,,0,0
 randomize
