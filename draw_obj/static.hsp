@@ -1,4 +1,5 @@
 #ifndef static_manager
+#addition "../../hsp_common/id_manager.hsp"
 #addition "../hsp_common/id_manager.hsp"
 #module static_manager
 #deffunc init_static_manager

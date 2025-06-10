@@ -27,7 +27,7 @@
 	if open_list_num {
 		open_list_num--
 		new_id = open_list(open_list_num)
-	} else {
+	}else{
 		new_id = using_max
 		if new_id >= len{ //確保済みサイズを超えたら
 			//自動拡張を利用して２倍に

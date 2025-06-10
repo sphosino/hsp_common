@@ -380,7 +380,7 @@ p2で間隔を指定します。この時間以内に２回目が押されると、１を返します。
 	#define global       setFPStime(%1 = FPStime@keyFPS) FPStime@keyFPS = limitf(%1, 0.1): dim prefps@keyFPS ; FPS精度を設定
 	#define global ctype getFPStime                      FPStime@keyFPS ; FPS精度
 	
-	#define global ctype waitedtime                      time_remaining@keyFPS ; 処理落ちしているかどうか
+	#define global ctype waitedtime                      time_remaining@keyFPS ; ウェイトを行った時間(ms) (0以下 == 処理落ち)
 	#define global ctype frametime                       ((0. + actual_elapsed@keyFPS) / 1000) ; 前回のフレームにかかった時間(秒)
 		
 	//キー状態取得関連
@@ -409,17 +409,6 @@ p2で間隔を指定します。この時間以内に２回目が押されると、１を返します。
 
 /*
 %index
-slowdown
-
-%prm
-()
-%inst
-
-フレームが処理落ちしているときは１、
-時間内に処理が完了しているときは０が帰ります
-%href
-
-%index
 addkey_all
 
 %prm
@@ -432,7 +421,7 @@ p1で非アクティブ時の動作を設定します。
 詳しくはaddkeyの項目を確認してください
 %href
 addkey
-
+delkey
 
 %index
 delkey_all
@@ -442,6 +431,7 @@ delkey_all
 全てのキーコードを監視から削除します。
 %href
 delkey
+addkey
 %*/	
 	addkey_all
 	

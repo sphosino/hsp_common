@@ -59,7 +59,7 @@
 	loop
 
 	max_num *= 2
-	init_ringbuffer max_num, size
+	init_ringbuffer size, max_num
 	
 	repeat max_num / 2
 		r_push tmp(cnt)

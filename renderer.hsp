@@ -43,6 +43,8 @@
 
 	sdim tmp,, 50 //splitƒpƒ‰—p
 
+	global_draw_dt = 0.016666
+
     return
 
 #deffunc register_renderer str s1, label l

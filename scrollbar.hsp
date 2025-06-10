@@ -86,6 +86,10 @@
 	if a(1) > a(3) : swap a(1), a(3)
 	return a(0) <= mousex && a(1) <= mousey && a(2) >= mousex && a(3) >= mousey
 
+#modcfunc is_in_scrollbar
+	
+	return in_rect(bar_area)
+
 	
 #modfunc get_scroll_bar_area array a
 	a = bar_area,bar_area.1,bar_area.2,bar_area.3

@@ -27,9 +27,14 @@
     loop
     return (s & 0x7FFFFFFF) \ MAX_KEYS
     
-#modinit
+#modinit int size
 
-	sdim data,, ENUM_MAX, DEFAULT_DATA_SIZE
+	if size == 0{
+		sdim data,, ENUM_MAX, DEFAULT_DATA_SIZE
+	}else{
+		sdim data,, ENUM_MAX, size
+	}
+	
 	dim hashcount, MAX_KEYS
 	dim hashtable, MAX_KEYS, EXPECTED_NUMBER_COLLISIONS
 	dim valid_hash, MAX_KEYS
