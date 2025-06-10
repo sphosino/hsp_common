@@ -52,7 +52,7 @@
 
 
 #deffunc local resize
-	logmes "キューのリサイズが発生しました"
+	init_ringbuffer size, max_num
 	sdim tmp, size, max_num
 	repeat max_num
 		r_shift tmp(cnt)
