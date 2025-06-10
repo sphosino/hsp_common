@@ -5,3 +5,4 @@ packfile
 test*.hsp
 *.exe
 all_include
+.vscode
