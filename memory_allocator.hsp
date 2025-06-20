@@ -6,9 +6,8 @@
 
 #const CLASS_NUM 5
 #const FREELIST_THRESHOLD 32
-#const DEFAULT_POOL_SIZE 200000000
-#const MAX_DIV 13000000 //総ブロック数
-#const MAX_EXPAND_LIMIT 200000000
+#const DEFAULT_POOL_SIZE 200000
+#const MAX_EXPAND_LIMIT 300000000
 
 #const OFFSET_SENTINEL -1234567
 #const MEM_SENTINEL_SIZE -9999999
@@ -21,12 +20,18 @@
 #enum STATE_HEAD
 #enum STATE_TAIL
 
-#deffunc init_memory_pool int size
+#deffunc init_memory_pool int size, int div_num
 	
 	if size <= 0{
 		sdim memory_pool, DEFAULT_POOL_SIZE
 	}else{
 		sdim memory_pool, size
+	}
+
+	if div_num <= 0{
+		MAX_DIV = varsize(memory_pool) / 8
+	}else{
+		MAX_DIV = div_num
 	}
 	
 	dim offset, MAX_DIV //メモリプール上のオフセット

@@ -61,7 +61,7 @@
 	;validate_list_integrity thismod, "ソート後"
 	return　//終了
 	
-#modcfunc _sort_list_by_value_array array a, int node, local right_top
+#modcfunc _sort_list_by_value_array array a, int node
 	if nextid(node) == -1 : return node ; 要素1個ならそのまま
 	
 	// ウサギとカメ
@@ -75,17 +75,13 @@
 		}
 	wend
 	
-	// slow の次で切断！ これと要素１リターンで無限再帰の回避が保障された。
+	// （slow の次で切断！ ＋ 要素１リターン）で無限再帰の回避。
 	mid = nextid(slow)
 	nextid(slow) = -1
-	
-	// 左右再帰(左を先にするなら、(right_top)ではなく(left_topとmid)をローカル変数にしなければならない
-	right_top = _sort_list_by_value_array(thismod, a, mid)
-	left_top  = _sort_list_by_value_array(thismod, a, node)
 
-	// マージして返す
+	// 左右を再帰して、マージして返す(右、左の順で再帰 -> 左を先にするとmidが壊れる。)
 	
-	return merge(thismod,a, left_top, right_top)
+	return merge(thismod, a, _sort_list_by_value_array(thismod, a, mid), _sort_list_by_value_array(thismod, a, node))
 
 #modfunc rebuild_backids int p1
 	tmp = p1
@@ -98,7 +94,9 @@
 	lastid = tmp
 	return
 
-#modcfunc merge array a, int list1, int list2
+#modcfunc merge array a, int list2, int list1
+	//list2 = 右
+	//list1 = 左
 	if list1 < 0: return list2
 	if list2 < 0: return list1
 

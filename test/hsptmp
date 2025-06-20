@@ -1,118 +1,189 @@
-#include "hsp3_64.as"
-#include "../memory_allocator.hsp"
-#include "nodmod/scrollbarmodule.hsp"
+#include "../id_manager.hsp"
+#include "../list.hsp"
 
-#addition "WrapCall.as"
-screen 0,1900,1000,,0,0
-randomize
-mes "速度調整のスクロールバーです"
-scbaOnScroll *sc　//動かすたびにジャンプするラベル
 
-scbaScrollbar 0, 600,30
-makeID = stat
-scbaSetrange makeID, 1, 20 //1-20までの値
-scbaSetPos makeID, 15
-m1 = 15
-scbaScrollbar 0,600,30
-writeID = stat
-scbaSetrange writeID, 1, 20
-scbaSetPos writeID,15
-m2 = 15
-scbaScrollbar 0, 600, 30
-delID = stat
-scbaSetrange delID, 1, 20
-scbaSetPos delID, 15
-m3 = 15
 
-randomize 
+newmod a,list_id_manager, 100
 
-init_memory_pool 400;プールサイズ自動拡張の確認のため小さく確保
+#undef mes
+#define global mes(%1) mes@hsp(%1):logmes %1
+// テスト用のデータ構造を定義
+#module
+#deffunc test_header str ti
+    mes "========================================"
+    mes ti
+    mes "========================================"
+return
 
-repeat 
-	title"作成準備中"
-	draw_memory_pool_with_labels  100,150 * 1, idx
-	await 2000/m1
-	
-	title"作成開始"
-	dim idlist
-	repeat 10
-		
-		size2 = 20 + rnd(30)
-		t = get_new_block(size2)
-		idlist(cnt) = t
-		debug_check_link_integrity "作成後のリンク整合性チェック"
-		if stat {
-			draw_memory_pool_with_labels 100,150 * 1, idlist
-			stop
-		}
-		draw_memory_pool_with_labels 100,150 * 1,idlist
-		stop
-		await 1000/m1
-	loop
+#deffunc print_list_with_values array list_manager, array values, str label
+    mes label + ":"
+    foreach_list list_manager, id
+        mes strf("ID: %d, Value: %d", id, values(id))
+    foreach_list_end
+    mes ""
+return
+#global
 
-;/*
-	// 一部を書き込みしてみる（右のスペースを使い無理なら左のスペースもみる。それでも無理なら、自動的に移動と解放が行われる。）
-	title "書き込み準備中"
-	draw_memory_pool_with_labels 100,150*2,idlist
-	await 2000/m2
-	
-	title "書き込み開始"
-	dim idx
-	repeat 20
-		
-		idx(cnt) = idlist(rnd(length(idlist)))
-		// 拡張を引き起こすように長い文字列を書く
+// メイン処理開始
+newmod manager1, list_id_manager, 200
+newmod manager2, list_id_manager, 200
+newmod manager3, list_id_manager, 200
 
-		s = ""
-		repeat 3 + rnd(3)
-		s += "abcde"
-		loop
-		
-		append_str idx(cnt), s
-		debug_check_free_list_integrity
-		debug_check_link_integrity "拡張後のリンク整合性チェック"
-		
-		if stat {
-			draw_memory_pool_with_labels  100,150 * 2, idx
-			stop
-		}
-		draw_memory_pool_with_labels  100,150 * 2, idx
-		await 1000/m2
-	loop
-//*/
-
-	title "削除準備中"
-	draw_memory_pool_with_labels  100,150 * 3, idx
-	await 2000/m3
-	
-	title "削除開始"
-	dim idx
-	count = 0
-	in = 0
-	dim a, get_block_count()
-	repeat 7 + rnd(6)
-		if get_usable_blocks(a) == 0: break
-		free_block a(rnd(stat))
-		debug_check_link_integrity "解放後のリンク整合性チェック"
-		if stat {
-			draw_memory_pool_with_labels  100,150 * 3, idx
-			stop
-		}
-		draw_memory_pool_with_labels  100,150 * 3, idx
-		await 1000/m3
-	loop
+// テスト1: 基本的なランダムソート（大きなデータセット）
+test_header "テスト1: 大きなデータセットの基本ソート"
+dim values1, 200
+repeat 50
+    node_id = get_new_list_id(manager1)
+    values1(node_id) = rnd(1000)
 loop
 
-*sc
-	switch wparam
-	case makeID
-	m1 = lparam
-	swbreak
-	case writeID
-	m2 = lparam
-	swbreak
-	case delID
-	m3 = lparam
-	swbreak
-	swend
-	return
+mes "ソート前:"
+foreach_list manager1, id
+    mes strf("ID: %d, Value: %d", id, values1(id))
+    if cnt >= 10 : mes "... (以下省略)" : _break
+foreach_list_end
+
+sort_list_by_value_array manager1, values1
+mes "\nソート後:"
+foreach_list manager1, id
+    mes strf("ID: %d, Value: %d", id, values1(id))
+    if cnt >= 10 : mes "... (以下省略)" : _break
+foreach_list_end
+mes ""
+// テスト2: 同じ値を持つ要素のソート（安定ソートのテスト）
+test_header "テスト2: 同じ値を持つ要素の安定ソート"
+dim values2, 200
+dim secondary_key, 200
+
+// 意図的に同じ値を持つ要素を作成
+repeat 15
+    node_id = get_new_list_id(manager2)
+    values2(node_id) = cnt \ 5 + 1  // 0,1,2,3,4,0,1,2,3,4... のパターン
+    secondary_key(node_id) = (cnt + 1) // 元の順序を記録
+loop
+
+print_list_with_values manager2, values2, "ソート前（主キー値で同じ値が複数存在）"
+
+sort_list_by_value_array manager2, values2
+
+mes "ソート後（同じ値の要素の順序に注目）:"
+foreach_list manager2, id
+    mes strf("ID: %d, Primary: %d, Original_Order: %d", id, values2(id), secondary_key(id))
+foreach_list_end
+mes ""
+
+// テスト3: 逆順ソート（大きい値から小さい値へ）
+test_header "テスト3: 逆順ソート実装"
+dim values3, 200
+dim inverted_values3, 200
+
+repeat 20
+    node_id = get_new_list_id(manager3)
+    values3(node_id) = rnd(100) + 1
+    inverted_values3(node_id) = -values3(node_id)  // 負の値にして逆順を実現
+loop
+
+print_list_with_values manager3, values3, "元のデータ"
+
+sort_list_by_value_array manager3, inverted_values3
+
+mes "逆順ソート後:"
+foreach_list manager3, id
+    mes strf("ID: %d, Value: %d", id, values3(id))
+foreach_list_end
+mes ""
+
+// テスト4: 複合ソート（文字列の長さでソート）
+test_header "テスト4: 文字列データの長さによるソート"
+newmod str_manager, list_id_manager, 100
+dim str_lengths, 100
+sdim test_strings, 64, 100
+
+// テスト用文字列データ
+test_data = "apple,cat,elephant,dog,butterfly,ant,rhinoceros,bee,crocodile,fish"
+split test_data, ",", temp_array
+
+repeat length(temp_array)
+    if temp_array(cnt) != "" {
+        node_id = get_new_list_id(str_manager)
+        test_strings(node_id) = temp_array(cnt)
+        str_lengths(node_id) = strlen(test_strings(node_id))
+    }
+loop
+
+mes "ソート前（文字列とその長さ）:"
+foreach_list str_manager, id
+    mes strf("ID: %d, String: '%s', Length: %d", id, test_strings(id), str_lengths(id))
+foreach_list_end
+
+sort_list_by_value_array str_manager, str_lengths
+
+mes "\n文字列長さでソート後:"
+foreach_list str_manager, id
+    mes strf("ID: %d, String: '%s', Length: %d", id, test_strings(id), str_lengths(id))
+foreach_list_end
+mes ""
+
+// テスト5: エッジケースのテスト
+test_header "テスト5: エッジケース"
+newmod edge_manager, list_id_manager, 50
+dim edge_values, 50
+
+// 単一要素
+node_single = get_new_list_id(edge_manager)
+edge_values(node_single) = 42
+
+mes "単一要素のソート:"
+print_list_with_values edge_manager, edge_values, "ソート前"
+sort_list_by_value_array edge_manager, edge_values
+print_list_with_values edge_manager, edge_values, "ソート後"
+
+// 既にソート済みデータ
+repeat 9
+    node_id = get_new_list_id(edge_manager)
+    edge_values(node_id) = cnt + 1
+loop
+
+mes "既にソートされたデータ:"
+print_list_with_values edge_manager, edge_values, "ソート前（既にソート済み）"
+sort_list_by_value_array edge_manager, edge_values
+print_list_with_values edge_manager, edge_values, "ソート後"
+
+// テスト6: パフォーマンステスト
+test_header "テスト6: パフォーマンステスト"
+newmod perf_manager, list_id_manager, 500
+dim perf_values, 500
+
+// 大量データでのソートテスト
+data_size = 100
+repeat data_size
+    node_id = get_new_list_id(perf_manager)
+    perf_values(node_id) = rnd(10000)
+loop
+
+start_time = keyfpstimer
+sort_list_by_value_array perf_manager, perf_values
+end_time = keyfpstimer
+
+mes strf("%d個の要素のソートにかかった時間: %dms", data_size, end_time - start_time)
+
+// 結果の検証（正しくソートされているかチェック）
+mes "ソート結果の検証:"
+prev_value = -1
+error_count = 0
+foreach_list perf_manager, id
+    if perf_values(id) < prev_value {
+        error_count++
+    }
+    prev_value = perf_values(id)
+foreach_list_end
+
+if error_count = 0 {
+    mes "? ソートが正しく実行されました"
+} else {
+    mes strf("? ソートエラーが%d箇所で発生しました", error_count)
+}
+
+mes "\n全てのテストが完了しました。"
+
+
