@@ -30,7 +30,7 @@
 			font fontname, fsize
 			mes b, p1
 
-			pos (rect.2 + rect.0) / 2 - ginfo(14) / 2, rect.1 + (行サイズ * cnt) + 行サイズ / 2 - ginfo(15) / 2
+			pos (rect.2 + rect.0 - ginfo(14)) / 2 , rect.1 + (行サイズ * cnt) + (行サイズ - ginfo(15)) / 2
 			mes b, p1
 			
 		loop

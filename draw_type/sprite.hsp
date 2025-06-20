@@ -1,6 +1,5 @@
 #ifndef sprite_mod
 #module sprite_mod
-#const DEFAULT_R 6
 
 *render
 	get_basic_params p
@@ -15,8 +14,8 @@
 	get_extra_params e
 
 	//コピー元情報
-	px = 0.
-	py = 0.
+	px = 0
+	py = 0
 	sizex = w
 	sizey = h
 	mode = 3
@@ -57,10 +56,10 @@
 	}
 	
     
-    gmode mode, sizex, sizey,alpha
+    gmode mode, sizex + 6, sizey, alpha //(謎補正  hspversion = 3.6)
     //コピーモード、元画像のサイズｘ、元画像のサイズｙ,alpha
     pos x, y
-    grotate int(e(0)),px,py,angle, w + 1, h
+    grotate int(e(0)),px,py,angle, w, h
     
 /* grotate
 p1=0～(0) : コピー元のウィンドウID
