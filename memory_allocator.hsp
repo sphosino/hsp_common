@@ -621,6 +621,7 @@
 		if next_mem_id(oldid) == MEM_TAIL{
 			//末尾なら直接拡張
 			if offset(oldid) + newsize > MAX_EXPAND_LIMIT{
+				mem_size(oldid) = size_original
 				logmes "拡張失敗"
 				stop
 			}
@@ -906,7 +907,7 @@ return
 	return
 
 #deffunc copy_block int id, var a
-	//メモリブロックを参照コピーします（安全チェックとoffsetなし）
+	//メモリブロックを参照コピーします（読み取り専用です！！！外部から直接変更を加えないようにしてください！！！）
 	dupptr a, varptr(memory_pool) + offset(id), mem_size(id), 2
 	return
 
