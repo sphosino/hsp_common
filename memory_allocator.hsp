@@ -734,7 +734,6 @@ return 1
 		mes _size
 		//文字列で使用中ならそれを可視化
 		color 255,0,0
-		logmes vid
 		使用量 = strlen(read_mem_str(vid))
 		boxf ofs*PIXEL+1, yoffset+ysize - ysize/4, (ofs + 使用量)*PIXEL-1, yoffset+ysize - ysize/9
 		//ブロックID
