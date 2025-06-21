@@ -30,7 +30,7 @@
 	}else{
 		new_id = using_max
 		if new_id >= len{ //Šm•ÛÏ‚İƒTƒCƒY‚ğ’´‚¦‚½‚ç
-			//©“®Šg’£‚ğ—˜—p‚µ‚Ä‚Q”{‚É
+			//©“®Šg’£‚ğ—˜—p‚µ‚Ä’è””{‚ÅŠg’£
 			new_len = ceil(EXP_RATE * len)
 			id_position_in_used_list(new_len - 1) = 0 
 			used_list(new_len - 1) = 0

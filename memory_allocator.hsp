@@ -4,11 +4,15 @@
 
 ;#define DEBUG_ALLOCATOR
 
-#const CLASS_NUM 5
-#const FREELIST_THRESHOLD 32
+//get_class_index関数と合わせて調整してください
+#const CLASS_NUM 5 //使用するクラスの数
+#const FREELIST_THRESHOLD 32 //このサイズ以下の領域はフリーリストに登録しない
+
+//プールサイズ設定(調整可能です）
 #const DEFAULT_POOL_SIZE 200000
 #const MAX_EXPAND_LIMIT 300000000
 
+//-------------------------------------------
 #const OFFSET_SENTINEL -1234567
 #const MEM_SENTINEL_SIZE -9999999
 
@@ -21,17 +25,22 @@
 #enum STATE_TAIL
 
 #deffunc init_memory_pool int size, int div_num
+
+	//アロケータを任意のサイズで初期化します。既に発行したブロックは全て無効になるので注意。
+	
+	//size -> 目安は、200,000(標準システム向け)、500,000～(高負荷システム向け)を推奨（省略可能)
+	//div_num -> 予め確保するブロックの数になります。(省略可能）
 	
 	if size <= 0{
 		sdim memory_pool, DEFAULT_POOL_SIZE
 	}else{
-		sdim memory_pool, size
+		sdim memory_pool, limit(size, 100, MAX_EXPAND_LIMIT)
 	}
 
 	if div_num <= 0{
-		MAX_DIV = varsize(memory_pool) / 8
+		MAX_DIV = varsize(memory_pool) / 8 + CLASS_NUM + 2
 	}else{
-		MAX_DIV = div_num
+		MAX_DIV = limit(div_num, 100, varsize(memory_pool))
 	}
 	
 	dim offset, MAX_DIV //メモリプール上のオフセット
@@ -421,6 +430,7 @@
 	if mem_size(MEM_HEAD) != 0: logmes "番兵が壊れています": stop
 	
 	list_count = get_block_count()
+	
 
 	//開始点から最後まで到達できるか、バックリンクと循環も含めてチェック
 	count = 0
@@ -696,7 +706,6 @@ return 1
 
 	vid = next_mem_id(MEM_HEAD)
 	while vid != MEM_TAIL
-	
 		ofs = offset(vid)
 		_size = mem_size(vid)
 		sclass = get_class_index(_size)
@@ -719,12 +728,11 @@ return 1
 		color 0,0,0
 		pos ofs*PIXEL+1,yoffset + ysize/3
 		mes _size
-		
 		//文字列で使用中ならそれを可視化
 		color 255,0,0
+		logmes vid
 		使用量 = strlen(read_mem_str(vid))
 		boxf ofs*PIXEL+1, yoffset+ysize - ysize/4, (ofs + 使用量)*PIXEL-1, yoffset+ysize - ysize/9
-
 		//ブロックID
 		color 0,0,0
 		pos (ofs + 2 ) * PIXEL, yoffset + 2
@@ -810,6 +818,7 @@ return
 
 //文字列として操作
 #deffunc write_mem_str int id, str value, int offset_in_block
+	//ブロックの指定位置に文字列を書き込む
 
 	if block_state(id) != STATE_USED: return
 	if offset_in_block < 0: return
@@ -823,6 +832,7 @@ return
 	return
 
 #deffunc re_write_mem_str int id, str value
+	//ブロックに文字列を書き込みます。（前の内容はクリアされる）
 
 	if block_state(id) != STATE_USED: return
 	
@@ -836,26 +846,31 @@ return
 	return
 
 #defcfunc read_mem_str int id, int offset_in_block
+	//文字列読み出し
 	if block_state(id) != STATE_USED: return ""
 	if offset_in_block < 0: return ""
 	if offset_in_block > mem_size(id): return ""
 
 	copy_size = mem_size(id) - offset_in_block
-	
+
 	dupptr s, varptr(memory_pool) + offset(id) + offset_in_block, copy_size, 2
+	
 	return strmid(s, 0, copy_size) //文字列として切り出す
 	
 #deffunc append_str int id, str value
+	//文字列を追加します( += )
 	write_mem_str id, read_mem_str(id) + value
 	return
 	
 #deffunc insert_str int id, str value, int write_pos
+	//文字列を指定位置に挿入します
 	tmp = read_mem_str(id)
 	write_mem_str id, strmid(tmp, 0, write_pos) + value + strmid(tmp, write_pos, $FFFFFFF)
 	return
 
 //バイナリ操作
 #deffunc poke_block int id, var a, int offset_in_block
+	//変数をメモリブロックにコピーします
 
 	if offset_in_block < 0: return
 	if block_state(id) != STATE_USED: return
@@ -871,6 +886,8 @@ return
 	return
 	
 #deffunc peek_block int id, var a, int offset_in_block
+	//メモリブロックを変数にコピーします
+
 	if block_state(id) != STATE_USED: return
 	if offset_in_block < 0: return
 	if offset_in_block > mem_size(id): return
@@ -879,6 +896,7 @@ return
 	return
 	
 #deffunc Lpoke_block int id, int p1, int offset_in_block
+	//メモリブロックから直接４バイト読み出し
 
 	if mem_size(id) < offset_in_block + 4 {
 		expand_block id, offset_in_block + 4
@@ -888,6 +906,7 @@ return
 	return
 
 #deffunc copy_block int id, var a
+	//メモリブロックを参照コピーします（安全チェックとoffsetなし）
 	dupptr a, varptr(memory_pool) + offset(id), mem_size(id), 2
 	return
 

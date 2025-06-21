@@ -1,9 +1,8 @@
-#include "hsp3_64.as"
 #include "../memory_allocator.hsp"
 #include "nodmod/scrollbarmodule.hsp"
 
 #addition "WrapCall.as"
-screen 0,1900,1000,,0,0
+screen 0,ginfo(20) - 50, ginfo(21) - 50,,0,0
 randomize
 mes "速度調整のスクロールバーです"
 scbaOnScroll *sc　//動かすたびにジャンプするラベル
@@ -39,16 +38,18 @@ repeat
 		
 		size2 = 20 + rnd(30)
 		t = get_new_block(size2)
+		
 		idlist(cnt) = t
 		debug_check_link_integrity "作成後のリンク整合性チェック"
+		
 		if stat {
 			draw_memory_pool_with_labels 100,150 * 1, idlist
 			stop
 		}
 		draw_memory_pool_with_labels 100,150 * 1,idlist
+		
 		await 1000/m1
 	loop
-
 ;/*
 	// 一部を書き込みしてみる（右のスペースを使い無理なら左のスペースもみる。それでも無理なら、自動的に移動と解放が行われる。）
 	title "書き込み準備中"

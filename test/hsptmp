@@ -1,189 +1,38 @@
-#include "../id_manager.hsp"
-#include "../list.hsp"
+#include "../all_include"
+//動きモジュール
+#include "../draw_obj/all_include"
+//描画タイプ定義集
+#include "../draw_type/all_include"
 
+		                                         ; life           , x    , y    , w  , h  , ohter_params
+bg_id = make_draw_object(MOVE_TYPE_STATIC, "BOXF", LIFE_FOREVER   , 640/2, 480/2, 640, 480, "$000000")
+update_priority_draw_object bg_id, PRIORITY_BACK
+//背景セットOKです！
 
+// テスト：中央から上に向かって移動する赤い円を出してみる
+circle_id = make_draw_object(MOVE_TYPE_EASE, "CIRCLE", 1, 640/2, 480/2, 80, 80, "$FF0000")
+set_easetime_all get_entity_id(circle_id), 1.0
+set_ease_posy get_entity_id(circle_id), 640/2, 480/2 - 200
+// 円は1秒で上に移動して消える！
 
-newmod a,list_id_manager, 100
+//出来た！！！　extra_params = 色、rsize, 丸くしない位置のフラグ, 角度
+   _make_draw_object MOVE_TYPE_STATIC,"RBOXF_FAST", LIFE_FOREVER, 640/2,480/2, 100,50, "$00FF00,5,0,0.5"
 
-#undef mes
-#define global mes(%1) mes@hsp(%1):logmes %1
-// テスト用のデータ構造を定義
-#module
-#deffunc test_header str ti
-    mes "========================================"
-    mes ti
-    mes "========================================"
-return
+l = make_draw_object(MOVE_TYPE_EASE,"LINE"      , LIFE_FOREVER, 100,200, 70,70,"$00FFFF,")
+set_ease_angle get_entity_id(l), 0,deg2rad(360), ease_quad_inout　//一応各パラごとに調整可能　省略で現状維持 ==１秒
+set_ease_posx get_entity_id(l), 000, 200, ease_quad_inout,2
 
-#deffunc print_list_with_values array list_manager, array values, str label
-    mes label + ":"
-    foreach_list list_manager, id
-        mes strf("ID: %d, Value: %d", id, values(id))
-    foreach_list_end
-    mes ""
-return
-#global
+*main
+	manage_keyfps
+	dt = frametime()
+	notify_dt_draw_object dt
 
-// メイン処理開始
-newmod manager1, list_id_manager, 200
-newmod manager2, list_id_manager, 200
-newmod manager3, list_id_manager, 200
-
-// テスト1: 基本的なランダムソート（大きなデータセット）
-test_header "テスト1: 大きなデータセットの基本ソート"
-dim values1, 200
-repeat 50
-    node_id = get_new_list_id(manager1)
-    values1(node_id) = rnd(1000)
-loop
-
-mes "ソート前:"
-foreach_list manager1, id
-    mes strf("ID: %d, Value: %d", id, values1(id))
-    if cnt >= 10 : mes "... (以下省略)" : _break
-foreach_list_end
-
-sort_list_by_value_array manager1, values1
-mes "\nソート後:"
-foreach_list manager1, id
-    mes strf("ID: %d, Value: %d", id, values1(id))
-    if cnt >= 10 : mes "... (以下省略)" : _break
-foreach_list_end
-mes ""
-// テスト2: 同じ値を持つ要素のソート（安定ソートのテスト）
-test_header "テスト2: 同じ値を持つ要素の安定ソート"
-dim values2, 200
-dim secondary_key, 200
-
-// 意図的に同じ値を持つ要素を作成
-repeat 15
-    node_id = get_new_list_id(manager2)
-    values2(node_id) = cnt \ 5 + 1  // 0,1,2,3,4,0,1,2,3,4... のパターン
-    secondary_key(node_id) = (cnt + 1) // 元の順序を記録
-loop
-
-print_list_with_values manager2, values2, "ソート前（主キー値で同じ値が複数存在）"
-
-sort_list_by_value_array manager2, values2
-
-mes "ソート後（同じ値の要素の順序に注目）:"
-foreach_list manager2, id
-    mes strf("ID: %d, Primary: %d, Original_Order: %d", id, values2(id), secondary_key(id))
-foreach_list_end
-mes ""
-
-// テスト3: 逆順ソート（大きい値から小さい値へ）
-test_header "テスト3: 逆順ソート実装"
-dim values3, 200
-dim inverted_values3, 200
-
-repeat 20
-    node_id = get_new_list_id(manager3)
-    values3(node_id) = rnd(100) + 1
-    inverted_values3(node_id) = -values3(node_id)  // 負の値にして逆順を実現
-loop
-
-print_list_with_values manager3, values3, "元のデータ"
-
-sort_list_by_value_array manager3, inverted_values3
-
-mes "逆順ソート後:"
-foreach_list manager3, id
-    mes strf("ID: %d, Value: %d", id, values3(id))
-foreach_list_end
-mes ""
-
-// テスト4: 複合ソート（文字列の長さでソート）
-test_header "テスト4: 文字列データの長さによるソート"
-newmod str_manager, list_id_manager, 100
-dim str_lengths, 100
-sdim test_strings, 64, 100
-
-// テスト用文字列データ
-test_data = "apple,cat,elephant,dog,butterfly,ant,rhinoceros,bee,crocodile,fish"
-split test_data, ",", temp_array
-
-repeat length(temp_array)
-    if temp_array(cnt) != "" {
-        node_id = get_new_list_id(str_manager)
-        test_strings(node_id) = temp_array(cnt)
-        str_lengths(node_id) = strlen(test_strings(node_id))
-    }
-loop
-
-mes "ソート前（文字列とその長さ）:"
-foreach_list str_manager, id
-    mes strf("ID: %d, String: '%s', Length: %d", id, test_strings(id), str_lengths(id))
-foreach_list_end
-
-sort_list_by_value_array str_manager, str_lengths
-
-mes "\n文字列長さでソート後:"
-foreach_list str_manager, id
-    mes strf("ID: %d, String: '%s', Length: %d", id, test_strings(id), str_lengths(id))
-foreach_list_end
-mes ""
-
-// テスト5: エッジケースのテスト
-test_header "テスト5: エッジケース"
-newmod edge_manager, list_id_manager, 50
-dim edge_values, 50
-
-// 単一要素
-node_single = get_new_list_id(edge_manager)
-edge_values(node_single) = 42
-
-mes "単一要素のソート:"
-print_list_with_values edge_manager, edge_values, "ソート前"
-sort_list_by_value_array edge_manager, edge_values
-print_list_with_values edge_manager, edge_values, "ソート後"
-
-// 既にソート済みデータ
-repeat 9
-    node_id = get_new_list_id(edge_manager)
-    edge_values(node_id) = cnt + 1
-loop
-
-mes "既にソートされたデータ:"
-print_list_with_values edge_manager, edge_values, "ソート前（既にソート済み）"
-sort_list_by_value_array edge_manager, edge_values
-print_list_with_values edge_manager, edge_values, "ソート後"
-
-// テスト6: パフォーマンステスト
-test_header "テスト6: パフォーマンステスト"
-newmod perf_manager, list_id_manager, 500
-dim perf_values, 500
-
-// 大量データでのソートテスト
-data_size = 100
-repeat data_size
-    node_id = get_new_list_id(perf_manager)
-    perf_values(node_id) = rnd(10000)
-loop
-
-start_time = keyfpstimer
-sort_list_by_value_array perf_manager, perf_values
-end_time = keyfpstimer
-
-mes strf("%d個の要素のソートにかかった時間: %dms", data_size, end_time - start_time)
-
-// 結果の検証（正しくソートされているかチェック）
-mes "ソート結果の検証:"
-prev_value = -1
-error_count = 0
-foreach_list perf_manager, id
-    if perf_values(id) < prev_value {
-        error_count++
-    }
-    prev_value = perf_values(id)
-foreach_list_end
-
-if error_count = 0 {
-    mes "? ソートが正しく実行されました"
-} else {
-    mes strf("? ソートエラーが%d箇所で発生しました", error_count)
-}
-
-mes "\n全てのテストが完了しました。"
-
-
+	if _getkey(1) == 1 { // 左クリック
+	    id = make_draw_object(MOVE_TYPE_EASE, "CIRCLE", 1, mousex, mousey, 50, 50, "$00FFCC")
+	    set_easetime_all get_entity_id(id), 1.0
+	    set_ease_posy get_entity_id(id), mousey,mousey - 150
+	}
+	
+	draw_objects
+	redraw: redraw 2
+	goto*main
