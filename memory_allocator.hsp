@@ -6,7 +6,7 @@
 
 //get_class_index関数と合わせて調整してください
 #const CLASS_NUM 5 //使用するクラスの数
-#const FREELIST_THRESHOLD 32 //このサイズ以下の領域はフリーリストに登録しない
+#const FREELIST_THRESHOLD 16 //このサイズ以下の領域はフリーリストに登録しない
 
 //プールサイズ設定(調整可能です）
 #const DEFAULT_POOL_SIZE 200000
@@ -113,8 +113,13 @@
 		stop
 	}
 	#endif
-	if size <= 0: return 0
-	return limit(logf(size)/logf(2) - 5, 0, CLASS_NUM - 1)
+	if size < 32 : return 0
+	if size < 64 : return 1
+	if size < 128: return 2
+	if size < 256: return 3
+	if size < 512: return 4
+	return 5
+#global
 	
 #defcfunc local get_class_index_by_id int id
 	return get_class_index(mem_size(id))
