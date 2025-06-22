@@ -2,7 +2,7 @@
 #addition "id_manager.hsp"
 #module memory_allocator
 
-;#define DEBUG_ALLOCATOR
+#define DEBUG_ALLOCATOR
 
 //get_class_index関数と合わせて調整してください
 #const CLASS_NUM 6 //使用するクラスの数
@@ -243,7 +243,9 @@
 
 	block_state(id) = STATE_FREE
 
-	;debug_check_free_list_integrity
+	#ifdef DEBUG_ALLOCATOR
+	debug_check_free_list_integrity
+	#endif
 
 	return
 	
@@ -532,14 +534,24 @@
 				assert mem_size(nid) > FREELIST_THRESHOLD
 
 			}
-			;debug_check_link_integrity "右側拡張成功 free"
+			
+			#ifdef DEBUG_ALLOCATOR
+			debug_check_link_integrity "右側拡張成功 free"
+			debug_check_memory_pool_integrity
+			#endif
+			
 			return 1
 		}
 		//右のフリーブロックを削除
 		remove_free_block nid
 	}else{
 		if newsize <= offset(nid) - offset_original{//右ブロックまでの隙間でOK
-			;debug_check_link_integrity "右側拡張成功 used"
+		
+			#ifdef DEBUG_ALLOCATOR
+			debug_check_link_integrity "右側拡張成功 used"
+			debug_check_memory_pool_integrity
+			#endif
+			
 			return 1
 		}
 	}
@@ -574,7 +586,11 @@
 				
 			}
 			
-			;debug_check_link_integrity "左側拡張成功 free"
+			#ifdef DEBUG_ALLOCATOR
+			debug_check_link_integrity "左側拡張成功 free"
+			debug_check_memory_pool_integrity
+			#endif
+			
 			return 1
 		}
 		remove_free_block bid
@@ -586,7 +602,11 @@
 			offset(oldid) = offset(bid) + mem_size(bid)
 			memcpy memory_pool, memory_pool, size_original, offset(oldid), offset_original
 			
-			;debug_check_link_integrity "左側拡張成功 used"
+			#ifdef DEBUG_ALLOCATOR
+			debug_check_link_integrity "左側拡張成功 used"
+			debug_check_memory_pool_integrity
+			#endif
+			
 			return 1
 		}
 	}
@@ -627,7 +647,7 @@
 		if next_mem_id(oldid) == MEM_TAIL{
 			//末尾なら直接拡張
 			if offset(oldid) + newsize > MAX_EXPAND_LIMIT{
-				logmes "拡張失敗"
+				logmes "末尾ブロックの拡張失敗"
 				stop
 			}
 			mem_size(oldid) = newsize
