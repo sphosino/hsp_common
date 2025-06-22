@@ -54,7 +54,7 @@
 		//‚Q”{‚ÌŠg’£ˆ—
 		if newid >= length(data){
 			data(newid * 2) = ""
-			;lab(newid * 2) = *‰½‚à‚µ‚È‚¢ 
+			lab(newid * 2) = *‰½‚à‚µ‚È‚¢ 
 		}
 	}
 

@@ -10,13 +10,15 @@
 
 //プールサイズ設定(調整可能です）
 #const DEFAULT_POOL_SIZE 200000
-#const MAX_EXPAND_LIMIT 300000000
+#const MAX_EXPAND_LIMIT 300000000 ; 287MB
+#const MIN_POOL_SIZE 100
 
 //-------------------------------------------
 #const OFFSET_SENTINEL -1234567
 #const MEM_SENTINEL_SIZE -9999999
 
-#const SENTINEL_NUM CLASS_NUM + 1
+#const SENTINEL_NUM CLASS_NUM + 1 //フリーリストのクラスの番兵の数 + 末尾番兵
+#const MEM_SENTINEL_NUM 2 //メモリプールの先頭と末尾の番兵数
 
 #enum STATE_SENTINEL 0
 #enum STATE_USED
@@ -34,13 +36,13 @@
 	if size <= 0{
 		sdim memory_pool, DEFAULT_POOL_SIZE
 	}else{
-		sdim memory_pool, limit(size, 100, MAX_EXPAND_LIMIT)
+		sdim memory_pool, limit(size, MIN_POOL_SIZE, MAX_EXPAND_LIMIT)
 	}
 
 	if div_num <= 0{
-		MAX_DIV = varsize(memory_pool) / 8 + CLASS_NUM + 2
+		MAX_DIV = varsize(memory_pool) / FREELIST_THRESHOLD + SENTINEL_NUM + MEM_SENTINEL_NUM
 	}else{
-		MAX_DIV = limit(div_num, 100, varsize(memory_pool))
+		MAX_DIV = limit(div_num, MIN_POOL_SIZE, varsize(memory_pool))
 	}
 	
 	dim offset, MAX_DIV //メモリプール上のオフセット
@@ -790,7 +792,7 @@ return
 
 //メモリプール上に存在するブロックの数（空き含む）
 #defcfunc get_block_count
-	return get_using_count(mem_id_manager) - SENTINEL_NUM - 2
+	return get_using_count(mem_id_manager) - SENTINEL_NUM - MEM_SENTINEL_NUM
 
 //操作可能なブロックのリストを取得
 #defcfunc get_usable_blocks array a
