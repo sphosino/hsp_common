@@ -321,7 +321,7 @@
 	
 	if newid >= 0{
 		shrink_block newid, size //必要な分だけにセット
-		memset memory_pool,0, size, offset(newid) //get_new_blockなのでお掃除
+		memset memory_pool, 0, size, offset(newid) //get_new_blockなのでお掃除
 		return newid
 	}
 
@@ -447,11 +447,11 @@
 	while start_point != MEM_TAIL
 		if back_mem_id(start_point) != __prev_id {
 			logmes "[リンクチェック失敗] " + strf("%d > (%d=%d) < %d", __prev_id, start_point, back_mem_id(start_point), start_point) + "次の前がリンクしていません\n" + lab
-			return 1
+			stop
 		}
 		if count > list_count{
 			logmes "[リンクチェック失敗] 循環検出: " + lab
-			return 1
+			stop
 		}
 		__prev_id = start_point
 		start_point = next_mem_id(start_point)
@@ -460,11 +460,11 @@
 	
 	if count != list_count{
 		logmes "[リンクチェック失敗] 使用中のブロック数とリンク数が一致しない：" + lab
-		return 1
+		stop
 	}
 
 	
-	return 0
+	return
 	
 #deffunc debug_check_memory_pool_integrity
 
@@ -921,7 +921,7 @@ return
 	return
 	
 #deffunc Lpoke_block int id, int p1, int offset_in_block
-	//メモリブロックから直接４バイト読み出し
+	//メモリブロックに直接４バイト書き込み
 
 	if mem_size(id) < offset_in_block + 4 {
 		expand_block id, offset_in_block + 4

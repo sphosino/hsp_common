@@ -42,10 +42,7 @@ repeat
 		idlist(cnt) = t
 		debug_check_link_integrity "作成後のリンク整合性チェック"
 		
-		if stat {
-			draw_memory_pool_with_labels 100,150 * 1, idlist
-			stop
-		}
+
 		draw_memory_pool_with_labels 100,150 * 1,idlist
 		
 		await 1000/m1
@@ -72,10 +69,6 @@ repeat
 		debug_check_free_list_integrity
 		debug_check_link_integrity "拡張後のリンク整合性チェック"
 		
-		if stat {
-			draw_memory_pool_with_labels  100,150 * 2, idx
-			stop
-		}
 		draw_memory_pool_with_labels  100,150 * 2, idx
 		await 1000/m2
 	loop
@@ -94,10 +87,7 @@ repeat
 		if get_usable_blocks(a) == 0: break
 		free_block a(rnd(stat))
 		debug_check_link_integrity "解放後のリンク整合性チェック"
-		if stat {
-			draw_memory_pool_with_labels  100,150 * 3, idx
-			stop
-		}
+
 		draw_memory_pool_with_labels  100,150 * 3, idx
 		await 1000/m3
 	loop
