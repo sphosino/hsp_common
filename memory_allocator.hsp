@@ -2,7 +2,7 @@
 #addition "id_manager.hsp"
 #module memory_allocator
 
-#define DEBUG_ALLOCATOR
+;#define DEBUG_ALLOCATOR
 
 //get_class_index関数と合わせて調整してください
 #const CLASS_NUM 6 //使用するクラスの数
