@@ -17,7 +17,7 @@
 		set_ease_alpha get_entity_id(id), alpha, 0, ease_linear
 		set_easetime_all get_entity_id(id), 0.6
 	loop
-	return
+	return id
 #global
 #endif
 
