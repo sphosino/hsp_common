@@ -3,10 +3,10 @@
 keyfps
 
 %var
-1.01
+1.1
 
 %date
-2025/04/11
+2025/06/28
 
 %group
 入出力制御命令
@@ -19,26 +19,17 @@ keyfps
 
 #uselib "winmm.dll"
 #cfunc keyFPStimer__ "timeGetTime"
-/*
-%index
-manage_keyfps
-
-%inst
-メインループのウェイト、キー取得などを行います
-メインループに一つだけ配置してください。
-
-%*/	
-
-
-#const FPS_ADJUST_PROB 20
-#const ADJUST_FACTOR 0.2
-#const FPS_ADJUST_LIMIT 1.0
-
-#const MIN_FPS 3.92157
-#const MAX_FPS 360
 
 #const DEFAULT_FPS 60.0
-#const DEFAULT_TARGET_WAIT 5.0
+
+#const DEFAULT_ADJUST_THRESHOLD 4 //余裕時間がこれ以上あればFPSを上げる
+#const DEFAULT_INCREASE_STEP 1.0 //余裕時間がある時、上げる量
+#const DEFAULT_DECREASE_STEP 1.1 //余裕時間がない時、下げる量
+#const DEFAULT_TARGET_WAIT 6.0
+
+//---------------------------------------------------
+#const MIN_FPS 3.92157 //内部仕様上の大体の最低値
+#const MAX_FPS 360
 
 
 // ( このモジュールで使用可能になる全ての機能です )
@@ -50,8 +41,15 @@ manage_keyfps
 	
 //FPS関連
 #define global       setfps(%1)                      fps@keyFPS = limitf(%1, MIN_FPS@keyFPS, MAX_FPS@keyFPS); 目標FPSを設定する
-#define global       enable_auto_adjust(%1)          autoAdjustEnabled@keyFPS = %1; FPSを自動調整するフラグ（default = ON)
-#define global       set_target_wait(%1)             target_wait@keyFPS = %1
+
+#define global       enable_auto_adjust(%1 = 1)      autoAdjustEnabled@keyFPS = %1; 目標FPSを自動調整するかのフラグ（default = ON)
+#define global       set_target_wait(%1)             target_wait@keyFPS = limit(%1, 1) //目標余裕時間の設定
+#define global ctype get_target_wait(%1)             target_wait@keyFPS //現在の目標余裕時間
+
+#define global       set_adjust_threshold(%1)        adjust_threshold = limit(%1, 1)
+#define global       set_fps_increase_step(%1)       fps_increase_step@keyfps = limit(%1,0.01)
+#define global       set_fps_decrease_step(%1)       fps_decrease_step@keyfps = limit(%1,0.01)
+
 #define global ctype getfps                          fps@keyFPS ; 目標FPS
 #define global ctype getrealfpsf                     current_fps@keyFPS ; 実現FPS
 #define global ctype getrealfps                      int(current_fps@keyFPS + 0.5) ; 実現FPS(整数)
@@ -87,16 +85,23 @@ manage_keyfps
 	
 #define global keyFPStime                     keyFPStimer__@keyFPS() ; Windows が起動してからの経過時間 ( timeGettime )
 
+/*
+%index
+manage_keyfps
+
+%inst
+メインループのウェイト、キー取得などを行います
+メインループに一つだけ配置してください。
+
+%*/	
 
 #deffunc manage_keyFPS__
 
 	// FPS自動調整処理
 	if autoAdjustEnabled {
-		if frame_counter \ FPS_ADJUST_PROB == 0 {
-			diff = waitedtime() - target_wait
-			adjust = limitf(ADJUST_FACTOR * diff, -FPS_ADJUST_LIMIT, FPS_ADJUST_LIMIT)
-			setfps fps + adjust
-		}
+		diff = waitedtime() - target_wait
+		if diff >  adjust_threshold : setfps fps + fps_increase_step
+		if diff <= 0                : setfps fps - fps_decrease_step
 	}
 	
 	// FPS変更チェック
@@ -427,9 +432,13 @@ p2で間隔を指定します。この時間以内に２回目が押されると、１を返します。
 	FPStime = 5
 	fps = DEFAULT_FPS
 	last_frame_time = keyFPStimer__()
-	autoAdjustEnabled = 1
+	autoAdjustEnabled = 0
 	target_wait = DEFAULT_TARGET_WAIT
-
+	
+	adjust_threshold = DEFAULT_ADJUST_THRESHOLD
+	fps_increase_step = DEFAULT_INCREASE_STEP
+	fps_decrease_step = DEFAULT_DECREASE_STEP
+	
 	addkey_all
 	
 	return
@@ -437,8 +446,6 @@ p2で間隔を指定します。この時間以内に２回目が押されると、１を返します。
 #global
 init_keyFPS
 		
-
-
 /*
 %index
 addkey_all

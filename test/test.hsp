@@ -1,38 +1,10 @@
-#include "../all_include"
-//動きモジュール
-#include "../draw_obj/all_include"
-//描画タイプ定義集
-#include "../draw_type/all_include"
+#include "../keyfps.hsp"
 
-		                                         ; life           , x    , y    , w  , h  , ohter_params
-bg_id = make_draw_object(MOVE_TYPE_STATIC, "BOXF", LIFE_FOREVER   , 640/2, 480/2, 640, 480, "$000000")
-update_priority_draw_object bg_id, PRIORITY_BACK
-//背景セットOKです！
 
-// テスト：中央から上に向かって移動する赤い円を出してみる
-circle_id = make_draw_object(MOVE_TYPE_EASE, "CIRCLE", 1, 640/2, 480/2, 80, 80, "$FF0000")
-set_easetime_all get_entity_id(circle_id), 1.0
-set_ease_posy get_entity_id(circle_id), 640/2, 480/2 - 200
-// 円は1秒で上に移動して消える！
-
-//出来た！！！　extra_params = 色、rsize, 丸くしない位置のフラグ, 角度
-   _make_draw_object MOVE_TYPE_STATIC,"RBOXF_FAST", LIFE_FOREVER, 640/2,480/2, 100,50, "$00FF00,5,0,0.5"
-
-l = make_draw_object(MOVE_TYPE_EASE,"LINE"      , LIFE_FOREVER, 100,200, 70,70,"$00FFFF,")
-set_ease_angle get_entity_id(l), 0,deg2rad(360), ease_quad_inout　//一応各パラごとに調整可能　省略で現状維持 ==１秒
-set_ease_posx get_entity_id(l), 000, 200, ease_quad_inout,2
-
+enable_auto_adjust
+set_target_wait 11
 *main
 	manage_keyfps
-	dt = frametime()
-	notify_dt_draw_object dt
 
-	if _getkey(1) == 1 { // 左クリック
-	    id = make_draw_object(MOVE_TYPE_EASE, "CIRCLE", 1, mousex, mousey, 50, 50, "$00FFCC")
-	    set_easetime_all get_entity_id(id), 1.0
-	    set_ease_posy get_entity_id(id), mousey,mousey - 150
-	}
-	
-	draw_objects
-	redraw: redraw 2
+	title ""+getrealfpsf() + ":: "+ getfps()
 	goto*main
