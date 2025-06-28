@@ -1,0 +1,28 @@
+#include "nodmod/ProcLinkModule.hsp"
+
+	screen 0, 320, 180
+
+	entryname = "TEST"
+	input entryname
+	button gosub "ACCEPT", *push_accept  ; 参加しよう。
+	button gosub "REFUSE", *push_refuse  ; 離脱しよう。
+
+	repeat  ; 無限ループ。
+		redraw 0
+		color 255, 255, 255  : boxf  : color
+		pos 0, 100
+		mes "WindowHandle\n " + hwnd + "\nNowCount " + nocoConnectInfo()
+		pos 120, 0
+		repeat nocoConnectInfo(0)  ; 識別子とウィンドウハンドル表示。
+			mes nocoConnectInfo(2, cnt) + " : " + nocoConnectInfo(1, cnt)
+		loop
+		redraw 1
+		wait 1000  ; メッセージを受けると残り時間が0になる(即応)
+	loop
+
+*push_accept
+	nocoConnectAccept entryname
+	return
+*push_refuse
+	nocoConnectRefuse
+	return
