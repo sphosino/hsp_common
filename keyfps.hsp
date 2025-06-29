@@ -21,11 +21,14 @@ keyfps
 #cfunc keyFPStimer__ "timeGetTime"
 
 #const DEFAULT_FPS 60.0
+#const DEFAULT_FPSTIME 3.0 //FPS精度（秒） -> 高いほうが精度は高いが目標FPS変更のタイミングの負荷がやや上昇
 
+//目標FPS自動調整の初期値
 #const DEFAULT_ADJUST_THRESHOLD 4 //余裕時間がこれ以上あればFPSを上げる
 #const DEFAULT_INCREASE_STEP 1.0 //余裕時間がある時、上げる量
 #const DEFAULT_DECREASE_STEP 1.1 //余裕時間がない時、下げる量
-#const DEFAULT_TARGET_WAIT 6.0
+#const DEFAULT_TARGET_WAIT 6 //目標待ち時間(ms)
+#const DEFAULT_FPS_SAMPLE_COUNT 5
 
 //---------------------------------------------------
 #const MIN_FPS 3.92157 //内部仕様上の大体の最低値
@@ -47,8 +50,9 @@ keyfps
 #define global ctype get_target_wait(%1)             target_wait@keyFPS //現在の目標余裕時間
 
 #define global       set_adjust_threshold(%1)        adjust_threshold = limit(%1, 1)
-#define global       set_fps_increase_step(%1)       fps_increase_step@keyfps = limit(%1,0.01)
-#define global       set_fps_decrease_step(%1)       fps_decrease_step@keyfps = limit(%1,0.01)
+#define global       set_fps_increase_step(%1)       fps_increase_step@keyfps = limitf(%1,0.01)
+#define global       set_fps_decrease_step(%1)       fps_decrease_step@keyfps = limitf(%1,0.01)
+#define global       set_fps_sample_count(%1)        fps_sample_count = limit(%1,1)
 
 #define global ctype getfps                          fps@keyFPS ; 目標FPS
 #define global ctype getrealfpsf                     current_fps@keyFPS ; 実現FPS
@@ -99,9 +103,28 @@ manage_keyfps
 
 	// FPS自動調整処理
 	if autoAdjustEnabled {
-		diff = waitedtime() - target_wait
-		if diff >  adjust_threshold : setfps fps + fps_increase_step
-		if diff <= 0                : setfps fps - fps_decrease_step
+		
+		wt_all += waitedtime() - wt_table(wt_index)
+		wt_table(wt_index) = waitedtime()
+		wt_index = (wt_index + 1) \ fps_sample_count
+
+		diff = wt_all / fps_sample_count - target_wait
+			
+		if diff < 0{
+			//負荷が高すぎるのでFPSを下げる
+			setfps fps - fps_decrease_step
+			repeat fps_sample_count
+				wt_table(cnt) = target_wait
+			loop
+			wt_all = target_wait * fps_sample_count
+		}else: if diff >  adjust_threshold {
+			//余裕があるのでFPSを上げる
+			setfps fps + fps_increase_step
+			repeat fps_sample_count
+				wt_table(cnt) = target_wait
+			loop
+			wt_all = target_wait * fps_sample_count
+		}
 	}
 	
 	// FPS変更チェック
@@ -429,15 +452,19 @@ p2で間隔を指定します。この時間以内に２回目が押されると、１を返します。
 	dim last_processed_frame, 256
 	dim dbl_time, 256
 	sdim dbl_result, 256
-	FPStime = 5
-	fps = DEFAULT_FPS
+
 	last_frame_time = keyFPStimer__()
+	
 	autoAdjustEnabled = 0
-	target_wait = DEFAULT_TARGET_WAIT
+	
+	fps = DEFAULT_FPS
+	FPStime = DEFAULT_FPSTIME
 	
 	adjust_threshold = DEFAULT_ADJUST_THRESHOLD
 	fps_increase_step = DEFAULT_INCREASE_STEP
 	fps_decrease_step = DEFAULT_DECREASE_STEP
+	target_wait = DEFAULT_TARGET_WAIT
+	fps_sample_count = DEFAULT_FPS_SAMPLE_COUNT
 	
 	addkey_all
 	

@@ -2,7 +2,7 @@
 
 
 enable_auto_adjust
-set_target_wait 11
+set_target_wait 7
 *main
 	manage_keyfps
 
