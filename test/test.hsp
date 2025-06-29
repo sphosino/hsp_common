@@ -1,6 +1,5 @@
 #include "../keyfps.hsp"
 
-
 enable_auto_adjust
 set_target_wait 7
 *main

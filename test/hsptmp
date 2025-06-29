@@ -1,10 +1,170 @@
-#include "../keyfps.hsp"
+#include "../list.hsp"
+
+#undef mes
+#define mes(%1): mes@hsp %1:logmes %1
+
+// テスト結果表示用
+test_count = 0
+pass_count = 0
+
+goto*@f
+#deffunc test_assert str test_name, int expected, int actual
+    test_count++
+    if expected == actual {
+        mes "[PASS] " + test_name
+        pass_count++
+    } else {
+        mes "[FAIL] " + test_name + " (expected: " + expected + ", actual: " + actual + ")"
+    }
+    return
+
+#deffunc test_assert_str str test_name, str expected, str actual
+    test_count++
+    if expected == actual {
+        mes "[PASS] " + test_name
+        pass_count++
+    } else {
+        mes "[FAIL] " + test_name + " (expected: " + expected + ", actual: " + actual + ")"
+    }
+    return
+*@
 
 
-enable_auto_adjust
-set_target_wait 7
-*main
-	manage_keyfps
+// メイン処理開始
+mes "=== list_id_manager テスト開始 ==="
+mes ""
 
-	title ""+getrealfpsf() + ":: "+ getfps()
-	goto*main
+// テスト1: 初期化テスト
+mes "【テスト1: 初期化テスト】"
+newmod list_mgr, list_id_manager, 10
+test_assert "初期状態でのリストカウント", 0, get_list_count(list_mgr)
+mes ""
+
+// テスト2: 基本的なID追加・取得テスト
+mes "【テスト2: ID追加・取得テスト】"
+id1 = get_new_list_id(list_mgr)
+id2 = get_new_list_id(list_mgr)
+id3 = get_new_list_id(list_mgr)
+
+test_assert "3つのID追加後のカウント", 3, get_list_count(list_mgr)
+test_assert "最初のIDの次", id2, get_next_id(list_mgr, id1)
+test_assert "2番目のIDの次", id3, get_next_id(list_mgr, id2)
+test_assert "最後のIDの次", -1, get_next_id(list_mgr, id3)
+mes ""
+
+// テスト3: ID削除テスト
+mes "【テスト3: ID削除テスト】"
+del_list_id list_mgr, id2  // 真ん中を削除
+test_assert "削除後のカウント", 2, get_list_count(list_mgr)
+test_assert "削除後の最初のIDの次", id3, get_next_id(list_mgr, id1)
+test_assert "削除されたIDの生存確認", 0, is_list_id_alive(list_mgr, id2)
+mes ""
+
+// テスト4: ソート機能テスト
+mes "【テスト4: ソート機能テスト】"
+newmod sort_list, list_id_manager, 20
+dim values, 20
+
+// テスト用データ作成（降順で追加してソートで昇順にする）
+values(0) = 100  // TOPNODE用（使わない）
+sort_ids(0) = get_new_list_id(sort_list) : values(sort_ids(0)) = 50
+sort_ids(1) = get_new_list_id(sort_list) : values(sort_ids(1)) = 30
+sort_ids(2) = get_new_list_id(sort_list) : values(sort_ids(2)) = 80
+sort_ids(3) = get_new_list_id(sort_list) : values(sort_ids(3)) = 10
+sort_ids(4) = get_new_list_id(sort_list) : values(sort_ids(4)) = 60
+
+sort_list_by_value_array sort_list, values
+
+// ソート後の順序確認
+dim result_ids, 10
+result_count = get_list_ids(sort_list, result_ids)
+result_str = ""
+repeat result_count
+    result_str += str(values(result_ids(cnt)))
+    if cnt < result_count - 1 : result_str += ","
+loop
+test_assert_str "ソート後の値順序", "10,30,50,60,80", result_str
+mes ""
+
+// テスト5: foreach_listマクロテスト
+mes "【テスト5: foreach_listマクロテスト】"
+newmod foreach_test, list_id_manager, 10
+test_id1 = get_new_list_id(foreach_test)
+test_id2 = get_new_list_id(foreach_test)
+test_id3 = get_new_list_id(foreach_test)
+
+foreach_count = 0
+foreach_list foreach_test, current_id
+    foreach_count++
+foreach_list_end
+
+test_assert "foreach_listでのカウント", 3, foreach_count
+mes ""
+
+// テスト6: ID入れ替えテスト
+mes "【テスト6: ID入れ替えテスト】"
+newmod swap_test, list_id_manager, 10
+dim swap_values, 10
+
+swap_values(0) = 999  // TOPNODE用
+swap_id1 = get_new_list_id(swap_test) : swap_values(swap_id1) = 100
+swap_id2 = get_new_list_id(swap_test) : swap_values(swap_id2) = 200
+swap_id3 = get_new_list_id(swap_test) : swap_values(swap_id3) = 300
+
+// ID1とID3を入れ替え
+swap_left_right swap_test, swap_id1, swap_id3
+
+// 入れ替え後の順序確認
+first_next = get_next_id(swap_test, 0)  // TOPNODEの次
+test_assert "入れ替え後の最初のID", swap_id3, first_next
+mes ""
+
+// テスト7: エラーハンドリングテスト
+mes "【テスト7: エラーハンドリングテスト】"
+newmod error_test, list_id_manager, 5
+
+// 無効なIDでの操作
+del_list_id error_test, 999  // 存在しないID
+test_assert "無効なID削除後のカウント", 0, get_list_count(error_test)
+
+// TOPNODEの削除試行
+del_list_id error_test, 0
+test_assert "TOPNODE削除試行後のカウント", 0, get_list_count(error_test)
+mes ""
+
+// テスト8: 大量データテスト
+mes "【テスト8: 大量データテスト】"
+newmod large_test, list_id_manager, 100
+dim large_values, 100
+
+// 50個のIDを追加
+repeat 50
+    temp_id = get_new_list_id(large_test)
+    large_values(temp_id) = cnt * 2  // 偶数値
+loop
+test_assert "大量データ追加後のカウント", 50, get_list_count(large_test)
+
+// 半分削除
+count = 0
+foreach_list large_test, current_id
+    if count \ 2 == 0 {
+        del_list_id large_test, current_id
+    }
+    count++
+foreach_list_end
+
+test_assert "半分削除後のカウント", 25, get_list_count(large_test)
+mes ""
+
+// テスト結果サマリー
+mes "=== テスト結果サマリー ==="
+mes "実行テスト数: " + test_count
+mes "成功テスト数: " + pass_count
+mes "失敗テスト数: " + (test_count - pass_count)
+if pass_count == test_count {
+    mes "全てのテストが成功しました！"
+} else {
+    mes "いくつかのテストが失敗しました。"
+}
+
+stop
