@@ -119,9 +119,8 @@
 	
 #deffunc get_extra_params array a
 	if フラグ: dialog"描画ラベル以外でget_extra_paramsが呼び出されました": end
-	if draw_object_params(obj_id) == "": return 0
 	split draw_object_params(obj_id), ",", a
-	return stat
+	return stat * (draw_object_params(obj_id) != "")
 
 //利用側で使う
 #deffunc set_extra_param int id, int idx, str newval
@@ -129,7 +128,7 @@
 	tmp(idx) = newval
 	s = tmp(0)
 	repeat stat - 1
-		s += "," + tmp(cnt+1)
+		s += "," + tmp(cnt + 1)
 	loop
 	draw_object_params(id) = s
 	return stat

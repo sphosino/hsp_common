@@ -27,7 +27,7 @@ keyfps
 #const DEFAULT_ADJUST_THRESHOLD 4 //余裕時間がこれ以上あればFPSを上げる
 #const DEFAULT_INCREASE_STEP 1.0 //余裕時間がある時、上げる量
 #const DEFAULT_DECREASE_STEP 1.1 //余裕時間がない時、下げる量
-#const DEFAULT_TARGET_WAIT 6 //目標待ち時間(ms)
+#const DEFAULT_TARGET_WAIT 5 //目標待ち時間(ms)
 #const DEFAULT_FPS_SAMPLE_COUNT 5
 
 //---------------------------------------------------

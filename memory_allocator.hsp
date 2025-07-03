@@ -439,7 +439,6 @@
 	
 	list_count = get_block_count()
 	
-
 	//開始点から最後まで到達できるか、バックリンクと循環も含めてチェック
 	count = 0
 	__prev_id = MEM_HEAD

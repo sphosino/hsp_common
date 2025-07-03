@@ -60,7 +60,7 @@
 	return
 	
 #deffunc del_static_obj int p1
-	release_id static_id_manager,p1
+	release_id static_id_manager, p1
 	return
 
 #deffunc update_static_rect int eid, array rect
@@ -69,10 +69,10 @@
 	_sizex = rect(2) - rect(0)
 	_sizey = rect(3) - rect(1)
 
-	posx(eid) = 0.+centerx
-	posy(eid) = 0.+centery
-	sizex(eid) = 0.+_sizex
-	sizey(eid) = 0.+_sizey
+	posx(eid) = 0. + centerx
+	posy(eid) = 0. + centery
+	sizex(eid) = 0. + _sizex
+	sizey(eid) = 0. + _sizey
 	return
 #global
 init_static_manager

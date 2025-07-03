@@ -13,7 +13,7 @@
     t = s1
     repeat strlen(t)
         s ^= peek(t, cnt) 
-        s *= FNV_PRIME 
+        s *= FNV_PRIME
     loop
     return (s & 0x7FFFFFFF) \ MAX_KEYS
     
@@ -24,7 +24,7 @@
 		n = limit(num_maxdata, 2)
 	}
 	sdim data,,n
-	ldim lab,n 
+	ldim lab,n
 	dim hashcount, MAX_KEYS
 	dim hashtable, MAX_KEYS, 3
 	dim data_deleted_list, n

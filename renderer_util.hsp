@@ -7,11 +7,14 @@
 #module effect_util
 
 
-#deffunc spawn_ripple_effect int cx, int cy
+#deffunc spawn_ripple_effect int cx, int cy, int priority
 	repeat 3
 		r = 30 * (cnt + 1)
 		alpha = 255 - cnt * 80
 		id = make_draw_object(MOVE_TYPE_EASE, "CIRCLE", 0.6, cx, cy, r, r, strf("$00FFFF,1"))
+		if priority > 0{
+			update_priority_draw_object id, priority
+		}
 		set_ease_sizex get_entity_id(id), 0, r, ease_quad_out
 		set_ease_sizey get_entity_id(id), 0, r, ease_quad_out
 		set_ease_alpha get_entity_id(id), alpha, 0, ease_linear

@@ -8,7 +8,7 @@
 	y = p.1
 	w = p.2
 	h = p.3
-	alpha = 256.0
+	alpha = 256
 	angle = 0.0
 
 	get_extra_params e
@@ -34,7 +34,7 @@
 				}
 				if stat >= 5{
 					if e.4 != ""{
-						angle = int(e.4)
+						angle = double(e.4)
 					}
 					if stat >= 6{
 						if e.5 != ""{
@@ -45,8 +45,10 @@
 								sizey = int(e.6)
 							}
 							if stat >= 8{
-								mode = 4
-								色を設定 int(e.7)
+								mode = int(e.7)
+								if stat >= 9{
+									色を設定 int(e.8)
+								}
 							}
 						}
 					}
@@ -59,7 +61,7 @@
     gmode mode, sizex + 5, sizey, alpha //(謎補正  hspversion = 3.6)
     //コピーモード、元画像のサイズｘ、元画像のサイズｙ,alpha
     pos x, y
-    grotate int(e(0)),px,py,angle, w, h
+    grotate int(e(0)), px, py, angle, w, h
     
 /* grotate
 p1=0～(0) : コピー元のウィンドウID
