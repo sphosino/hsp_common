@@ -462,6 +462,46 @@
 	return get_list_count(thismod)
 #deffunc set_stat_to_TOPNODE
 	return TOPNODE
+	
+//--リストボックス用関数
+#modfunc id_to_listnumber int id
+
+	n = TOPNODE
+	count = 0
+	while get_next_id(thismod, n) >= 0
+		if n == id: return count
+		n = stat
+		count++
+	wend
+	return -1
+
+#modfunc get_ids_from_listnumber int startpoint, int endpoint, array ids
+	n = TOPNODE
+	count = 0
+	started = 0
+	dim ids
+	id_pointer = 0
+	while get_next_id(thismod, n) >= 0
+	
+		if count == startpoint{
+			start_cash = n
+			started++
+		}else: if started{
+			ids(id_pointer) = n
+			id_pointer++
+			if count == endpoint{
+				end_cash = n
+				_break
+			}
+		}
+		n = stat
+		count++
+	wend
+	
+	
+	return
+
+
 #global
 
 #define global foreach_list(%1, %2, %3 = TOPNODE)%tforlist :\

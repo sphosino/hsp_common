@@ -19,6 +19,7 @@
 #const global PRIORITY_BACK   100000
 #const global PRIORITY_NORMAL 200000
 #const global PRIORITY_FRONT  300000
+#const global PRIORITY_FRONT_EFFECT PRIORITY_FRONT + 10
 
 #enum global MOVE_TYPE_PHYSIS 0
 #enum global MOVE_TYPE_EASE
