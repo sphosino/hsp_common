@@ -58,10 +58,10 @@
 	}
 	
     
-    gmode mode, sizex + 5, sizey, alpha //(謎補正  hspversion = 3.6)
+    gmode mode, sizex, sizey, alpha //(謎補正  hspversion = 3.6)
     //コピーモード、元画像のサイズｘ、元画像のサイズｙ,alpha
     pos x, y
-    grotate int(e(0)), px, py, angle, w, h
+    grotate int(e(0)), px, py, int(angle), w, h
     
 /* grotate
 p1=0～(0) : コピー元のウィンドウID

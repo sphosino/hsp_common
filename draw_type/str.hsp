@@ -45,7 +45,7 @@
 			}
 		}
 		F‚ğİ’è col
-	    centering_mes tmp.0, rect, fontname, option
+	    centering_mes tmp, rect, fontname, option
 	    
 	return
 #global

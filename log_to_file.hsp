@@ -1,0 +1,22 @@
+#ifndef logfile_name
+#define global LOGFILE_NAME "log.txt"
+#module
+#deffunc add_log str message, int not_save_flag
+	log += message + "\n"
+	if not_save_flag == 0{
+		tmp = dir_cur
+		chdir logdirname
+		notesel log
+			notesave LOGFILE_NAME
+		noteunsel
+		chdir tmp
+	}
+	return
+	
+#deffunc log_init str dirname, int size
+	sdim log, size
+	logdirname = dirname
+	return
+	
+#global
+#endif
