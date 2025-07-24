@@ -127,6 +127,21 @@
 
 	return rn
 
+
+#modcfunc set_get_one
+    // セットが空の場合は空文字列を返す
+    if data_num == 0: return ""
+
+    // 有効なバケット（要素があるハッシュテーブルのインデックス）から一つ選ぶ
+    // valid_buckets の最初の要素を使うことで、一つ要素を取り出す
+    hash_idx = valid_buckets(0) 
+
+    // そのハッシュバケットの最初の要素のIDを取得
+    data_id = hashtable(hash_idx, 0)
+
+    // 実際のデータを返す
+    return data(data_id)
+
 #modcfunc _get_cardinality
 	return data_num
 #global
@@ -157,6 +172,9 @@
 //セットの要素数取得
 #defcfunc get_cardinality int setID
 	return _get_cardinality(data(setID))
+	
+#defcfunc get_one_data int setID
+    return set_get_one(data(setID))
 
 #defcfunc is_inset int setID, str s1
 	return is_in_set(data(setID),s1)
@@ -381,6 +399,25 @@ sdim arr
 n = set_to_array(s1, arr)
 test_result "全要素取得", (n == 2 && (arr(0) == "apple" || arr(1) == "apple") && (arr(0) == "cherry" || arr(1) == "cherry"))
 
+
+; --- ★追加テスト項目 ---
+// 何か一つ要素を取得するテスト
+temp_val = get_one_data(s1)
+test_result "一つ要素取得", (temp_val == "apple" || temp_val == "cherry")
+
+push_data s1, "grape"
+temp_val = get_one_data(s1)
+test_result "一つ要素取得（追加後）", (temp_val == "apple" || temp_val == "cherry" || temp_val == "grape")
+
+del_data s1, "apple"
+del_data s1, "cherry"
+del_data s1, "grape"
+test_result "一つ要素取得（空のセット）", (get_one_data(s1) == "")
+
+push_data s1, "apple"
+push_data s1, "cherry"
+
+; --- ★ここまで追加テスト項目 ---
 // セット演算のテスト
 // -------------------------------
 

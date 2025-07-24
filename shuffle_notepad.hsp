@@ -4,6 +4,7 @@
 	ss = s1
 	notesel ss
 		n = notemax
+		sdim slist,,notemax
 		if n == 0: return ""
 		repeat n
 			noteget slist(cnt),cnt

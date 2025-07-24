@@ -1,0 +1,60 @@
+#include "nodmod/ProcLinkModule.hsp"
+#packopt name "child_process"  // この名前でexeを作成し、親はこれを呼び出す。
+
+#include "メッセージ定数.hsp"
+
+// 設定読み込み
+notesel s
+noteload "app_name.txt"
+
+// なごコネに参加。参加しなくても読み書きは可能だが、(親が離脱を感知できるようにするため）
+noteget app_name, 0
+nocoConnectAccept app_name  // グローバルアクセス空間に
+
+noteget h, 1
+parent_hwnd = int(h)
+
+
+// 自動受信設定
+nocoAutoCopyData
+nocoOnCopyData *on_copydata  // これが必要！
+oncmd gosub *on_copydata, stat
+
+// メッセージ待機
+repeat
+    await 100
+loop
+
+*on_copydata
+    // データ受信処理
+    
+    // メッセージを受信したら
+    param = nocoCopyDataInfo(3)  // 受信した整数値を取得
+    data_size = nocoCopyDataInfo(4)  // データサイズを取得
+    
+    // パラメータで処理を分岐
+    switch param
+    case テキストデータ:
+        // テキストデータの処理
+        text_data = ""
+        nocoGetCopyData text_data
+        mes "受信したテキスト: " + text_data
+        swbreak
+        
+    case 終了指示:
+        // 親プロセスからの終了指示
+        mes "親プロセスから終了指示を受信しました"
+        end  // プロセス終了
+        swbreak
+
+    case 接続拒否:
+		mes "親プロセスに接続できませんでした"
+    	end
+    	swbreak
+        
+    default:
+        mes "未知のデータタイプ: " + param
+        swbreak
+    swend
+    
+    return

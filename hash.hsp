@@ -14,7 +14,7 @@
 #const FNV_PRIME 73091
 #const SEED 72889
 
-#const DEFAULT_DATA_SIZE 26000
+#const DEFAULT_DATA_SIZE 11000
 #const EXPECTED_NUMBER_COLLISIONS 4
     
 #defcfunc local get_hash str s1

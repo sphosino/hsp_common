@@ -1,0 +1,367 @@
+#include "nodmod/ProcLinkModule.hsp" // ProcLinkModuleのインクルード
+
+
+onexit *exit
+//----------------------------------------------------------------------
+// 定数定義
+//----------------------------------------------------------------------
+#include "メッセージ定数.hsp" // メッセージ定数をインクルード
+
+#define MAX_CHILDREN 10 // 最大子プロセス数
+
+// メニュー選択肢
+#define MENU_START_CHILD      1
+#define MENU_SEND_TO_CHILD_0  2
+#define MENU_BROADCAST        3
+#define MENU_TERMINATE        4
+
+//----------------------------------------------------------------------
+// グローバル変数
+//----------------------------------------------------------------------
+dim child_hwnd_current, MAX_CHILDREN      // 子プロセスのウィンドウハンドル配列
+sdim child_status_current, 64, MAX_CHILDREN // 子プロセスの状態配列
+child_count_current = 0                   // 現在起動中の子プロセス数
+app_name = ""                     // 親プロセスに割り当てるユニークなアプリケーション名
+dim prekeys, 9                        // キー入力の状態を保持
+
+// 子プロセス情報の表示用文字列 (更新はshow_menu内で行う)
+child_info_display = ""
+
+//----------------------------------------------------------------------
+// 初期化処理
+//----------------------------------------------------------------------
+ gosub *init_parent_process
+
+//----------------------------------------------------------------------
+// メインループ
+//----------------------------------------------------------------------
+repeat
+	color 255,255,255:boxf:color:pos 0,0
+    // キー入力受付 (メニュー選択)
+    menu_choice = 0
+    repeat 9
+        getkey key, '1' + cnt
+        if prekeys(cnt) == 0 {
+            if key {
+                menu_choice = cnt + 1
+            }
+        }
+        prekeys(cnt) = key
+    loop
+
+    update_child_list
+
+    // メニュー選択に応じた処理
+    switch menu_choice
+    case MENU_START_CHILD:
+        start_child_process
+        swbreak
+    case MENU_SEND_TO_CHILD_0:
+        if child_hwnd_list(0) != 0 {
+            message = "Hello from Parent!"
+            send_to_child child_hwnd_list(0), message, テキストデータ
+        } else {
+            logmes "エラー: 子プロセス0が利用できません。"
+        }
+        swbreak
+    case MENU_BROADCAST:
+        if (child_count_current > 0) {
+            message = "Broadcast message!"
+            broadcast_to_children message, テキストデータ
+        } else {
+           logmes "エラー: 起動中の子プロセスがありません。"
+        }
+        swbreak
+    case MENU_SHOW_STATUS:
+        update_child_status_display // 状態表示文字列を更新
+        
+        swbreak
+    case MENU_TERMINATE:
+		goto *exit
+        break // メインループを抜けて終了
+    swend
+
+
+
+    show_menu // メニュー表示を更新
+    await 33  // 33ms 待機 (約30FPS)
+loop
+
+end // アプリケーション終了
+
+//----------------------------------------------------------------------
+// サブプロシージャ定義
+//----------------------------------------------------------------------
+
+*init_parent_process
+    // ユニークなアプリ名を作成
+    app_name = "MyApp_" + str(rnd(10000))
+    
+    // 設定ファイルを作成し、アプリ名と親のウィンドウハンドルを保存
+    notesel s
+    noteadd app_name
+    noteadd str(hwnd)
+    notesave "app_name.txt"
+
+    // なごコネに参加 (他のプロセスからの接続を受け入れ)
+    nocoConnectAccept app_name
+
+    // 自動受信設定と受信コールバック関数の設定
+    nocoAutoCopyData
+    nocoOnCopyData *on_copydata
+    oncmd gosub *on_copydata, stat 
+    
+    return
+
+// 子プロセスを起動する関数
+#deffunc start_child_process
+    if (child_count_current >= MAX_CHILDREN) {
+        mes "エラー: 子プロセスの上限 (" + MAX_CHILDREN + ") に達しました。"
+        return
+    }
+    
+    // 子プロセスを起動
+    // child_process.exe は親プロセスと同じディレクトリにあると仮定
+    exec "child_process.exe"
+    logmes "子プロセスの起動コマンドを発行しました。起動完了を待機中..."
+    
+    // 起動完了は子プロセスからのハンドル通知で検知する
+    return
+
+// 指定した子プロセスにメッセージを送信
+#deffunc send_to_child int target_hwnd, var data_to_send, int message_type
+    if (target_hwnd == 0) {
+        logmes "エラー: 無効なウィンドウハンドル (" + target_hwnd + ") にメッセージを送信しようとしました。"
+        return
+    }
+    nocoSendCopyData target_hwnd, data_to_send, message_type, varsize(data_to_send)
+    logmes "HWND=" + target_hwnd + " にメッセージ (タイプ:" + message_type + ") を送信しました。"
+    return
+
+// 全子プロセスにメッセージを送信
+#deffunc broadcast_to_children var data_to_send, int message_type
+    if (child_count_current == 0) {
+        logmes "警告: 起動中の子プロセスがないため、ブロードキャストは行いませんでした。"
+        return
+    }
+    repeat child_count_current
+        if (child_hwnd_list(cnt) != 0) {
+            send_to_child child_hwnd_list(cnt), data_to_send, message_type
+        } else {
+            logmes "警告: 子プロセス " + cnt + " のハンドルが無効なためスキップしました。"
+        }
+    loop
+    return
+
+// 全子プロセスに終了指示を送信し、終了を待機する
+#deffunc terminate_children
+    mes "全子プロセスに終了指示を送信しています..."
+    
+    // 現在管理している子プロセスに終了指示を送る (既存の処理)
+    repeat child_count_current
+        if (child_hwnd_list(cnt) != 0) {
+            nocoSendCopyDataInt child_hwnd_list(cnt), 終了指示 // 終了指示
+            mes "管理下の子プロセス " + cnt + " (HWND:" + child_hwnd_list(cnt) + ") に終了指示を送信しました。"
+        }
+    loop
+    
+    // --- ここから nocoConnectInfo を使った追加処理 ---
+    
+    // なごコネに参加している全てのアプリ数を取得
+    total_connected_apps = nocoConnectInfo(0, 0)
+    
+    if (total_connected_apps > 1) { // 自アプリ(index 0)以外にも接続しているアプリがある場合
+        mes "なごコネ経由で他のプロセスも探索し、終了指示を送信します..."
+        
+        // 自アプリを除外するため、インデックス1からループを開始
+        repeat total_connected_apps
+            idx = cnt
+            
+            // 接続中のアプリのウィンドウハンドルを取得
+            connected_hwnd = nocoConnectInfo(1, idx)
+            
+            // 取得したハンドルが有効で、かつそれが親プロセス自身ではないことを確認
+            // (親自身のハンドルは hwnd 変数に格納されているはず)
+            if (connected_hwnd != 0 && connected_hwnd != hwnd) {
+                // このハンドルが既にchild_hwnd配列に登録されているか確認
+                is_already_managed = -1
+                repeat child_count_current
+                    if (child_hwnd_list(cnt) == connected_hwnd) {
+                        is_already_managed = true
+                        break
+                    }
+                loop
+                
+                // まだ管理されていない（ハンドル通知を受けていない）子プロセスであれば終了指示を送る
+                if is_already_managed == -1 {
+                    mes "未管理の子プロセス (HWND: " + connected_hwnd + ") に終了指示を送信します。"
+                    nocoSendCopyDataInt connected_hwnd, 終了指示
+                }
+            }
+        loop
+    } else {
+        mes "なごコネ経由で他に接続中の子プロセスはありません。"
+    }
+
+    // --- ここまで追加処理 ---
+
+    await 1000 // 子プロセスが終了するのを待つ (適宜調整)
+    
+
+    mes "全子プロセスの終了処理が完了しました。"
+    
+    // 子プロセス管理配列をリセット
+    child_count_current = 0
+    dim child_hwnd_list
+    sdim child_status_list
+    return
+
+// 子プロセスの状態表示文字列を更新
+#deffunc update_child_status_display
+    child_info_display = "=== 子プロセス状態 ===\n"
+    if (child_count_current == 0) {
+        child_info_display += "現在、起動中の子プロセスはありません。\n"
+        return
+    }
+    repeat child_count_current
+        child_info_display += "子プロセス " + cnt + ": HWND=" + child_hwnd_list(cnt) + ", 状態=" + child_status_list(cnt) + "\n"
+    loop
+    return
+
+// デモ用のメニュー表示
+#deffunc show_menu
+    
+    update_child_status_display // 最新の状態に更新
+    
+    mes child_info_display      // 子プロセスの状態を表示
+    
+    mes "=== 親プロセス制御メニュー ==="
+    mes str(MENU_START_CHILD)      + ": 子プロセスを起動"
+    mes str(MENU_SEND_TO_CHILD_0)  + ": 子プロセス0にテキスト送信"
+    mes str(MENU_BROADCAST)        + ": 全子プロセスにブロードキャスト"
+    mes str(MENU_TERMINATE)        + ": 全子プロセスを終了して親プロセスも終了"
+    mes "選択してください (" + str(MENU_START_CHILD) + "-" + str(MENU_TERMINATE) + "):"
+
+    redraw: redraw 2
+    return
+
+//----------------------------------------------------------------------
+// モジュール定義
+//----------------------------------------------------------------------
+#module
+// 子プロセスのハンドルを検索し、そのインデックスを返す
+// 見つからない場合は -1 を返す
+#defcfunc find_child_by_hwnd array h_array, int search_hwnd
+    result = -1
+    repeat length(h_array)
+        if (h_array(cnt) == search_hwnd) {
+            result = cnt
+            break
+        }
+    loop
+    return result
+#global
+
+//----------------------------------------------------------------------
+// コールバック関数 (nocoOnCopyData で指定)
+//----------------------------------------------------------------------
+*on_copydata
+    // 受信データの詳細情報を取得
+    sender_hwnd = nocoCopyDataInfo(2)   // 送信元ウィンドウハンドル
+    param = nocoCopyDataInfo(3)         // メッセージタイプ (LPARAM)
+    data_size = nocoCopyDataInfo(4)     // データサイズ (dwData)
+    
+    // 送信元の子プロセスを特定
+    child_index = find_child_by_hwnd(child_hwnd_list, sender_hwnd)
+
+    // 未知の送信元からのメッセージはログに記録
+    if child_index == -1{
+        logmes "警告: 未知の送信元 (HWND: " + sender_hwnd + ") からメッセージを受信しました。タイプ: " + param
+        stop
+    }
+    
+    // メッセージタイプに応じた処理
+    switch param
+
+    case テキストデータ:
+        // 子プロセスからのテキストデータ応答
+        received_data = ""
+        nocoGetCopyData received_data
+        if child_index != -1 {
+            mes "子プロセス " + child_index + " からテキスト: " + received_data
+            child_status_list(child_index) = "テキスト受信" // 状態を更新
+        } else {
+            mes "未知の子プロセスからテキスト: " + received_data
+        }
+        swbreak
+                        
+    default:
+        // 未知のメッセージタイプ
+        if child_index != -1 {
+            mes "子プロセス " + child_index + " から未知のメッセージタイプ (" + param + ") を受信しました。"
+        } else {
+            mes "未知の送信元 (HWND: " + sender_hwnd + ") から未知のメッセージタイプ (" + param + ") を受信しました。"
+        }
+        swbreak
+    swend
+    
+    return
+
+
+#deffunc update_child_list
+    new_child_count = 0
+    dim temp_child_hwnd, MAX_CHILDREN
+    sdim temp_child_status, 64, MAX_CHILDREN
+
+    // なごコネに参加している全てのアプリ数を取得
+    total_connected_apps = nocoConnectInfo(0, 0)
+    
+    if (total_connected_apps > 1) { // 自アプリ(index 0)以外にも接続しているアプリがある場合
+        // 自アプリを除外するため、インデックス1からループを開始
+        repeat total_connected_apps
+            connected_hwnd = nocoConnectInfo(1, cnt)
+            
+            // 取得したハンドルが有効で、かつそれが親プロセス自身ではないことを確認
+            if (connected_hwnd != 0 && connected_hwnd != hwnd) {
+                // 新しいリストに追加
+                if (new_child_count < MAX_CHILDREN) {
+
+	                
+					found_index = find_child_by_hwnd(child_hwnd_list, connected_hwnd) //このhwndが既存のリストのどこにあるか？
+					if found_index == -1{
+                    	temp_child_status(new_child_count) = "初期状態"
+                    	
+                    }else{
+						temp_child_status(new_child_count) = child_status_list(found_index)
+	               	}
+	               	
+	                temp_child_hwnd(new_child_count) = connected_hwnd
+	                
+                    new_child_count++
+                } else {
+                    logmes "警告: 検出された子プロセスがMAX_CHILDRENを超えました。一部を無視します。"
+                    break // 配列の容量を超えたらループを抜ける
+                }
+            }
+        loop
+    }
+
+    // 新しいリストを現在のリストにコピー
+    
+    dim child_hwnd_list, new_child_count
+    dim child_status_list, new_child_count
+    repeat new_child_count
+        child_hwnd_list(cnt) = temp_child_hwnd(cnt)
+        child_status_list(cnt) = temp_child_status(cnt)
+    loop
+
+    child_count_current = new_child_count
+    
+    return
+
+*exit
+    logmes "終了処理を開始します..."
+    terminate_children
+    logmes "親プロセスを終了します。"
+
+	end
