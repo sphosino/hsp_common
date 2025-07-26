@@ -172,9 +172,13 @@
 	return -1
 
 ; フィルター機能
-#modfunc listbox_filter_on array id_array
+#modfunc listbox_filter_on array id_array, int _filtered_count
 	; フィルター用IDリストを設定
-	filtered_count = length(id_array)
+	if _filtered_count < 0{
+		filtered_count = length(id_array)
+	}else{
+		filtered_count = _filtered_count
+	}
 	if filtered_count > len {
 		; 配列サイズが足りない場合は拡張
 		new_len = filtered_count

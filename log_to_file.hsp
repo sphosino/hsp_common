@@ -1,22 +1,45 @@
 #ifndef logfile_name
 #define global LOGFILE_NAME "log.txt"
 #module
+
 #deffunc add_log str message, int not_save_flag
-	log += message + "\n"
-	if not_save_flag == 0{
-		tmp = dir_cur
-		chdir logdirname
-		notesel log
-			notesave LOGFILE_NAME
-		noteunsel
-		chdir tmp
-	}
-	return
-	
+    ; タイムスタンプと元のメッセージを結合してログに追加
+    log += "[" + get_timestr(0)  + "] " + message + "\n"
+
+    if not_save_flag == 0 {
+        tmp = dir_cur
+        chdir logdirname
+        notesel log
+            notesave LOGFILE_NAME
+        noteunsel
+        chdir tmp
+    }
+    return
+
 #deffunc log_init str dirname, int size
-	sdim log, size
-	logdirname = dirname
-	return
-	
+    sdim log, size
+    logdirname = dirname
+    return    
+
+#defcfunc get_timestr int type
+
+    ; gettime関数で各時刻要素を取得
+    year   = gettime(0)  ; 年
+    month  = gettime(1)  ; 月
+    ;weekday= gettime(2)  ; 曜日
+    day    = gettime(3)  ; 日
+    hour   = gettime(4)  ; 時
+    minute = gettime(5)  ; 分
+    second = gettime(6)  ; 秒
+    ;millisecond = gettime(7); ミリ秒
+    
+    switch type
+    case 0 ; YYYY/MM/DD HH:MM:SS 形式
+        time_buf = strf("%04d/%02d/%02d %02d:%02d:%02d", year, month, day, hour, minute, second)
+        return time_buf
+    swbreak
+    ; 必要であれば、他のtypeのフォーマットもここに追加
+    swend
+    return "?" ; 未定義のtypeの場合
 #global
 #endif
