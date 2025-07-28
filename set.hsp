@@ -60,7 +60,7 @@
 		valid_buckets(valid_buckets_num) = hash
 		valid_buckets_num++
 	}
-		
+
 	data(newid) = s1
 	hashtable(hash, hashcount(hash)) = newid
 	hashcount(hash)++
@@ -129,18 +129,8 @@
 
 
 #modcfunc set_get_one
-    // セットが空の場合は空文字列を返す
     if data_num == 0: return ""
-
-    // 有効なバケット（要素があるハッシュテーブルのインデックス）から一つ選ぶ
-    // valid_buckets の最初の要素を使うことで、一つ要素を取り出す
-    hash_idx = valid_buckets(0) 
-
-    // そのハッシュバケットの最初の要素のIDを取得
-    data_id = hashtable(hash_idx, 0)
-
-    // 実際のデータを返す
-    return data(data_id)
+    return data(hashtable(valid_buckets(0), 0))
 
 #modcfunc _get_cardinality
 	return data_num
@@ -346,7 +336,7 @@
 #endif
 
 
-#if 0
+#if 00
 #undef mes
 #define mes(%1 = "") mes@hsp %1: logmes %1
 // set_strモジュールのテスト

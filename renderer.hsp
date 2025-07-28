@@ -122,6 +122,13 @@
 	if フラグ: dialog"描画ラベル以外でget_extra_paramsが呼び出されました": end
 	split draw_object_params(obj_id), ",", a
 	return stat * (draw_object_params(obj_id) != "")
+	
+#deffunc get_custom_param array a
+	if フラグ: dialog"描画ラベル以外でget_custom_paramsが呼び出されました": end
+	a.0 = get_ease_custom(draw_object_params(obj_id))
+	a.1 = get_ease_custom2(draw_object_params(obj_id))
+	a.2 = get_ease_custom3(draw_object_params(obj_id))
+	return 
 
 //利用側で使う
 #deffunc set_extra_param int id, int idx, str newval

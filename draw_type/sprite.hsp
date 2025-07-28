@@ -58,7 +58,7 @@
 	}
 	
     
-    gmode mode, sizex, sizey, alpha //(謎補正(+2～+6)  hspversion = 3.6)
+    gmode mode, sizex, sizey, alpha
     //コピーモード、元画像のサイズｘ、元画像のサイズｙ,alpha
     pos x, y
     grotate int(e(0)), px, py, int(angle), w, h

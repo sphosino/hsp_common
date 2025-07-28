@@ -22,7 +22,7 @@
     s = SEED
     t = s1
     repeat strlen(t)
-        s ^= peek(t, cnt) 
+        s ^= peek(t, cnt)
         s *= FNV_PRIME 
     loop
     return (s & 0x7FFFFFFF) \ MAX_KEYS

@@ -45,7 +45,7 @@ keyfps
 //FPS関連
 #define global       setfps(%1)                      fps@keyFPS = limitf(%1, MIN_FPS@keyFPS, MAX_FPS@keyFPS); 目標FPSを設定する
 
-#define global       enable_auto_adjust(%1 = 1)      autoAdjustEnabled@keyFPS = %1; 目標FPSを自動調整するかのフラグ（default = ON)
+#define global       enable_auto_adjust(%1 = 1)      autoAdjustEnabled@keyFPS = %1; 目標FPSを自動調整するかのフラグ（default = OFF)
 #define global       set_target_wait(%1)             target_wait@keyFPS = limit(%1, 1) //目標余裕時間の設定
 #define global ctype get_target_wait(%1)             target_wait@keyFPS //現在の目標余裕時間
 

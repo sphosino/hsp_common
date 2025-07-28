@@ -37,7 +37,7 @@
 
 
 //複数のeaseを束ねたオブジェクト
-#module ease_obj x, y, sx, sy, a, r, u
+#module ease_obj x, y, sx, sy, a, r, u, u2, u3
 
 #modinit int posx, int posy, int sizex, int sizey, local thismod_ID
 	// 最初はその場に動かないオブジェクトを作成
@@ -48,6 +48,8 @@
 	newmod a, ease, 256, 256, ease_linear
 	newmod r, ease, 0, 0, ease_linear
 	newmod u, ease, 0, 0, ease_linear
+	newmod u2, ease, 0, 0, ease_linear
+	newmod u3, ease, 0, 0, ease_linear
 	mref thismod_ID, 2
 	return thismod_ID
 	
@@ -59,6 +61,8 @@
 	set_ease_time a, time
 	set_ease_time r, time
 	set_ease_time u, time
+	set_ease_time u2, time
+	set_ease_time u3, time
 	return
 	
 #modfunc _set_ease_posx double from, double to, int type, double t
@@ -82,6 +86,12 @@
 #modfunc _set_ease_custom double from, double to, int type, double t
 	set_ease_obj u, from, to, type, t
 	return
+#modfunc _set_ease_custom2 double from, double to, int type, double t
+	set_ease_obj u2, from, to, type, t
+	return
+#modfunc _set_ease_custom3 double from, double to, int type, double t
+	set_ease_obj u3, from, to, type, t
+	return
 	
 #modcfunc _get_ease_posx double t
 	return _get_ease_value(x, t)
@@ -97,7 +107,11 @@
 	return _get_ease_value(r, t)
 #modcfunc _get_ease_custom double t
 	return _get_ease_value(u, t)
-	
+#modcfunc _get_ease_custom2 double t
+	return _get_ease_value(u2, t)
+#modcfunc _get_ease_custom3 double t
+	return _get_ease_value(u3, t)
+
 #global
 
 
@@ -120,7 +134,8 @@
 #define global set_ease_alpha(%1,%2,%3,%4 = 0, %5 = 0.0) _set_ease_alpha data@ease_obj_manager(%1),%2,%3,%4,%5
 #define global set_ease_angle(%1,%2,%3,%4 = 0, %5 = 0.0) _set_ease_angle data@ease_obj_manager(%1),%2,%3,%4,%5
 #define global set_ease_custom(%1,%2,%3,%4 = 0, %5 = 0.0) _set_ease_custom data@ease_obj_manager(%1),%2,%3,%4,%5
-
+#define global set_ease_custom2(%1,%2,%3,%4 = 0, %5 = 0.0) _set_ease_custom2 data@ease_obj_manager(%1),%2,%3,%4,%5
+#define global set_ease_custom3(%1,%2,%3,%4 = 0, %5 = 0.0) _set_ease_custom3 data@ease_obj_manager(%1),%2,%3,%4,%5
 #defcfunc is_entity_id_alive int id
 	return varuse(data(id))
 
@@ -138,6 +153,10 @@
 	return _get_ease_angle(data(id), t)
 #defcfunc get_ease_custom int id, double t
 	return _get_ease_custom(data(id), t)
+#defcfunc get_ease_custom2 int id, double t
+	return _get_ease_custom2(data(id), t)
+#defcfunc get_ease_custom3 int id, double t
+	return _get_ease_custom3(data(id), t)
 	
 #deffunc del_ease_obj int id
 	delmod data(id)

@@ -9,9 +9,9 @@
     if not_save_flag == 0 {
         tmp = dir_cur
         chdir logdirname
-        notesel log
-            notesave LOGFILE_NAME
-        noteunsel
+	        notesel log
+	            notesave LOGFILE_NAME
+	        noteunsel
         chdir tmp
     }
     return
