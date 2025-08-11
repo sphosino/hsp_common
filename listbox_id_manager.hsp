@@ -1,10 +1,12 @@
 #ifndef listbox_id_manager
 #addition "id_manager.hsp"
-#module listbox_id_manager id_to_listnum, listnum_to_id, listnum, id_list_manager, len, filtered_ids, filtered_count, is_filtered, filtered_id_to_listnum, filtered_listnum_to_id, filtered_listnum, sort_keys, is_sorted, sort_order
+#module listbox_id_manager id_to_listnum, listnum_to_id, listnum, id_list_manager, len, filtered_ids, filtered_count, is_filtered, filtered_id_to_listnum, filtered_listnum_to_id, filtered_listnum, sort_keys, sort_strings, is_sorted, sort_order, sort_type
 #const DEFAULT_SIZE 200
 #const EXP_RATE 2.0
 #const global LISTBOX_SORT_ASC 0
 #const global LISTBOX_SORT_DESC 1
+#const global LISTBOX_SORT_NUMERIC 0
+#const global LISTBOX_SORT_STRING 1
 #define ctype ceil(%1) ((%1 > int(%1)) + %1)
 #modinit int p1
 	if p1 == 0{
@@ -32,8 +34,10 @@
 	
 	; ソート用の変数を初期化
 	dim sort_keys, len
+	dim sort_strings, len   ; 文字列ソートキー用配列
 	is_sorted = 0
 	sort_order = LISTBOX_SORT_ASC
+	sort_type = LISTBOX_SORT_NUMERIC  ; デフォルトは数値ソート
 	return
 	
 #modcfunc get_new_listbox_id
@@ -50,6 +54,7 @@
 		filtered_listnum_to_id(new_len - 1) = 0
 		; ソート配列もリサイズ
 		sort_keys(new_len - 1) = 0
+		sort_strings(new_len - 1) = ""
 		len = new_len
 	}
     
@@ -197,6 +202,7 @@
 		filtered_id_to_listnum(new_len - 1) = 0
 		filtered_listnum_to_id(new_len - 1) = 0
 		sort_keys(new_len - 1) = 0
+		sort_strings(new_len - 1) = ""
 		len = new_len
 	}
 	
@@ -215,96 +221,65 @@
 	}
 	return
 
-; ソート機能
-#modfunc listbox_sort_on array key_array, int order, int is_id_indexed
+; ソート機能（型自動判定）
+#modfunc listbox_sort_on array key_array, int order
 	; ソートキー配列を設定
 	array_size = length(key_array)
+	lb_max_id_capacity = get_max_id(id_list_manager) + 1
 	
-	/* 必要に応じて内部配列を拡張
-	if len < get_id_length(id_list_manager) {
-		new_len = get_id_length(id_list_manager)
-		sort_keys(new_len - 1) = 0
-		filtered_ids(new_len - 1) = 0
-		filtered_id_to_listnum(new_len - 1) = 0
-		filtered_listnum_to_id(new_len - 1) = 0
-		len = new_len
-		end
+	; vartypeで配列の型を自動判定
+	key_vartype = vartype(key_array)
+	
+	if key_vartype == 2 {  ; 文字列型の場合
+		; 文字列配列として処理
+		dim sort_strings, lb_max_id_capacity
+		repeat limit(array_size,,lb_max_id_capacity)
+			sort_strings(cnt) = key_array(cnt)
+		loop
+		sort_type = LISTBOX_SORT_STRING
+	} else {  ; 数値型の場合
+		; 数値配列として処理
+		dim sort_keys, lb_max_id_capacity
+		memcpy sort_keys, key_array, limit(array_size,,lb_max_id_capacity) << 2
+		sort_type = LISTBOX_SORT_NUMERIC
 	}
-	;*/
-	
-	; is_id_indexed が 1 の場合、または配列サイズがlen以上の場合はそのままコピー
-	if is_id_indexed || array_size >= len {
-		memcpy sort_keys, key_array, len << 2
-	} else {
-		; 配列が不足している場合は変換処理
-		_convert_to_id_indexed thismod, key_array, array_size
-	}
-	
+
 	sort_order = order
 	is_sorted = 1
 	_rebuild_display_list thismod
 	return
 
-#modfunc listbox_shuffle
+#modfunc listbox_shuffle 
+    ; シャッフルは「ソートキー」を変更することで実現すべき
+    ; IDと実データの関係は保持する
+    
     if is_filtered {
-	    if filtered_listnum{
-	        repeat filtered_listnum - 1
-	            v = filtered_listnum_to_id(cnt)
-	            index = rnd(filtered_listnum - cnt) + cnt
-	            filtered_listnum_to_id(cnt) = filtered_listnum_to_id(index)
-	            filtered_listnum_to_id(index) = v
-	        loop
-	        ; フィルタ状態では逆引きテーブルを手動更新
-	        repeat filtered_listnum
-	            id = filtered_listnum_to_id(cnt)
-	            filtered_id_to_listnum(id) = cnt
-	        loop
-	   }
+        if filtered_listnum <= 1 : return
+        
+        ; 現在のフィルター対象IDのソートキーをランダムに再設定
+        repeat filtered_listnum
+            id = filtered_listnum_to_id(cnt)
+            sort_keys(id) = rnd(10000) ; ランダムなソートキーを設定
+        loop
+        
     } else {
-        if listnum {
-            repeat listnum - 1
-                v = listnum_to_id(cnt)
-                index = rnd(listnum - cnt) + cnt
-                listnum_to_id(cnt) = listnum_to_id(index)
-                listnum_to_id(index) = v
-            loop
-            repeat listnum
-                id = listnum_to_id(cnt)
-                id_to_listnum(id) = cnt
-            loop
-        }
-    }
-    is_sorted = 0
-    ; シャッフル後は再構築不要（既に更新済み）
-    return
+        if listnum <= 1 : return
+        
+        ; 全IDのソートキーをランダムに再設定
+        repeat listnum
+            id = listnum_to_id(cnt)
+            sort_keys(id) = rnd(10000) ; ランダムなソートキーを設定
+        loop
 
-; 内部関数：リスト順序の配列をID位置配列に変換
-#modfunc local _convert_to_id_indexed array source_array, int source_size
-	; sort_keysを初期化
-	repeat len
-		sort_keys(cnt) = 0
-	loop
-	
-	; 現在の表示順序に基づいて変換
-	convert_count = 0
-	if is_filtered {
-		; フィルター状態の場合
-		repeat filtered_listnum
-			if convert_count >= source_size : break
-			id = filtered_listnum_to_id(cnt)
-			sort_keys(id) = source_array(convert_count)
-			convert_count++
-		loop
-	} else {
-		; 通常状態の場合
-		repeat listnum
-			if convert_count >= source_size : break
-			id = listnum_to_id(cnt)
-			sort_keys(id) = source_array(convert_count)
-			convert_count++
-		loop
-	}
-	return
+    }
+    
+    ; ソートを有効にして再構築（数値ソートとして処理）
+    is_sorted = 1
+    sort_type = LISTBOX_SORT_NUMERIC
+    sort_order = LISTBOX_SORT_ASC
+    _rebuild_display_list thismod
+    
+    return
 
 #modfunc listbox_sort_off
 	is_sorted = 0
@@ -383,14 +358,29 @@
 	while i < left_size && j <= right
 		id1 = temp_array(i)
 		id2 = filtered_listnum_to_id(j)
-		key1 = sort_keys(id1)
-		key2 = sort_keys(id2)
 		
 		should_use_left = 0
-		if sort_order == LISTBOX_SORT_ASC {
-			if key1 <= key2 : should_use_left = 1
+		
+		if sort_type == LISTBOX_SORT_STRING {
+			; 文字列比較
+			str1 = sort_strings(id1)
+			str2 = sort_strings(id2)
+			
+			if sort_order == LISTBOX_SORT_ASC {
+				if str1 ! str2 <= 0 : should_use_left = 1
+			} else {
+				if str1 ! str2 >= 0 : should_use_left = 1
+			}
 		} else {
-			if key1 >= key2 : should_use_left = 1
+			; 数値比較
+			key1 = sort_keys(id1)
+			key2 = sort_keys(id2)
+			
+			if sort_order == LISTBOX_SORT_ASC {
+				if key1 <= key2 : should_use_left = 1
+			} else {
+				if key1 >= key2 : should_use_left = 1
+			}
 		}
 		
 		if should_use_left {

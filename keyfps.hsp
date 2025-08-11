@@ -27,7 +27,7 @@ keyfps
 #const DEFAULT_ADJUST_THRESHOLD 4 //余裕時間がこれ以上あればFPSを上げる
 #const DEFAULT_INCREASE_STEP 1.0 //余裕時間がある時、上げる量
 #const DEFAULT_DECREASE_STEP 1.1 //余裕時間がない時、下げる量
-#const DEFAULT_TARGET_WAIT 5 //目標待ち時間(ms)
+#const DEFAULT_TARGET_WAIT_TIME 5 //目標待ち時間(ms)
 #const DEFAULT_FPS_SAMPLE_COUNT 5
 
 //---------------------------------------------------
@@ -463,7 +463,7 @@ p2で間隔を指定します。この時間以内に２回目が押されると、１を返します。
 	adjust_threshold = DEFAULT_ADJUST_THRESHOLD
 	fps_increase_step = DEFAULT_INCREASE_STEP
 	fps_decrease_step = DEFAULT_DECREASE_STEP
-	target_wait = DEFAULT_TARGET_WAIT
+	target_wait = DEFAULT_TARGET_WAIT_TIME
 	fps_sample_count = DEFAULT_FPS_SAMPLE_COUNT
 	
 	addkey_all

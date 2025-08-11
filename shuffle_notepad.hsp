@@ -1,25 +1,32 @@
 #ifndef shuffle_notepad
 #module 
-#defcfunc shuffle_notepad str s1, local ss, local slist, local n, local r
+#defcfunc shuffle_notepad str s1, int num, local ss, local slist, local n, local r, local output_num
 	ss = s1
 	notesel ss
 		n = notemax
-		sdim slist,,notemax
-		if n == 0: return ""
+		if n == 0{
+			noteunsel
+			return ""
+		}
+		sdim slist,,n
 		repeat n
 			noteget slist(cnt),cnt
 		loop
+		if num <= 0{
+			output_num = n
+		}else{
+			output_num = limit(num,,n)
+		}
 	
-		repeat n - 1
-			r = rnd(n - cnt) + cnt
-			tmp = slist(cnt)
-			slist(cnt) = slist(r)
-			slist(r) = tmp
-		loop
-
 		ss = ""
-		repeat n
-			noteadd slist(cnt)
+		repeat output_num
+			r = rnd(n - cnt) + cnt
+			if cnt{
+				ss += "\n" + slist(r)
+			}else{
+				ss += slist(r)
+			}
+			slist(r) = slist(cnt)
 		loop
 	noteunsel
 	
