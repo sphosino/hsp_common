@@ -10,25 +10,26 @@
 		}
 		sdim slist,,n
 		repeat n
-			noteget slist(cnt),cnt
-		loop
-		if num <= 0{
-			output_num = n
-		}else{
-			output_num = limit(num,,n)
-		}
-	
-		ss = ""
-		repeat output_num
-			r = rnd(n - cnt) + cnt
-			if cnt{
-				ss += "\n" + slist(r)
-			}else{
-				ss += slist(r)
-			}
-			slist(r) = slist(cnt)
+			noteget slist(cnt), cnt
 		loop
 	noteunsel
+	
+	if num <= 0{
+		output_num = n
+	}else{
+		output_num = limit(num,,n)
+	}
+
+	ss = ""
+	repeat output_num
+		r = rnd(n - cnt) + cnt
+		if cnt{
+			ss += "\n" + slist(r)
+		}else{
+			ss += slist(r)
+		}
+		slist(r) = slist(cnt)
+	loop
 	
 	return ss
 #global
