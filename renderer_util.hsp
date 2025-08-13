@@ -30,19 +30,18 @@
 
 	return id
 
-#defcfunc spawn_neco_effect array area_rect, int buffer_id
-	tmp = ginfo_sel
-	gsel buffer_id
-	x = ginfo(12)
-	y = ginfo(13)
-	gsel tmp
-	id = make_draw_object(MOVE_TYPE_EASE,"SPRITE", LIFE_FOREVER, x/2,y/2,x,y, "")
-	set_ease_posx get_entity_id(id), x1 - move_range/2, x1 + move_range/2, ease_linear | ease_loop, 1.0
-	
-
+#deffunc spawn_toast_effect int x1, int y1, int w, int h, str _message
+	//Â•¶š‚ÅA”wŒi•š
+	id = make_draw_object(MOVE_TYPE_EASE, "STR", 1.0, x1, y1, w, h, strf("%s,%d,,,,%d", _message, $80DFFF,$00000))
+	update_priority_draw_object id, PRIORITY_FRONT
 	return
 
-	
+#deffunc spawn_toast_effect_success int x1, int y1, int w, int h, str _message
+	//Â•¶š‚ÅA”wŒi•š
+	id = make_draw_object(MOVE_TYPE_EASE, "STR_FULL", 1.0, x1, y1, w, h, strf("%s,%d,,,,%d", _message, $80DFFF,$00000))
+	update_priority_draw_object id, PRIORITY_FRONT
+	set_ease_alpha get_entity_id(id), 0, 255, ease_quad_out | ease_loop, 0.5  // 0.5•b‚Å‚Ó‚í‚Á‚ÆoŒ»‚µ‚ÄÁ‚¦‚é
+	return
 #global
 #endif
 
