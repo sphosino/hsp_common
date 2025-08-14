@@ -38,9 +38,10 @@
 
 #deffunc spawn_toast_effect_success int x1, int y1, int w, int h, str _message
 	//Â•¶š‚ÅA”wŒi•š
-	id = make_draw_object(MOVE_TYPE_EASE, "STR_FULL", 1.0, x1, y1, w, h, strf("%s,%d,,,,%d", _message, $80DFFF,$00000))
+	id = make_draw_object(MOVE_TYPE_EASE, "STR_FULL", 2.1, x1, y1, w, h, strf("%s,%d,,,,%d", _message, $9AEFFF,$00000))
 	update_priority_draw_object id, PRIORITY_FRONT
-	set_ease_alpha get_entity_id(id), 0, 255, ease_quad_out | ease_loop, 0.5  // 0.5•b‚Å‚Ó‚í‚Á‚ÆoŒ»‚µ‚ÄÁ‚¦‚é
+	set_ease_alpha get_entity_id(id), 0, 255, ease_cubic_out | ease_loop, 1.1
+	set_ease_posy get_entity_id(id), y1-h, y1, ease_quad_out, 0.5
 	return
 #global
 #endif
