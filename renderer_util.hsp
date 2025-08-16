@@ -22,11 +22,19 @@
 	return id
 
 #defcfunc spawn_search_bar_effect int x1, int y1, int w, int h, int move_range, int priority
-	id = make_draw_object(MOVE_TYPE_EASE, "BOXF", LIFE_FOREVER, x1, y1, w, h, "$80DFFF,1")
+	id = make_draw_object(MOVE_TYPE_EASE, "BOXF", LIFE_FOREVER, x1, y1, w, h, "$80DFFF")
 	if priority > 0{
 		update_priority_draw_object id, priority
 	}
 	set_ease_posx get_entity_id(id), x1 - move_range/2, x1 + move_range/2, ease_linear | ease_loop, 1.0
+
+	return id
+
+#defcfunc spawn_search_bar_effect2 int x1, int y1, int x2, int y2, int w, int priority
+	id = make_draw_object(MOVE_TYPE_EASE, "BOXF", LIFE_FOREVER, x1 + w / 2, (y1 + y2 ) / 2, w, y2 - y1, "$FFFFFF")
+	update_priority_draw_object id, priority
+	set_ease_posx get_entity_id(id), x1+w/2, x2 - w/2, ease_linear | ease_loop, 1.0
+	set_ease_alpha get_entity_id(id), 0,128, ease_shake_inout | ease_loop, 2.0
 
 	return id
 
