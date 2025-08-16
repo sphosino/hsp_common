@@ -141,11 +141,7 @@
 
 #module set_manager
 
-//idが有効かどうか
-#defcfunc is_valid_set_id int id
-	if vartype(data) != 5 : return 0
-	if length(data) <= id: return 0
-	return varuse(data) == 1
+
 
 //新たな空のセットを作成
 #defcfunc make_new_set int max ;初期確保容量
@@ -314,7 +310,12 @@
 		s += tmp(cnt) + "\n" 
 	loop
 	return strmid(s,0,strlen(s)-2)
-	
+
+//idが有効かどうか
+#defcfunc is_valid_set_id int id
+	if vartype(data) != 5 : return 0
+	if length(data) <= id: return 0
+	return varuse(data(id)) == 1
 #global
 
 
@@ -341,6 +342,12 @@
 #global
 #endif
 
+/*
+s1 = make_new_set()
+s2 = make_new_set()
+del_set s2
+mes strf("%d->%d,%d->%d",s1,is_valid_set_id(s1),s2,is_valid_set_id(s2))
+*/
 
 #if 00
 #undef mes
