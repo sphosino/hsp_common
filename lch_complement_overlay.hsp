@@ -1,0 +1,382 @@
+#ifndef __Xn
+#ifndef PI
+#const global PI 3.141592653589793
+#endif
+; --- 定数（D65 白色点）---
+#define global __Xn 0.95047
+#define global __Yn 1.00000
+#define global __Zn 1.08883
+
+;----------------------------------------------
+; sRGB 1ch (0..255) -> Linear (0..1) 
+;----------------------------------------------
+#module
+#defcfunc _srgb_to_linear_safe double s, local normalized, local result
+	; 入力値を0-1に正規化
+	if s < 0.0 : s = 0.0
+	if s > 1.0 : s = 1.0
+	
+	logmes "sRGB input (normalized): "+s
+	
+	if s <= 0.04045 {
+		result = s / 12.92
+		logmes "Linear branch: "+s+" / 12.92 = "+result
+	} else {
+		normalized = (s + 0.055) / 1.055
+		logmes "Gamma branch step1: ("+s+" + 0.055) / 1.055 = "+normalized
+		
+		if normalized <= 0.0 {
+			logmes "ERROR: normalized value <= 0, setting to 0"
+			result = 0.0
+		} else {
+			; より安全な実装
+			result = expf( 2.4 * logf(normalized) )
+			logmes "Gamma branch step2: exp(2.4 * ln("+normalized+")) = "+result
+		}
+	}
+	
+	; 結果のチェック
+	if result != result { ; NaNチェック
+		logmes "ERROR: NaN detected, setting to 0"
+		result = 0.0
+	}
+	
+	return result
+#global
+
+;----------------------------------------------
+; Linear 1ch (0..1) -> sRGB 1ch (0..1) - 安全版
+;----------------------------------------------
+#module
+#defcfunc _linear_to_srgb_safe double u
+	if (u <= 0.0) : return 0.0
+	if (u >= 1.0) : return 1.0
+	if u <= 0.0031308 : return  12.92 * u
+	return 1.055*powf(u, 1.0/2.4) - 0.055
+#global
+
+;----------------------------------------------
+; f(t) for Lab
+;----------------------------------------------
+#module
+#defcfunc _f double t
+	if t > 0.008856 : return powf(t, 1.0/3.0)
+	return 	(7.787*t + 16.0/116.0)
+#global
+
+;----------------------------------------------
+; RGB(0..255) -> XYZ (D65) - 修正版（実数除算）
+;----------------------------------------------
+#module
+#deffunc rgb_to_xyz int r, int g, int b, var X, var Y, var Z, local _R, local _G, local _B, local rNorm, local gNorm, local bNorm
+	logmes "=== RGB to XYZ Debug ==="
+	logmes "Input RGB: "+r+", "+g+", "+b
+	
+	; **修正: 実数除算を確実に行う**
+	rNorm = double(r) / 255.0
+	gNorm = double(g) / 255.0
+	bNorm = double(b) / 255.0
+	logmes "Normalized: "+rNorm+", "+gNorm+", "+bNorm
+	
+	_R = _srgb_to_linear_safe( rNorm )
+	_G = _srgb_to_linear_safe( gNorm )
+	_B = _srgb_to_linear_safe( bNorm )
+	
+	logmes "Linear RGB: "+_R+", "+_G+", "+_B
+	
+	; sRGB linear → XYZ（D65）
+	X = 0.4124564*_R + 0.3575761*_G + 0.1804375*_B
+	Y = 0.2126729*_R + 0.7151522*_G + 0.0721750*_B
+	Z = 0.0193339*_R + 0.1191920*_G + 0.9503041*_B
+	
+	logmes "XYZ result: X="+X+", Y="+Y+", Z="+Z
+	return
+#global
+
+;----------------------------------------------
+; XYZ → Lab - グローバルに移動
+;----------------------------------------------
+#module
+#deffunc xyz_to_lab double X, double Y, double Z, var L, var a, var b, local fx, local fy, local fz, local xr, local yr, local zr
+	xr = X / __Xn
+	yr = Y / __Yn
+	zr = Z / __Zn
+	fx = _f(xr)
+	fy = _f(yr)
+	fz = _f(zr)
+	L = 116.0*fy - 16.0
+	a = 500.0*(fx - fy)
+	b = 200.0*(fy - fz)
+	logmes "XYZ->Lab: ("+X+","+Y+","+Z+") -> ("+L+","+a+","+b+")"
+	return
+#global
+
+;----------------------------------------------
+; Lab → LCh (CIE L*C*h°)
+;----------------------------------------------
+#module
+#deffunc lab_to_lch double L, double a, double b, var LL, var CC, var HH, local hrad
+	LL = L
+	CC = sqrt(a*a + b*b)
+	hrad = atan(b, a) ; ラジアン
+	if (hrad < 0.0) : hrad += 2.0 * PI
+	HH = hrad * 180.0/PI
+	logmes "Lab->LCh: ("+L+","+a+","+b+") -> ("+LL+","+CC+","+HH+")"
+	return
+#global
+
+;----------------------------------------------
+; LCh → Lab
+;----------------------------------------------
+#module
+#deffunc lch_to_lab double L, double C, double Hdeg, var LL, var aa, var bb, local hrad
+	hrad = Hdeg * PI/180.0
+	LL = L
+	aa = C * cos(hrad)
+	bb = C * sin(hrad)
+	logmes "LCh->Lab: ("+L+","+C+","+Hdeg+") -> ("+LL+","+aa+","+bb+")"
+	return
+#global
+
+;----------------------------------------------
+; Lab → XYZ - 逆変換
+;----------------------------------------------
+#module
+#deffunc lab_to_xyz double L, double a, double b, var X, var Y, var Z, local fx, local fy, local fz, local ux, local uy, local uz
+	; Lab→XYZ（逆 f^-1 ）
+	fy = (L + 16.0) / 116.0
+	fx = a/500.0 + fy
+	fz = fy - b/200.0
+
+	ux = fx*fx*fx
+	uy = fy*fy*fy
+	uz = fz*fz*fz
+	if (ux <= 0.008856) : ux = (fx - 16.0/116.0) / 7.787
+	if (uy <= 0.008856) : uy = (fy - 16.0/116.0) / 7.787
+	if (uz <= 0.008856) : uz = (fz - 16.0/116.0) / 7.787
+
+	X = ux * __Xn
+	Y = uy * __Yn
+	Z = uz * __Zn
+	logmes "Lab->XYZ: ("+L+","+a+","+b+") -> ("+X+","+Y+","+Z+")"
+	return
+#global
+
+;----------------------------------------------
+; XYZ → RGB(0..255) - 修正版
+;----------------------------------------------
+#module
+#deffunc xyz_to_rgb double X, double Y, double Z, var r8, var g8, var b8, local R, local G, local B
+	; XYZ→linear sRGB（sRGB逆行列）
+	R =  3.2404542*X -1.5371385*Y -0.4985314*Z
+	G = -0.9692660*X +1.8760108*Y +0.0415560*Z
+	B =  0.0556434*X -0.2040259*Y +1.0572252*Z
+	
+	logmes "Linear RGB before gamma: ("+R+","+G+","+B+")"
+	
+	; linear→sRGB（ガンマ補正）
+	R = _linear_to_srgb_safe(R)
+	G = _linear_to_srgb_safe(G)
+	B = _linear_to_srgb_safe(B)
+	
+	; 0-255にクリップ
+	r8 = limit(int(R*255.0+0.5), 0, 255)
+	g8 = limit(int(G*255.0+0.5), 0, 255)
+	b8 = limit(int(B*255.0+0.5), 0, 255)
+	
+	logmes "Final RGB: ("+r8+","+g8+","+b8+")"
+	return
+#global
+
+;----------------------------------------------
+; 背景RGB → LCh（統合版）
+;----------------------------------------------
+#module
+#deffunc rgb_to_lch int r, int g, int b, var L, var C, var H, local X, local Y, local Z, local LL, local aa, local bb
+	logmes "=== RGB to LCh conversion ==="
+	rgb_to_xyz r, g, b, X, Y, Z
+	xyz_to_lab X, Y, Z, LL, aa, bb
+	lab_to_lch LL, aa, bb, L, C, H
+	logmes "Final LCh: L="+L+" C="+C+" H="+H
+	return
+#global
+
+;----------------------------------------------
+; LCh → RGB（統合版）
+;----------------------------------------------
+#module
+#deffunc lch_to_rgb double L, double C, double H, var r8, var g8, var b8, local LL, local aa, local bb, local X, local Y, local Z
+	logmes "=== LCh to RGB conversion ==="
+	lch_to_lab L, C, H, LL, aa, bb
+	lab_to_xyz LL, aa, bb, X, Y, Z
+	xyz_to_rgb X, Y, Z, r8, g8, b8
+	return
+#global
+
+;----------------------------------------------
+; 補色（LCH）を生成
+;----------------------------------------------
+#module
+#deffunc make_complement_lch double L, double C, double H, double minC, double cClamp, var Lo, var Co, var Ho,\
+	local is_neutral, local boost, local adjusted_L, local base_C
+	Lo = L
+	Ho = (H + 180.0)
+	if Ho >= 360.0 : Ho -= 360.0
+
+	is_neutral_color C, L, is_neutral, boost
+
+	if is_neutral{
+		base_C = 60.0 * boost
+		Co = base_C * cClamp
+	}else{
+	
+		if C < minC {
+			Co = minC
+		} else {
+			Co = C * 1.5  ; 補色は彩度を上げる
+		}
+		Co = Co * cClamp
+	}
+		; 明るさ調整（前回のロジック＋グレー特化）
+	if L < 10.0 {
+		adjusted_L = 70.0
+	} else: if L < 30.0 {
+		adjusted_L = 80.0
+	} else: if L < 70.0 {
+		adjusted_L = 90.0  ; 中間グレーには「超明るい補色」
+	} else {
+		adjusted_L = 30.0  ; 明るい色には暗めの補色
+	}
+
+	if is_neutral{
+		adjusted_L = limit(adjusted_L, 70.0, 95.0)
+	}
+
+	adjust_complement_lightness L, C, adjusted_L
+	Lo = adjusted_L
+	
+	logmes "Complement generation: L="+Lo+" C="+Co+" H="+Ho
+	return
+#global
+
+;----------------------------------------------
+; αブレンド
+;----------------------------------------------
+#module
+#deffunc blend_over int rb, int gb, int bb, int rs, int gs, int bs, double alpha, var ro, var go, var bo
+	ro = limit( int(alpha*rs + (1.0-alpha)*rb + 0.5), 0, 255 )
+	go = limit( int(alpha*gs + (1.0-alpha)*gb + 0.5), 0, 255 )
+	bo = limit( int(alpha*bs + (1.0-alpha)*bb + 0.5), 0, 255 )
+	logmes "Alpha blend: ("+rb+","+gb+","+bb+") + ("+rs+","+gs+","+bs+") * "+alpha+" = ("+ro+","+go+","+bo+")"
+	return
+#global
+#module
+#deffunc is_neutral_color double C, double L, var is_neutral, var boost_factor
+	if C < 15.0 {
+		is_neutral = 1
+		; 明るさに応じてブースト量を調整
+		if L < 40.0 {
+			boost_factor = 1.8  ; 濃グレー → 鮮やか+明るめ
+		} else: if L < 70.0 {
+			boost_factor = 2.0  ; 中グレー → 最大ブースト
+		} else {
+			boost_factor = 1.6  ; 明るグレー → 鮮やか+暗め
+		}
+	} else {
+		is_neutral = 0
+		boost_factor = 1.0
+	}
+	logmes "Neutral check: C="+C+" → is="+is_neutral+", boost="+boost_factor
+	return
+#global
+#module
+#deffunc adjust_complement_lightness double L_input, double C_input, var L_output
+	; 入力色の明るさが低いほど、補色は明るくする
+	if L_input < 10.0 {
+		L_output = 60.0  ; 黒に近い → 補色は明るい灰色～白系
+	} else: if L_input < 30.0 {
+		L_output = 70.0
+	} else: if L_input < 50.0 {
+		L_output = 80.0
+	} else {
+		L_output = limit(30.0, 100.0 - L_input)  ; 明るい色には暗めの補色
+	}
+	
+	; 彩度が十分あれば、明るさ優先。そうでなければ最低でも40
+	if C_input < 20.0 {
+		L_output = limit(L_output, 50.0)  ; 地味色には明るめで目立つ補色
+	}
+	
+	logmes "Adjust L: Input L="+L_input+" → Output L="+L_output
+	return
+#global
+#module
+#deffunc highlight_over int rb, int gb, int bb, double alpha, double minC, double cClamp, var ro, var go, var bo, local L, local C, local H, local L2, local C2, local H2, local rs, local gs, local bs
+	logmes "========================================="
+	logmes "Input RGB: ("+rb+","+gb+","+bb+")"
+	logmes "Alpha: "+alpha+", MinC: "+minC+", CClamp: "+cClamp
+	logmes "========================================="
+	
+	; 背景 → LCh
+	rgb_to_lch rb, gb, bb, L, C, H
+	
+	; 補色生成
+	make_complement_lch L, C, H, minC, cClamp, L2, C2, H2
+	
+	; 補色 → RGB
+	lch_to_rgb L2, C2, H2, rs, gs, bs
+	
+	; ブレンド
+	blend_over rb, gb, bb, rs, gs, bs, alpha, ro, go, bo
+	
+	logmes "========================================="
+	logmes "FINAL RESULT: ("+ro+","+go+","+bo+")"
+	logmes "========================================="
+	return
+#global
+
+;----------------------------------------------
+; メイン関数
+;----------------------------------------------
+#module
+#deffunc get_complement_rgb int r, int g, int b, double minC, double cClamp, var ro, var go, var bo, local L, local C, local H, local L2, local C2, local H2
+	logmes "========================================="
+	logmes "Calculating Complementary Color"
+	logmes "Input RGB: ("+r+","+g+","+b+")"
+	logmes "MinC: "+minC+", CClamp: "+cClamp
+	logmes "========================================="
+	
+	; 背景 → LCh
+	rgb_to_lch r, g, b, L, C, H
+	
+	; 補色生成
+	make_complement_lch L, C, H, minC, cClamp, L2, C2, H2
+	
+	; 補色 → RGB
+	lch_to_rgb L2, C2, H2, ro, go, bo
+	
+	logmes "========================================="
+	logmes "COMPLEMENT RGB: ("+ro+","+go+","+bo+")"
+	logmes "========================================="
+	return
+#global
+
+
+
+; ===============================
+; テスト実行
+; ===============================
+#if 01
+#ifdef _debug
+	rb=200 : gb=180 : bb=160
+
+	minC = 30.0
+	cClamp = 0.90
+	get_complement_rgb rb, gb, bb, minC, cClamp, ro, go, bo
+
+	alpha = 0.35
+	highlight_over rb, gb, bb, alpha, minC, cClamp, ro, go, bo
+#endif
+#endif
+
+#endif
