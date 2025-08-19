@@ -1,0 +1,82 @@
+#ifndef hsv_implement_overlay
+#module
+#defcfunc get_complement_by_hsv int p1
+	r = p1 >> 16 & 255
+	g = p1 >> 8  & 255
+	b = p1       & 255
+
+	r_ = (0. + r) / 255
+	g_ = (0. + g) / 255
+	b_ = (0. + b) / 255
+	if r_ > g{
+		cmax = r_ : max = 0
+		cmin = g_
+	}else{
+		cmax = g_ : max = 1
+		cmin = g_
+	}
+
+	if cmax < b_{
+		cmax = b_ : max = 2
+	}else: if cmin > b_{
+		cmin = b_
+	}
+
+	scale = cmax - cmin
+
+	if cmax == 0{
+		s = 0
+	}else{
+		s = scale / cmax
+	}
+
+	//H
+	if scale < 0.15 {
+	    if v < 0.7 {
+	        output_h = 60   // 中間グレー → 黄色系 
+	        
+	    } else {
+	        output_h = 0     // 明るいグレー → 赤系
+	    }
+	}else{
+		switch max
+		case 0
+			h = 60 * ((g_ - b_) / scale)  
+		swbreak
+		case 1
+			h = 60 * ((b_ - r_) / scale + 2)
+		swbreak
+		case 2
+			h = 60 * ((r_ - g_) / scale + 4)
+		swbreak
+		swend
+	
+		h += 360
+		output_h = (180 + h) \ 360
+		
+	}
+
+	//S
+	output_s = 1.0
+
+	//V
+	v = cmax
+	if v < 0.6: v += 0.6
+	output_v = v + 0.2
+	if output_v > 1.0{
+		output_v = v - 0.2
+	}
+
+	
+	/*
+	HSV形式でカラーを設定する
+	hsvcolor p1,p2,p3
+	p1=0～191(0) : HSV形式 H値
+	p2=0～255(0) : HSV形式 S値
+	p3=0～255(0) : HSV形式 V値
+	*/
+	hsvcolor output_h * 191 / 360, output_s * 255, output_v * 255
+		
+	return ginfo_r << 16 | ginfo_g << 8 | ginfo_b
+
+#global

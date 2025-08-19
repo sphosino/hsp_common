@@ -339,7 +339,14 @@
 ; ƒƒCƒ“ŠÖ”
 ;----------------------------------------------
 #module
-#deffunc get_complement_rgb int r, int g, int b, double minC, double cClamp, var ro, var go, var bo, local L, local C, local H, local L2, local C2, local H2
+#defcfunc get_complement_by_lch int col, double minC, double cClamp,\
+local ro, local go, local bo,\
+local L, local C, local H, local L2, local C2, local H2
+
+	r = col >> 16
+	g = col >> 8 & 255
+	b = col & 255
+
 	logmes "========================================="
 	logmes "Calculating Complementary Color"
 	logmes "Input RGB: ("+r+","+g+","+b+")"
@@ -358,7 +365,7 @@
 	logmes "========================================="
 	logmes "COMPLEMENT RGB: ("+ro+","+go+","+bo+")"
 	logmes "========================================="
-	return
+	return ro << 16 | go << 8 | bo
 #global
 
 
@@ -372,7 +379,7 @@
 
 	minC = 30.0
 	cClamp = 0.90
-	get_complement_rgb rb, gb, bb, minC, cClamp, ro, go, bo
+	tmp = get_complement_by_lch(rb << 16 | gb << 8 | bb, minC, cClamp)
 
 	alpha = 0.35
 	highlight_over rb, gb, bb, alpha, minC, cClamp, ro, go, bo
