@@ -1,3 +1,5 @@
+#module
+//この関数で得られた値を、alphaを掛けて利用する。
 #defcfunc get_complement_by_hsv int p1
     r = p1 >> 16 & 255
     g = p1 >> 8  & 255
@@ -59,3 +61,4 @@
     
     hsvcolor output_h_int, output_s_int, output_v_int
     return ginfo_r << 16 | ginfo_g << 8 | ginfo_b
+#global
