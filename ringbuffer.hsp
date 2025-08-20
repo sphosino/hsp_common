@@ -1,25 +1,30 @@
-#ifndef ringbuffer
-#module ringbuffer
 
-#deffunc init_ringbuffer int _size, int _max_num
+#ifndef ringbuffer
+#module ringbuffer max_num, size, data, count, write_index, read_index
+#define plus1(%1) %1 = (%1 + 1) \ max_num
+
+#modinit int _size, int _max_num
+	init_ringbuffer thismod, _size, _max_num
+	return
+	
+#modfunc init_ringbuffer int _size, int _max_num
 	max_num = limit(_max_num, 1)
 	size = limit(_size, 64)
 	sdim data, size, max_num
-	reset_ringbuffer
+	reset_ringbuffer thismod
 	return
 	
-#deffunc reset_ringbuffer
+#modfunc reset_ringbuffer
 	write_index = 0
 	read_index = 0
 	count = 0
+	
 	return
 
-#define plus1(%1) %1 = (%1 + 1) \ max_num
-
-#deffunc r_push var values
+#modfunc r_push var values
 
 	if count == max_num{
-		resize
+		resize thismod
 	}
 
 	memcpy data(write_index), values, size
@@ -30,7 +35,7 @@
 
 	return
 
-#deffunc r_push2 var values
+#modfunc r_push2 var values
 
 	memcpy data(write_index), values, size
 	
@@ -40,36 +45,86 @@
 
 	return
 
-#deffunc r_shift var values
+#modfunc _r_shift var values //命令呼び出し用
+#modcfunc r_shift var values //関数呼び出し用
 
-	count--
+	if count{
 
-	memcpy values, data(read_index), size
-
-	plus1 read_index
+		count--
 	
-	return
+		memcpy values, data(read_index), size
+	
+		plus1 read_index
+		
+		return 1
+	}
+	
+	return 0
 
 
-#deffunc local resize
-	init_ringbuffer size, max_num
+#modfunc local resize
+	
 	sdim tmp, size, max_num
-	repeat max_num
-		r_shift tmp(cnt)
+
+	old_count = count
+
+	repeat old_count
+		_r_shift thismod, tmp(cnt)
 	loop
 
 	max_num *= 2
-	init_ringbuffer size, max_num
+	init_ringbuffer thismod, size, max_num
 	
-	repeat max_num / 2
-		r_push tmp(cnt)
+	repeat old_count
+		r_push thismod, tmp(cnt)
 	loop
 	
 	return
 
+#modcfunc get_ringbuffer_count
+	return count
 #global
-init_ringbuffer
+#endif
 
-#define global ringbuffer_count count@ringbuffer
+
+#if 0
+#undef mes
+#define mes(%1) mes@hsp %1: logmes %1
+; 初期化 (要素サイズ=4byte, 最大要素数=4個)
+	newmod buf, ringbuffer, 4, 4
+
+sdim tmp
+mes "=== push & shift test ==="
+repeat 4
+	i = cnt + 100
+	poke tmp, 0, i   ; 値を格納する変数 (サイズ4byte)
+	r_push buf, tmp  ; バッファに追加
+	mes "push: " + i
+loop
+
+mes "--- shift ---"
+repeat 4
+	if r_shift(buf, tmp) {
+		n = peek(tmp,0)
+		mes "shift: " + n
+	}
+loop
+
+mes "=== auto resize test ==="
+; 最初4個だが、5回pushするとresize発動
+repeat 5
+	i = cnt + 200
+	poke tmp, 0, i
+	r_push buf, tmp
+	mes "push: " + i + " (count=" + get_ringbuffer_count(buf) + ")"
+loop
+
+mes "--- shift after resize ---"
+repeat get_ringbuffer_count(buf)
+	if r_shift(buf, tmp) {
+		n = peek(tmp,0)
+		mes "shift: " + n
+	}
+loop
 
 #endif
