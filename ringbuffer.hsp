@@ -20,7 +20,7 @@
 	return
 
 #define data_push :\
-	memcpy data(write_index), values, size:\
+	memcpy data(write_index), values, limit(size,, varsize(values)):\
 	plus1 write_index
 	
 #modfunc r_push var values, int no_resize
@@ -46,7 +46,7 @@
 
 	if count{
 		count--
-		memcpy values, data(read_index), size
+		memcpy values, data(read_index), limit(size,, varsize(values))
 		plus1 read_index
 		return 1
 	}
@@ -86,7 +86,7 @@
 
 
 //以下テストコード
-#if 0001
+#if 00
 #ifdef _debug
 
 #undef mes
@@ -96,7 +96,7 @@
 mes "--- リングバッファのテストを開始します ---"
 
 // リングバッファのインスタンスを作成
-newmod my_buffer , ringbuffer , 4, 3
+newmod my_buffer , ringbuffer , 256, 4
 
 mes "初期化後のバッファ状態:"
 mes "最大数: " + get_ringbuffer_max_num(my_buffer)
