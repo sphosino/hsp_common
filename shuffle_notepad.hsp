@@ -1,5 +1,8 @@
 #ifndef shuffle_notepad
 #module 
+
+#define ctype rnd_large(%1) (((rnd(32768) << 15) | rnd(32768)) \ (%1))
+
 #defcfunc shuffle_notepad str s1, int num, local ss, local slist, local n, local r, local output_num
 	ss = s1
 	notesel ss
@@ -22,7 +25,7 @@
 
 	ss = ""
 	repeat output_num
-		r = rnd(n - cnt) + cnt
+		r = rnd_large(n - cnt) + cnt
 		if cnt{
 			ss += "\n" + slist(r)
 		}else{
@@ -32,5 +35,7 @@
 	loop
 	
 	return ss
+
+
 #global
 #endif

@@ -14,8 +14,8 @@
 #const FNV_PRIME 73091
 #const SEED 72889
 
-#const DEFAULT_DATA_SIZE 11000
-#const EXPECTED_NUMBER_COLLISIONS 4
+#const DEFAULT_DATA_SIZE 16000
+#const EXPECTED_NUMBER_COLLISIONS 3
     
 #defcfunc local get_hash str s1
 
@@ -71,10 +71,13 @@
 		valid_hash(hash) = get_new_id(valid_hash_manager)
 		valid_tableid_to_hash(stat) = hash
 	}
-		
-	if hashcount(hash) >= EXPECTED_NUMBER_COLLISIONS{
-		logmes strf("hash -> 想定より多いハッシュ衝突\nハッシュ空間 = %d, count = %d", hash, hashcount(hash) )
-	}
+
+
+	#ifdef _debug
+		if hashcount(hash) >= EXPECTED_NUMBER_COLLISIONS{
+			logmes strf("hash -> 想定より多いハッシュ衝突\nハッシュ空間 = %d, count = %d", hash, hashcount(hash) )
+		}
+	#endif
 
 	return 1
 

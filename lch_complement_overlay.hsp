@@ -373,7 +373,7 @@ local L, local C, local H, local L2, local C2, local H2
 ; ===============================
 ; テスト実行
 ; ===============================
-#if 01
+#if 00
 #ifdef _debug
 	rb=200 : gb=180 : bb=160
 

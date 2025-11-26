@@ -1,0 +1,13 @@
+#include "memory_allocator.hsp"
+#include "hash.hsp"
+#module params data
+#const header_size  500
+#modinit 
+	data = get_new_block(500)
+	
+	return
+#modfunc add_params int data_type, var a
+	
+	return
+
+#global

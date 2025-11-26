@@ -1,0 +1,317 @@
+/*::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+; HSP3用スクロールバー モジュール2号
+;.........................................................................................
+; 2011/07/25	HSP3.3b3
+;	   08/01	HSP3.3RC1	モジュール化。
+; 2012/03/10	HSP3.3
+; 2013/10/06	HSP3.4b2	HDL対応(やっつけ)
+; 2020/02/06	HSP3.6b2	2号作製。
+;	   07/22	HSP3.6b3	LastUpdate		Copyright (C) 2020 衣日和 All rights reserved.
+;.........................................................................................
+%dll
+和モジュール
+%note
+ScrollbarModule.hsp をインクルードする。
+標準・コンパクト・UTF-8・64bit版ランタイムに対応。
+%group
+スクロールバーモジュール
+%;......................................................................................*/
+
+#ifndef ndk_scrollbar2
+#module ndk_scrollbar2
+
+;●:::::::::::::::::::::::::::::::::::::::::::::::::::::::●
+#uselib "user32"
+;×.......................................................×
+#func apiSetScrollInfo			"SetScrollInfo" int, int, var, int
+#func apiGetScrollInfo			"GetScrollInfo" int, int, var
+#func apiGetSystemMetrics		"GetSystemMetrics" int		; システム設計値取得(バーの厚さ)
+#func apiIsWindow				"IsWindow" int				; hwndの生存判定。0もOK!
+#func apiRegisterWindowMessage	"RegisterWindowMessageW" wstr	; そこまでするかっ！て感じ。
+#func apiPostMessage			"PostMessageW" int, int, int, int
+
+#const cnsWM_HSCROLL			0x0114						; よこスク。wparam = 上位位置,下位SB_xxx
+#const cnsWM_VSCROLL			0x0115						; たてスク。lparam = Handle(class時0)
+
+#const cnsSBS_HORZ				0
+#const cnsSBS_VERT				1
+#const cnsSB_CTL				2
+
+#const cnsSB_LINEUP				0							; (=SB_LINELEFT)	矢印部。
+#const cnsSB_LINEDOWN			1							; (=SB_LINERIGHT)
+#const cnsSB_PAGEUP				2							; (=SB_PAGELEFT)	ブランク部。
+#const cnsSB_PAGEDOWN			3							; (=SB_PAGERIGHT)
+#const cnsSB_THUMBTRACK			5
+
+#const cnsSIF_RANGE				0x0001						; 範囲(最小、最大)
+#const cnsSIF_PAGE				0x0002						; つまみの長さ。
+#const cnsSIF_POS				0x0004						; 現在値。
+#const cnsSIF_DISABLENOSCROLL	0x0008						; 無効ならつまみ消す(なしだとバーごと消える)
+#const cnsSIF_TRACKPOS			0x0010						; 更新中の暫定現在値。
+#const cnsSIF_ALL				(cnsSIF_RANGE | cnsSIF_PAGE | cnsSIF_POS | cnsSIF_TRACKPOS)
+
+
+; ○ウィンドウスタイル WS_HSCROLL(=0x00100000) / WS_VSCROLL(=0x00200000)
+;	#func apiGetWindowLong		"GetWindowLongA" int, int
+;	#func apiSetWindowLong		"SetWindowLongA" int, int, int
+; ・HSPスクリーンのhwndに対してSetScrollInfoをすればスクバがつき当該フラグがOnになる。
+;	SIF_DISABLENOSCROLLによってはバーが消滅⇒フラグもOff。
+; ・このスクバは肉厚なウィンドウフレームの一部みたいな感覚だがHSPのシステムとは相性が悪い感じ。
+;	ginfo_sx/sy:初期化サイズ。ginfo_winx/winy:クライアントサイズ、バーがある場合その分だけ小さくなる。
+;	grollしてもバーの裏の部分(バーサイズ分)の画面を表示することはできない。
+; ・ちなみにステータスバーはあくまでクライアント領域に。よこスクの上にたてスク分短く設置される。
+; ・SetScrollInfoでバーが付くときと消える時にはWM_SIZE(=5)が発生する。
+; ・バーを操作するとlparam=0で割り込み来る、メッセージを受け取ったウィンドウのhwndを使う必要。
+
+
+	; ステータス用変数(未初期化対策、このコードは実際に通ることは無い)
+	scba_winobj = 0											; 管理ID配列。
+	scba_handle = 0											; ハンドル配列。
+	scba_arrow  = 0											; 矢印部の変量配列。
+	scba_blank  = 0											; 空白部の変量配列。
+	scba_cur	= 0											; カレントindex
+
+#deffunc scbaSearchCur array a, int t, int f				; □管理サーチ(オブジェID⇒管理ID変換付き)
+	if f == 0  : if (t & 0xffff0000) == 0  : scbaSearchCur a, ginfo_sel + 1 << 16 | t, 1  : return stat
+	ttivmaxi = length(a)									; [a]配列。[t]検索値。[f]0:変換On or 1:Off
+	repeat ttivmaxi, scba_cur								; [stat]0:発見、1:なかった。curにindex入る。
+		if a(cnt \ ttivmaxi) == t  : scba_cur = cnt \ ttivmaxi  : break
+	loop
+	return t != a(scba_cur)
+
+
+;●:::::::::::::::::::::::::::::::::::::::::::::::::::::::●
+
+/*
+%index;...................................................×
+scbaScrollbar
+スクロールバーを設置する
+%prm;.....................................................×
+mode, width, height
+%inst;....................................................×
+カレントウィンドウのカレントポジションにスクロールバーを設置します。
+
+▼ mode
+設置するスクロールバーのスタイルを指定します。
+= 0 (横方向スクロールバー)
+= 1 (縦方向スクロールバー)
+
+▼ width, height [pixel]
+スクロールバーの横幅と縦幅を指定します。
+
+◆ stat
+statにはスクロールバーを識別するための管理番号が返ります。この管理番号でカレントウィンドウを意識することなくスクロールバーを操作できます。
+= stat / 65536 - 1 (HSPウィンドウID)
+= stat \ 65536 (オブジェクトID)
+
+scbaSetRangeを使用して値の範囲などを設定してください。
+scbaSetPosを使用して現在の値を変更できます。
+scbaInfoで現在の値を取得できます。
+scbaOnScrollを使用するとユーザーがスクロールバーを操作した後に割り込みを発生させることが可能です。
+
+無効化や消去は標準命令で可能です。
+gsel  管理番号 / 65536 - 1  ; ウィンドウ指定
+objenable  管理番号 \ 65536, flag  ; 無効・有効
+clrobj  管理番号 \ 65536, 管理番号 \ 65536  ; 消去
+
+命令実行後、ウィンドウメッセージWM_HSCROLL(=276、0x0114)とWM_VSCROLL(=277、0x0115)はモジュール内で処理します。oncmdを使用するスクリプトでは注意してください。
+%sample;..................................................×
+#include "(このモジュール)"
+	buffer 1  : picload dir_tv + "bg04.jpg"
+	picw = ginfo_sx
+	pich = ginfo_sy
+
+	scbaOnScroll *getroll
+	bars = scbaInfo(-1)  ; スクロールバーの厚さ(システム値)
+
+	screen 0, 320, 240
+	pos 0, ginfo_winy - bars  ; よこスクを設置。
+	scbaScrollbar 0, ginfo_winx - bars, bars  : yokoid = stat
+	scbaSetRange  stat, 0, picw - ginfo_winx + bars, ginfo_winx - bars, ginfo_winx - bars, 30
+	pos ginfo_winx - bars, 0  ; たてスクを設置。
+	scbaScrollbar 1, bars, ginfo_winy - bars  : tateid = stat
+	scbaSetRange  stat, 0, pich - ginfo_winy + bars, ginfo_winy - bars, ginfo_winy - bars, 30
+
+	pos 0, 0  : gosub *getroll  ; 一度描画する。
+	stop
+
+*getroll
+	gcopy 1, scbaInfo(yokoid), scbaInfo(tateid), ginfo_winx - bars, ginfo_winy - bars
+	return
+%;........................................................*/
+#deffunc scbaScrollbar int m, int w, int h					; ■スクロールバー(設置)
+	if m != 0 & m != 1  : return 0
+
+	scba_cur = length(scba_handle)							; 空き場探し。
+	repeat scba_cur
+		apiIsWindow scba_handle(cnt)
+		if stat == 0  : scba_cur = cnt  : break
+	loop
+
+	if m == 0  : winobj "SCROLLBAR", "", 0, 0x50000000, w, h, 0, 0  : ttivobid = stat	; よこスク。
+	if m == 1  : winobj "SCROLLBAR", "", 0, 0x50000001, w, h, 0, 0  : ttivobid = stat	; たてスク。
+	if (hspstat & 0x40000) == 0  : scba_handle(scba_cur) = objinfo(ttivobid, 2)	; ウィンドウハンドル。
+	if (hspstat & 0x40000)       : scba_handle(scba_cur) = objinfo(ttivobid, 4)	; x64対策。
+	scba_winobj(scba_cur) = (ginfo_sel + 1) * 65536 + ttivobid					; 管理ID
+	scba_arrow(scba_cur)  = 0													; 矢印部の変量。
+	scba_blank(scba_cur)  = 0													; 空白部の変量。
+	ttiaapip = 28, cnsSIF_ALL | cnsSIF_DISABLENOSCROLL, 0, 0, 0, 0, 0			; つまみ消去フラグ＋。
+	apiSetScrollInfo scba_handle(scba_cur), cnsSB_CTL, ttiaapip, 1				; 初期値を与える。
+	oncmd gosub *scba_getmessage_scroll, cnsWM_HSCROLL
+	oncmd gosub *scba_getmessage_scroll, cnsWM_VSCROLL
+	return scba_winobj(scba_cur)
+
+/*
+%index;...................................................×
+scbaSetRange
+スクロールバーを設定する
+%prm;.....................................................×
+id, min, max, size, blank, arrow
+%inst;....................................................×
+scbaScrollbarで設置したスクロールバーに範囲を設定します。
+
+▼ id
+対象となるスクロールバーの管理番号を指定します。
+
+▼ min, max
+最小値(左/上の値)と最大値(右/下の値)を指定します。指定の順番に限らず値の小さい方を最小値、大きい方を最大値とします。
+
+▼ size
+つまみ部分の幅を指定します。
+
+▼ blank
+つまみ前後の空白部分をクリックしたときの変量を指定します。sizeと同値程度を指定すると一般的な操作性になります。
+
+▼ arrow
+バー端の矢印部分をクリックしたときの変量を指定します。
+
+◆ stat
+= id (完了、管理番号)
+= 0 (失敗)
+%;........................................................*/
+#deffunc scbaSetRange int i, int n, int m, int s, int b, int a	; ■スクロールバー(設定)
+	if scba_winobj(scba_cur) != i  : scbaSearchCur scba_winobj, i  : if stat  : return 0	; curset
+	ttiaapip = 28, cnsSIF_ALL | cnsSIF_DISABLENOSCROLL, 0, 0, 0, 0, 0	; 一応現在値を反映する。
+	apiGetScrollInfo scba_handle(scba_cur), cnsSB_CTL, ttiaapip
+	ttiaapip(2) = n, n, 0
+	; バーのレンジ設定：最大よりおおきな最小を設定することができない。
+	if n < m  : ttiaapip(2) = n, m + s + (s == 0) - 1, s + (s == 0)	; 最小<最大を合わせる(バー不明動作)
+	if m < n  : ttiaapip(2) = m, n + s + (s == 0) - 1, s + (s == 0)	; sが0なら1に置き換える(両方必要)
+	apiSetScrollInfo scba_handle(scba_cur), cnsSB_CTL, ttiaapip, 1
+	scba_arrow(scba_cur) = a
+	scba_blank(scba_cur) = b
+	return scba_winobj(scba_cur)
+
+/*
+%index;...................................................×
+scbaSetPos
+スクロールバーの値を変更する
+%prm;.....................................................×
+id, position
+%inst;....................................................×
+scbaScrollbarで設置したスクロールバーが現在示している値を変更します。
+
+▼ id
+対象となるスクロールバーの管理番号を指定します。
+
+▼ position
+新しい値を指定します。
+
+◆ stat
+= id (完了、管理番号)
+= 0 (失敗)
+%;........................................................*/
+#deffunc scbaSetPos int i, int p							; ■スクロールバー(値設定)
+	if scba_winobj(scba_cur) != i  : scbaSearchCur scba_winobj, i  : if stat  : return 0	; curset
+	ttiaapip = 28, cnsSIF_ALL | cnsSIF_DISABLENOSCROLL, 0, 0, 0, 0, 0
+	apiGetScrollInfo scba_handle(scba_cur), cnsSB_CTL, ttiaapip
+	if ttiaapip(4) == 0  : return i							; つまみが0なら動かさない。
+	ttiaapip(5) = p											; 全取得しているので構造体をそのまま利用。
+	apiSetScrollInfo scba_handle(scba_cur), cnsSB_CTL, ttiaapip, 1
+	return scba_winobj(scba_cur)
+
+/*
+%index;...................................................×
+scbaInfo
+スクロールバーから情報を取得する
+%prm;.....................................................×
+(id)
+%inst;....................................................×
+scbaScrollbarで設置したスクロールバーの情報を取得します。
+
+▼ id
+対象となるスクロールバーの管理番号を指定します。
+= 管理番号 (現在の値を取得する)
+= -1 (スクロールバーの厚さ)
+
+◆ val
+idに管理番号を指定した場合は、そのスクロールバーが示している現在の値が返ります。
+idに-1を指定した場合は、システムが通常使用するスクロールバーの大きさが返ります。
+%;........................................................*/
+#defcfunc scbaInfo int i									; ◆スクロールバー(値取得)
+	if i == -1  : return apiGetSystemMetrics(2)
+	if scba_winobj(scba_cur) != i  : scbaSearchCur scba_winobj, i  : if stat  : return 0	; curset
+	ttiaapip = 28, cnsSIF_POS, 0, 0, 0, 0, 0
+	apiGetScrollInfo scba_handle(scba_cur), cnsSB_CTL, ttiaapip
+	return ttiaapip(5)
+
+/*
+%index;...................................................×
+scbaOnScroll
+スクロールバー割り込み実行指定
+%prm;.....................................................×
+*label
+%inst;....................................................×
+scbaScrollbarで設置したスクロールバーをユーザーが操作したとき、自動的にジャンプする場所を指定します。
+一度この命令を実行すればすべてのスクロールバーで*labelにジャンプするようになります。
+
+▼ *label
+ジャンプ先のラベルを指定します。サブルーチンですのでreturnで終了するようにしてください。
+ジャンプ先では、wparamで操作されたスクロールバーの管理番号をlparamで新しい現在の値を参照できます。
+
+◆ stat
+実行後のstatにはジャンプに使用するウィンドウメッセージIDが代入されています。
+このstatは再定義が可能です(安全に実行できるよう元の受信処理を完了した後で割り込む仕組み)。
+	scbaOnScroll *dummy
+	gsel 0  ; メインウィンドウで再定義してください。
+	oncmd goto *getscroll, stat
+
+この割り込み指定を解除するには「scbaOffScroll」(命令形式、引数なし)を実行します。
+%;........................................................*/
+#deffunc scbaOnScroll label l								; ■スクロールバー(リアルタイム監視・開始)
+	ttivwiid = ginfo_sel									; 全ウィンドウ共通。
+	gsel 0													; (ウィンドウごとに分けるという考えもあるが、
+	scba_realmode = hwnd, apiRegisterWindowMessage("NodokaModules_ScrollbarRealtime")
+	oncmd gosub l, scba_realmode(1)							; スクリーンそれぞれに命令実行はやはり面倒)
+	gsel ttivwiid
+	return scba_realmode(1)
+
+#deffunc scbaOffScroll										; □スクロールバー(リアルタイム監視・終了)
+	scba_realmode = 0
+	return
+
+*scba_getmessage_scroll
+	if lparam {
+		if scba_handle(scba_cur) != lparam  : scbaSearchCur scba_handle, lparam, 1  : if stat  : return
+
+		ttiaapip = 28, cnsSIF_ALL, 0, 0, 0, 0, 0				; 結局まずは全部取得する必要がある。
+		apiGetScrollInfo lparam, cnsSB_CTL, ttiaapip
+		ttivtemp = ttiaapip(5)								; リアルタイム用現在値控え。
+		if (wparam & 0xffff) == cnsSB_LINEUP      : ttiaapip(5) -= scba_arrow(scba_cur)
+		if (wparam & 0xffff) == cnsSB_LINEDOWN    : ttiaapip(5) += scba_arrow(scba_cur)
+		if (wparam & 0xffff) == cnsSB_PAGEUP      : ttiaapip(5) -= scba_blank(scba_cur)
+		if (wparam & 0xffff) == cnsSB_PAGEDOWN    : ttiaapip(5) += scba_blank(scba_cur)
+		if (wparam & 0xffff) == cnsSB_THUMBTRACK  : ttiaapip(5) = ttiaapip(6)
+		apiSetScrollInfo lparam, cnsSB_CTL, ttiaapip, 1
+		if scba_realmode {									; リアルタイムOn
+			apiGetScrollInfo lparam, cnsSB_CTL, ttiaapip	; 結果を精査してバーの示す位置が変わって、
+			if ttivtemp != ttiaapip(5) {					; たら割り込み発行。
+				apiPostMessage scba_realmode, scba_realmode(1), scba_winobj(scba_cur), ttiaapip(5)
+			}
+		}
+	}														; lprm=0はウィンドウの一部としてのバー。
+	return 0
+
+#global
+#endif
+

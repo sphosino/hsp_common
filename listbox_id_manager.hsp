@@ -374,7 +374,7 @@
 		} else {
 			; ”’l”äŠr
 			key1 = sort_keys(id1)
-			key2 = sort_keys(id2)
+			key2 = sort_keys(id2) //“Á’èğŒ‰º‚Å‚±‚±‚ÅƒGƒ‰[
 			
 			if sort_order == LISTBOX_SORT_ASC {
 				if key1 <= key2 : should_use_left = 1

@@ -1,5 +1,5 @@
 #include "../memory_allocator.hsp"
-#include "nodmod/scrollbarmodule.hsp"
+#include "scrollbarmodule.hsp"
 
 #addition "WrapCall.as"
 screen 0,ginfo(20) - 50, ginfo(21) - 50,,0,0
