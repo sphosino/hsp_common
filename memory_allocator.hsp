@@ -865,16 +865,16 @@ return 1
 //////可視化///////
 ///////////////////
 
-#deffunc set_pixel_draw_memory_pool int _pixel
+#deffunc set_pixel_draw_memory_pool double _pixel
 	//一バイトあたり何ピクセルで描画するかを設定
-	pixel = limit(_pixel, 1)
+	pixel = limitf(_pixel, 0.1)
 	return
 #deffunc draw_memory_pool_with_labels int ysize, int yoffset, array chenged_ids, local sclass, local col, local ofs, local _size
 	
 	redraw 2
 	
 	color 0,255,0 ; 使われておらず、フリーリストにも登録されていない色
-	boxf 0, yoffset, limit(get_memory_pool_size() * pixel,,ginfo(12)), yoffset + ysize
+	boxf 0, yoffset, pixel * limit(get_memory_pool_size(),,ginfo(12)), yoffset + ysize
 
 	vid = next_mem_id(MEM_HEAD)
 	while vid != MEM_TAIL
@@ -896,28 +896,28 @@ return 1
 			color col>>16&255,col>>8&255,col&255
 		}
 		//領域描画
-		boxf ofs * PIXEL + 1, yoffset, (ofs + _size) * pixel - 1, yoffset + ysize
+		boxf pixel * ofs + 1, yoffset, pixel * (ofs + _size) - 1, yoffset + ysize
 
 		//文字列で使用中ならそれを可視化
 		color 255,0,0
 		使用量 = strlen(read_mem_str(vid))
-		boxf ofs * pixel + 1, yoffset + ysize - ysize / 4, (ofs + 使用量) * pixel - 1, yoffset + ysize - ysize / 9
+		boxf pixel * ofs + 1, yoffset + ysize - ysize / 4, pixel * (ofs + 使用量) - 1, yoffset + ysize - ysize / 9
 		
 		//両側の区切り線
 		color 0,0,0
-		line ofs * pixel          , yoffset, ofs * pixel          , yoffset + ysize
-		line (ofs + _size) * pixel, yoffset, (ofs + _size) * pixel, yoffset + ysize
+		line pixel * ofs          , yoffset, pixel * ofs          , yoffset + ysize
+		line pixel * (ofs + _size), yoffset, pixel * (ofs + _size), yoffset + ysize
 
 		//ブロックID
-		pos (ofs + 2) * pixel, yoffset + 2
+		pos pixel * (ofs + 2), yoffset + 2
 		mes vid
 
 		//サイズ
-		pos (ofs + 2) * pixel, yoffset + 2 + ysize / 3
+		pos pixel * (ofs + 2), yoffset + 2 + ysize / 3
 		mes _size
 		
 		//クラス
-		pos (ofs + 2) * pixel, yoffset + 2 + ysize / 2
+		pos pixel * (ofs + 2), yoffset + 2 + ysize / 2
 		mes sclass
 
 
@@ -949,7 +949,7 @@ return
 	return 0
 #global
 init_memory_pool
-set_pixel_draw_memory_pool
+set_pixel_draw_memory_pool 1
 
 #ifndef swap
 #module

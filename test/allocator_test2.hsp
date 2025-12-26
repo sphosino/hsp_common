@@ -25,6 +25,7 @@ m3 = 15
 
 randomize 
 
+
 init_memory_pool 400;プールサイズ自動拡張の確認のため小さく確保
 
 repeat 
