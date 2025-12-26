@@ -881,14 +881,15 @@ return 1
 	
 	redraw 2
 	color 0,255,0 ; 使われておらず、フリーリストにも登録されていない色
-	boxf xoffset, yoffset, limit(pixel * get_memory_pool_size() + xoffset,,ginfo(12)-xoffset), yoffset + ysize
+	boxf xoffset, yoffset, limit(pixel * get_memory_pool_size() + xoffset,, ginfo(12)-xoffset), yoffset + ysize
 
 	vid = next_mem_id(MEM_HEAD)
 	while vid != MEM_TAIL
 
-		//メモリ上の位置、サイズを取得
+		//メモリ上の位置、サイズ、クラスを取得
 		ofs = offset(vid)
 		_size = mem_size(vid)
+		sclass = get_class_index(_size)
 	
 		//領域の色分け
 		if block_state(vid) == STATE_USED{
@@ -897,7 +898,7 @@ return 1
 			color 255,200,0
 		}else{
 			//使われていない領域はクラスで色分け
-			sclass = get_class_index(_size)
+
 			col = get_color_by_class(sclass)
 			color col>>16&255,col>>8&255,col&255
 		}
