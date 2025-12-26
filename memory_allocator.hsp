@@ -640,7 +640,7 @@
 	//移動可能ブロックを選択
 	newid = get_free_block(newsize)
 	
-	if newid = -1{
+	if newid == -1{
 		//フリーリストに見つからなかった
 		
 		if next_mem_id(oldid) == MEM_TAIL{
@@ -873,7 +873,7 @@ return 1
 
 //一バイトあたり何ピクセルで描画するかを設定
 #deffunc set_pixel_draw_memory_pool double _pixel
-	pixel = limitf(_pixel, 0.1)
+	pixel = limitf(_pixel, 0.1, 10.0)
 	return
 
 //メモリプール描画
@@ -890,7 +890,6 @@ return 1
 		ofs = offset(vid)
 		_size = mem_size(vid)
 	
-		
 		//領域の色分け
 		if block_state(vid) == STATE_USED{
 			color $D3,$D3,$D3
@@ -927,7 +926,6 @@ return 1
 		pos pixel * (ofs + 2) + xoffset, yoffset + 2 + ysize / 2
 		mes sclass
 
-
 		vid = next_mem_id(vid)
 	wend
 	redraw
@@ -950,7 +948,7 @@ return 1
 	swend
 return
 #defcfunc local is_in_array int _value, array a
-	for i,, length(a)
+	for i, 0, length(a)
 		if a(i) == _value : return 1
 	next
 	return 0

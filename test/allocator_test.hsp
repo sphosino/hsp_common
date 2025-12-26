@@ -1,252 +1,117 @@
 #include "../memory_allocator.hsp"
+#include "scrollbarmodule.hsp"
 
-// テスト結果表示用
-#define TEST_OK "OK"
-#define TEST_NG "NG"
+#addition "WrapCall.as"
+screen 0,ginfo(20) - 50, ginfo(21) - 50,,0,0
+randomize
+mes "速度調整のスクロールバーです"
+scbaOnScroll *sc　//動かすたびにジャンプするラベル
 
-test_count = 0
-pass_count = 0
+scbaScrollbar 0, 600,30
+makeID = stat
+scbaSetrange makeID, 1, 20 //1-20までの値
+scbaSetPos makeID, 15
+m1 = 15
+scbaScrollbar 0,600,30
+writeID = stat
+scbaSetrange writeID, 1, 20
+scbaSetPos writeID,15
+m2 = 15
+scbaScrollbar 0, 600, 30
+delID = stat
+scbaSetrange delID, 1, 20
+scbaSetPos delID, 15
+m3 = 15
 
-goto*@f
-#deffunc test_start str test_name
-    current_test = test_name
-    logmes "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    logmes "テスト " + test_count + ": " + test_name
-    logmes "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    return
-
-#deffunc test_result int result, str message
-
- 	test_count++
-    if result {
-        logmes TEST_OK + " " + message
-        pass_count++
-    } else {
-        logmes TEST_NG + " " + message
-    }
-    logmes "    [デバッグ] テスト番号: " + test_count + ", 成功数: " + pass_count + ", 結果: " + result
-    return
-
-#deffunc test_summary
-    logmes ""
-    logmes "==============================================="
-    logmes "テスト結果: " + pass_count + "/" + test_count + " passed"
-    if pass_count == test_count {
-        logmes "?? すべてのテストが成功しました！"
-    } else {
-        logmes "??  " + (test_count - pass_count) + "個のテストが失敗しました"
-    }
-    logmes "==============================================="
-    return
-*@
-
-// メイン テスト開始
-logmes "=== メモリプール文字列操作テスト開始 ==="
-logmes ""
-
-// テスト1: 基本的な文字列書き込み・読み込み
-test_start "基本的な文字列書き込み・読み込み"
-
-block1 = get_new_block(100)
-test_result block1 >= 0, "ブロック確保: ID=" + block1
-
-write_mem_str block1, "Hello, World!", 0
-result = read_mem_str(block1, 0)
-test_result result == "Hello, World!", "文字列書き込み・読み込み: \"" + result + "\""
-
-size = get_block_size(block1)
-test_result size == 100, "ブロックサイズ確認: " + size + " bytes"
-
-// テスト2: 文字列の追加・連結
-test_start "文字列の追加・連結"
-
-block2 = get_new_block(200)
-write_mem_str block2, "こんにちは", 0
-append_str block2, "、世界！"
-result = read_mem_str(block2, 0)
-test_result result == "こんにちは、世界！", "文字列連結: \"" + result + "\""
-
-// オフセット指定での書き込み
-write_mem_str block2, "HSP", 50
-result2 = read_mem_str(block2, 50)
-test_result strmid(result2, 0, 3) == "HSP", "オフセット書き込み: \"" + strmid(result2, 0, 3) + "\""
-
-// テスト3: 複数ブロックの管理
-test_start "複数ブロックの管理"
-
-// 異なるサイズのブロックを複数作成
-block_small = get_new_block(16)   // クラス0
-block_medium = get_new_block(64)  // クラス2
-block_large = get_new_block(300)  // クラス5
-
-write_mem_str block_small, "小", 0
-write_mem_str block_medium, "中サイズのテキスト", 0
-write_mem_str block_large, "これは大きなブロックに保存される長いテキストデータです。メモリプールの動作確認用のサンプル文字列として使用します。", 0
-
-result1 = read_mem_str(block_small, 0)
-result2 = read_mem_str(block_medium, 0)
-result3 = read_mem_str(block_large, 0)
-
-test_result strmid(result1, 0, 2) == "小", "小ブロック: \"" + strmid(result1, 0, 10) + "\""
-test_result result2 == "中サイズのテキスト", "中ブロック: \"" + result2 + "\""
-test_result strlen(result3) > 50, "大ブロック長さ: " + strlen(result3) + " 文字"
-
-// テスト4: メモリ解放とコアレッシング
-test_start "メモリ解放とコアレッシング"
-
-// 連続するブロックを作成
-seq_block1 = get_new_block(50)
-seq_block2 = get_new_block(50)
-seq_block3 = get_new_block(50)
-
-write_mem_str seq_block1, "ブロック1", 0
-write_mem_str seq_block2, "ブロック2", 0
-write_mem_str seq_block3, "ブロック3", 0
-
-logmes "解放前:"
-logmes "  ブロック" + seq_block1 + ": \"" + read_mem_str(seq_block1, 0) + "\""
-logmes "  ブロック" + seq_block2 + ": \"" + read_mem_str(seq_block2, 0) + "\""
-logmes "  ブロック" + seq_block3 + ": \"" + read_mem_str(seq_block3, 0) + "\""
-
-// 中央のブロックを解放（コアレッシングテスト）
-free_block seq_block2
-test_result 1, "中央ブロック解放完了"
-
-// 新しいブロックが解放された領域を再利用するかテスト
-reuse_block = get_new_block(30)
-write_mem_str reuse_block, "再利用", 0
-result = read_mem_str(reuse_block, 0)
-test_result result == "再利用", "メモリ再利用: \"" + result + "\""
-
-// テスト5: 動的サイズ変更
-test_start "動的サイズ変更（文字列拡張）"
-
-dynamic_block = get_new_block(20)
-write_mem_str dynamic_block, "短い", 0
-
-// 元のサイズを超える文字列を書き込み（自動拡張テスト）
-long_text = "これは元のブロックサイズを超える長い文字列です。メモリプールが自動的に拡張されるかテストします。"
-write_mem_str dynamic_block, long_text, 0
-
-result = read_mem_str(dynamic_block, 0)
-
-test_result strlen(result) > 20, "自動拡張: " + strlen(result) + " 文字（元20文字制限）"
-test_result result == long_text, "拡張後データ整合性: 正常"
-/*/
-logmes strlen(long_text)
-logmes result
-stop
-;*/
-// テスト6: エラーハンドリング
-test_start "エラーハンドリング"
+randomize 
 
 
+init_memory_pool 400;プールサイズ自動拡張の確認のため小さく確保
 
-// 無効なIDでの操作
-invalid_result = read_mem_str(-1, 0)
-test_result 1, "無効ID処理: エラーなく実行"
+set_pixel_draw_memory_pool 1
 
-// テスト7: 日本語文字列処理
-test_start "日本語文字列処理"
+draw_posx = 50
 
-jp_block = get_new_block(200)
-jp_text = "こんにちは！これは日本語のテストです。ひらがな、カタカナ、漢字が含まれています。??"
-write_mem_str jp_block, jp_text, 0
+repeat 
+	set_position_draw_memory_pool draw_posx, 150*1
+	title"作成準備中"
+	draw_memory_pool_with_labels  100, idx
+	await 2000/m1
+	
+	title"作成開始"
+	dim idlist
+	repeat 10
+		
+		size2 = 20 + rnd(30)
+		t = get_new_block(size2)
+		
+		idlist(cnt) = t
+		debug_check_link_integrity "作成後のリンク整合性チェック"
+		
 
-result = read_mem_str(jp_block, 0)
-test_result result == jp_text, "日本語書き込み・読み込み: 正常"
+		draw_memory_pool_with_labels 100, idlist
+		
+		await 1000/m1
+	loop
+	
+	set_position_draw_memory_pool draw_posx, 150*2
 
-// 日本語文字列の部分書き換え
-write_mem_str jp_block, "さようなら", 15
-partial_result = read_mem_str(jp_block, 15)
-test_result strmid(partial_result, 0, 10) == "さようなら", "日本語部分書き換え: 正常"
+	// 一部を書き込みしてみる（右のスペースを使い無理なら左のスペースもみる。それでも無理なら、自動的に移動と解放が行われる。）
+	title "書き込み準備中"
+	draw_memory_pool_with_labels 100,idlist
+	await 2000/m2
+	
+	title "書き込み開始"
+	dim idx
+	
+	repeat 20
+		
+		idx(cnt) = idlist(rnd(length(idlist)))
+		// 拡張を引き起こすように長い文字列を書く
 
-// テスト8: 大量データ処理
-test_start "大量データ処理"
+		s = ""
+		repeat 3 + rnd(3)
+		s += "abcde"
+		loop
+		
+		append_str idx(cnt), s
+		debug_check_free_list_integrity
+		debug_check_link_integrity "拡張後のリンク整合性チェック"
+		
+		draw_memory_pool_with_labels  100, idx
+		await 1000/m2
+	loop
+	
+	set_position_draw_memory_pool draw_posx, 150*3
+	title "削除準備中"
+	draw_memory_pool_with_labels  100, idx
+	await 2000/m3
+	
+	title "削除開始"
+	dim idx
+	count = 0
+	in = 0
+	dim a, get_block_count()
+	repeat 7 + rnd(6)
+		if get_usable_blocks(a) == 0: break
+		free_block a(rnd(stat))
+		debug_check_link_integrity "解放後のリンク整合性チェック"
 
-// 多数の小さなブロックを作成
-logmes "100個の小ブロックを作成中..."
-dim small_blocks, 100
-repeat 100
-    small_blocks(cnt) = get_new_block(32)
-    write_mem_str small_blocks(cnt), "データ" + cnt, 0
+		draw_memory_pool_with_labels  100, idx
+		await 1000/m3
+	loop
 loop
 
-// ランダムにいくつかを読み込んでテスト
-test_data = read_mem_str(small_blocks(25), 0)
-test_result test_data == "データ25", "大量ブロック管理: ブロック25 = \"" + test_data + "\""
-
-test_data = read_mem_str(small_blocks(75), 0)
-test_result test_data == "データ75", "大量ブロック管理: ブロック75 = \"" + test_data + "\""
-
-// 半分のブロックを解放
-logmes "50個のブロックを解放中..."
-repeat 50
-    free_block small_blocks(cnt * 2)
-loop
-
-test_result 1, "大量解放: 完了"
-
-// テスト9: 境界値テスト
-test_start "境界値テスト"
-
-// 最小サイズ
-
-min_block = get_new_block(1)
-
-write_mem_str min_block, "A", 0
-
-result = read_mem_str(min_block, 0)
-test_result strmid(result, 0, 1) == "A", "最小ブロック(1byte): \"" + strmid(result, 0, 1) + "\""
-
-// サイズクラス境界値
-boundary_tests = 4,8,16, 32, 64, 128, 256, 512,1024,2048
-repeat 10
-    size = boundary_tests(cnt)
-    logmes cnt
-    boundary_block = get_new_block(size)
-    boundary_text = ""
-    repeat size - 1
-        boundary_text += "A"
-    loop
-    write_mem_str boundary_block, boundary_text, 0
-    result = read_mem_str(boundary_block, 0)
-    test_result strlen(result) >= size - 1, "境界値" + size + "bytes: " + strlen(strmid(result, 0, 10)) + "文字..."
-loop
-
-// 最終テスト: メモリ使用状況の確認
-test_start "メモリ使用状況確認"
-
-logmes "=== 最終メモリ状況 ==="
-logmes "作成されたブロック数: " + (test_count * 3) + "以上"
-logmes "テスト実行完了"
-
-// 最後に大きなブロックでメモリプールの状態を確認
-final_block = get_new_block(1000)
-if final_block >= 0 {
-    write_mem_str final_block, "最終テストブロック - メモリプールは正常に動作しています！", 0
-    final_result = read_mem_str(final_block, 0)
-    test_result final_result != "", "最終ブロック確保: 正常"
-} else {
-    test_result 0, "最終ブロック確保: 失敗（メモリ枯渇）"
-}
-
-// テスト結果まとめ
-logmes ""
-test_summary
-
-logmes ""
-logmes "=== 使用例デモ ==="
-
-// 実際の使用例を示す
-demo_block = get_new_block(500)
-write_mem_str demo_block, "ユーザー名: ", 0
-append_str demo_block, "田中太郎"
-append_str demo_block, "\n年齢: 25歳"
-append_str demo_block, "\n職業: プログラマー"
-
-logmes "デモ - ユーザー情報:"
-logmes read_mem_str(demo_block, 0)
-
-logmes ""
-logmes "=== テスト終了 ==="
+*sc
+	switch wparam
+	case makeID
+	m1 = lparam
+	swbreak
+	case writeID
+	m2 = lparam
+	swbreak
+	case delID
+	m3 = lparam
+	swbreak
+	swend
+	return
