@@ -719,81 +719,7 @@ return 1
     back_free_list(_next_id_) = _prev_id_
     return
 	
-///////////////////
-//////可視化///////
-///////////////////
 
-#deffunc draw_memory_pool_with_labels int ysize, int yoffset, array chenged_ids, local sclass, local col, local ofs, local _size
-	#const PIXEL 1
-	redraw 2
-	color 0,255,0 ; 使われておらず、フリーリストにも登録されていない
-	boxf 0,yoffset, limit(get_memory_pool_size() * PIXEL,,ginfo(12)),yoffset+ysize
-
-	vid = next_mem_id(MEM_HEAD)
-	while vid != MEM_TAIL
-		ofs = offset(vid)
-		_size = mem_size(vid)
-		sclass = get_class_index(_size)
-		col = get_color_by_class(sclass)
-
-		//領域描画
-		
-		//領域の色分け
-		if block_state(vid) == STATE_USED{
-			color $D3,$D3,$D3
-		}else: if is_in_array(vid, changed_ids){
-			color 255,200,0
-		}else{
-			//使われていない領域はクラスで色分け
-			color col>>16&255,col>>8&255,col&255
-		}
-		
-		boxf ofs*PIXEL+1,yoffset, (ofs + _size)*PIXEL-1, yoffset+ysize
-
-		color 0,0,0
-		pos ofs*PIXEL+1,yoffset + ysize/3
-		mes _size
-		//文字列で使用中ならそれを可視化
-		color 255,0,0
-		使用量 = strlen(read_mem_str(vid))
-		boxf ofs*PIXEL+1, yoffset+ysize - ysize/4, (ofs + 使用量)*PIXEL-1, yoffset+ysize - ysize/9
-		//ブロックID
-		color 0,0,0
-		pos (ofs + 2 ) * PIXEL, yoffset + 2
-		mes vid
-		//クラス
-		pos (ofs + 2 ) * PIXEL, yoffset + 2 + ysize/2
-		mes sclass
-		//両側の区切り線
-		line ofs * PIXEL                 , yoffset, ofs*PIXEL, yoffset+ysize
-		line (ofs + mem_size(vid)) * PIXEL, yoffset, (ofs+mem_size(vid)) * PIXEL,yoffset+ysize
-
-		vid = next_mem_id(vid)
-	wend
-	redraw
-	return
-	
-#defcfunc local get_color_by_class int _class
-	switch _class
-	case 0 : return $ff6666
-	case 1 : return $ff9933 
-	case 2 : return $ffff66
-	case 3 : return $66cc66 
-	case 4 : return $3399ff 
-	case 5 : return $6666ff 
-	case 6 : return $cc66ff
-	case 7 : return $ff66cc
-	case 8 : return $33cc99
-	case 9 : return $999999
-	default: return $333333
-	swbreak
-	swend
-return
-#defcfunc local is_in_array int _value, array a
-	for i,, length(a)
-		if a(i) == _value : return 1
-	next
-	return 0
 
 ////////////////////////
 /////内部情報取得///////
@@ -934,8 +860,96 @@ return
 	dupptr a, varptr(memory_pool) + offset(id), mem_size(id), 2
 	return
 
+
+///////////////////
+//////可視化///////
+///////////////////
+
+#deffunc set_pixel_draw_memory_pool int _pixel
+	//一バイトあたり何ピクセルで描画するかを設定
+	pixel = limit(_pixel, 1)
+	return
+#deffunc draw_memory_pool_with_labels int ysize, int yoffset, array chenged_ids, local sclass, local col, local ofs, local _size
+	
+	redraw 2
+	
+	color 0,255,0 ; 使われておらず、フリーリストにも登録されていない色
+	boxf 0, yoffset, limit(get_memory_pool_size() * pixel,,ginfo(12)), yoffset + ysize
+
+	vid = next_mem_id(MEM_HEAD)
+	while vid != MEM_TAIL
+
+		//メモリ上の位置、サイズを取得
+		ofs = offset(vid)
+		_size = mem_size(vid)
+	
+		
+		//領域の色分け
+		if block_state(vid) == STATE_USED{
+			color $D3,$D3,$D3
+		}else: if is_in_array(vid, changed_ids){
+			color 255,200,0
+		}else{
+			//使われていない領域はクラスで色分け
+			sclass = get_class_index(_size)
+			col = get_color_by_class(sclass)
+			color col>>16&255,col>>8&255,col&255
+		}
+		//領域描画
+		boxf ofs * PIXEL + 1, yoffset, (ofs + _size) * pixel - 1, yoffset + ysize
+
+		//文字列で使用中ならそれを可視化
+		color 255,0,0
+		使用量 = strlen(read_mem_str(vid))
+		boxf ofs * pixel + 1, yoffset + ysize - ysize / 4, (ofs + 使用量) * pixel - 1, yoffset + ysize - ysize / 9
+		
+		//両側の区切り線
+		color 0,0,0
+		line ofs * pixel          , yoffset, ofs * pixel          , yoffset + ysize
+		line (ofs + _size) * pixel, yoffset, (ofs + _size) * pixel, yoffset + ysize
+
+		//ブロックID
+		pos (ofs + 2) * pixel, yoffset + 2
+		mes vid
+
+		//サイズ
+		pos (ofs + 2) * pixel, yoffset + 2 + ysize / 3
+		mes _size
+		
+		//クラス
+		pos (ofs + 2) * pixel, yoffset + 2 + ysize / 2
+		mes sclass
+
+
+		vid = next_mem_id(vid)
+	wend
+	redraw
+	return
+	
+#defcfunc local get_color_by_class int _class
+	switch _class
+	case 0 : return $ff6666
+	case 1 : return $ff9933 
+	case 2 : return $ffff66
+	case 3 : return $66cc66 
+	case 4 : return $3399ff 
+	case 5 : return $6666ff 
+	case 6 : return $cc66ff
+	case 7 : return $ff66cc
+	case 8 : return $33cc99
+	case 9 : return $999999
+	default: return $333333
+	swbreak
+	swend
+return
+#defcfunc local is_in_array int _value, array a
+	for i,, length(a)
+		if a(i) == _value : return 1
+	next
+	return 0
 #global
 init_memory_pool
+set_pixel_draw_memory_pool
 
 #ifndef swap
 #module
