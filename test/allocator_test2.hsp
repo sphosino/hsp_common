@@ -1,0 +1,20 @@
+#include "../memory_allocator.hsp"
+
+test = get_new_block(8)
+test2 = get_new_block(20)
+
+write_mem_str test,"‚¨‚Í‚æ"
+write_mem_str test2,"‚±‚ñ‚Î‚ñ‚í"
+
+mes get_block_offset(test)
+mes get_block_size(test)
+
+append_str test, "ABCDEFGHIJK" //Šm•Û‚æ‚è‘å‚«‚¢‘‚«‚İ‚È‚Ì‚ÅAˆÚ“®”­¶
+
+mes get_block_offset(test)
+mes get_block_size(test)
+
+mes
+
+mes read_mem_str(test)
+mes read_mem_str(test2)
