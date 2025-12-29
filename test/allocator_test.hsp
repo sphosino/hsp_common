@@ -42,8 +42,14 @@ set_pixel_draw_memory_pool 0.8 //一バイト当たり0.8pxで描画
 
 draw_posx = 50
 
+//各フェーズで変更を行ったブロックはオレンジ
+//それ以外の使用中のブロックは灰色
+//その他、使用中でないブロックは、大きさによって色分けされています。
+pos 0,160*1-20: mes "メモリ確保"
+pos 0,160*2-20: mes "メモリ書き込み"
+pos 0,160*3-20: mes "メモリ解放"
 repeat
-	set_position_draw_memory_pool draw_posx, 150*1
+	set_position_draw_memory_pool draw_posx, 160*1
 	title"作成準備中"
 	draw_memory_pool_with_labels  100, idx
 	await 2000/m1
@@ -64,7 +70,7 @@ repeat
 		await 1000/m1
 	loop
 	//----------------------------------------------------
-	set_position_draw_memory_pool draw_posx, 150*2
+	set_position_draw_memory_pool draw_posx, 160*2
 
 	// 一部を書き込みしてみる（右のスペースを使い無理なら左のスペースもみる。それでも無理なら、自動的に移動と解放が行われる。）
 	title "書き込み準備中"
@@ -91,7 +97,7 @@ repeat
 		await 1000/m2
 	loop
 	//---------------------------------------------------
-	set_position_draw_memory_pool draw_posx, 150*3
+	set_position_draw_memory_pool draw_posx, 160*3
 	title "削除準備中"
 	draw_memory_pool_with_labels  100, idx
 	await 2000/m3
