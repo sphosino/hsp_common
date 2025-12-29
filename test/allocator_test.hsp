@@ -106,7 +106,7 @@ repeat
 	
 	title "削除開始"
 	max = get_usable_blocks(a) //使用中のブロックリスト取得
-	delcount = 4 + rnd(5+logf(max)) //削除する数を決定
+	delcount = 4 + rnd(5+logf(max)*1.4) //削除する数を決定
 	repeat max
 		n = rnd(max)
 		idx(cnt) = a(n)
