@@ -893,13 +893,14 @@ return 1
 		sclass = get_class_index(_size)
 	
 		//領域の色分け
-		if block_state(vid) == STATE_USED{
-			color $D3,$D3,$D3
-		}else: if is_in_array(vid, changed_ids){
+		if is_in_array(vid, changed_ids){
+			//強調すべきブロックのリストはオレンジ
 			color 255,200,0
+		}else: if block_state(vid) == STATE_USED{
+			//それ以外の使用中は灰色
+			color $D3,$D3,$D3
 		}else{
 			//使われていない領域はクラスで色分け
-
 			col = get_color_by_class(sclass)
 			color col>>16&255,col>>8&255,col&255
 		}
@@ -936,7 +937,7 @@ return 1
 #defcfunc local get_color_by_class int _class
 	switch _class
 	case 0 : return $ff6666
-	case 1 : return $ff9933 
+	case 1 : return $66cccc
 	case 2 : return $ffff66
 	case 3 : return $66cc66 
 	case 4 : return $3399ff 

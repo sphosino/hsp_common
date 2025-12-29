@@ -7,21 +7,31 @@ randomize
 mes "速度調整のスクロールバーです"
 scbaOnScroll *sc　//動かすたびにジャンプするラベル
 
+//確保の速度
 scbaScrollbar 0, 600,30
 makeID = stat
 scbaSetrange makeID, 1, 20 //1-20までの値
 scbaSetPos makeID, 15
 m1 = 15
+//書き込みの速度
 scbaScrollbar 0,600,30
 writeID = stat
 scbaSetrange writeID, 1, 20
 scbaSetPos writeID,15
 m2 = 15
+//削除処理の速度
 scbaScrollbar 0, 600, 30
 delID = stat
 scbaSetrange delID, 1, 20
 scbaSetPos delID, 15
 m3 = 15
+//作業中の表示速度
+scbaScrollbar 0, 600, 30
+workID = stat
+scbaSetrange workID, 1, 20
+scbaSetPos workID, 15
+m4 = 15
+
 
 randomize 
 
@@ -32,7 +42,7 @@ set_pixel_draw_memory_pool 0.8 //一バイト当たり0.8pxで描画
 
 draw_posx = 50
 
-repeat 
+repeat
 	set_position_draw_memory_pool draw_posx, 150*1
 	title"作成準備中"
 	draw_memory_pool_with_labels  100, idx
@@ -42,7 +52,7 @@ repeat
 	dim idlist
 	repeat 10
 		
-		size2 = 20 + rnd(30)
+		size2 = 20 + rnd(40)
 		t = get_new_block(size2)
 		
 		idlist(cnt) = t
@@ -53,7 +63,7 @@ repeat
 		
 		await 1000/m1
 	loop
-	
+	//----------------------------------------------------
 	set_position_draw_memory_pool draw_posx, 150*2
 
 	// 一部を書き込みしてみる（右のスペースを使い無理なら左のスペースもみる。それでも無理なら、自動的に移動と解放が行われる。）
@@ -73,32 +83,35 @@ repeat
 		repeat 3 + rnd(3)
 		s += "abcde"
 		loop
-		
+		draw_memory_pool_with_labels  100, idx: await 1000/m4
 		append_str idx(cnt), s
-		debug_check_free_list_integrity
+		draw_memory_pool_with_labels  100, idx: await 1000/m4
 		debug_check_link_integrity "拡張後のリンク整合性チェック"
-		
-		draw_memory_pool_with_labels  100, idx
+		debug_check_free_list_integrity
 		await 1000/m2
 	loop
-	
+	//---------------------------------------------------
 	set_position_draw_memory_pool draw_posx, 150*3
 	title "削除準備中"
 	draw_memory_pool_with_labels  100, idx
 	await 2000/m3
+
+	dim idx
 	
 	title "削除開始"
-	dim idx
-	count = 0
-	in = 0
-	dim a, get_block_count()
-	repeat 7 + rnd(6)
-		if get_usable_blocks(a) == 0: break
-		free_block a(rnd(stat))
+	max = get_usable_blocks(a) //使用中のブロックリスト取得
+	delcount = 4 + rnd(5+logf(max)) //削除する数を決定
+	repeat max
+		n = rnd(max)
+		idx(cnt) = a(n)
+		draw_memory_pool_with_labels  100, idx: await 1000/m4
+		free_block a(n)
+		draw_memory_pool_with_labels  100, idx: await 1000/m4
 		debug_check_link_integrity "解放後のリンク整合性チェック"
-
-		draw_memory_pool_with_labels  100, idx
 		await 1000/m3
+		if delcount == cnt + 1: break
+		max--
+		a(n) = a(max)
 	loop
 loop
 
@@ -112,6 +125,9 @@ loop
 	swbreak
 	case delID
 	m3 = lparam
+	swbreak
+	case workID
+	m4 = lparam
 	swbreak
 	swend
 	return
