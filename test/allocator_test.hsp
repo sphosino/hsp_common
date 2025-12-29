@@ -28,7 +28,7 @@ randomize
 
 init_memory_pool 400;プールサイズ自動拡張の確認のため小さく確保
 
-set_pixel_draw_memory_pool 1
+set_pixel_draw_memory_pool 0.8 //一バイト当たり0.8pxで描画
 
 draw_posx = 50
 

@@ -4,7 +4,7 @@
 #const DEFAULT_SIZE 32
 #const EXP_RATE 2.0
 #ifndef ceil
-#define ctype ceil(%1) ((%1 > int(%1)) + %1)
+#define ctype ceil(%1) (((%1) > int(%1)) + (%1))
 #endif
 
 #modinit int size

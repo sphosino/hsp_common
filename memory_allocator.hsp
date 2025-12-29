@@ -50,6 +50,7 @@
 	dim block_state, MAX_DIV //このブロックが空きか、使用中か、番兵か？など。
 	dim back_mem_id, MAX_DIV //前のブロックid
 	dim next_mem_id, MAX_DIV //次のブロックid
+	;dim ref_count, MAX_DIV //new!!　参照カウント方式導入しちゃう？
 
 	dim next_free_list, MAX_DIV
 	dim back_free_list, MAX_DIV
