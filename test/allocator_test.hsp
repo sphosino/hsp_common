@@ -25,7 +25,7 @@ delID = stat
 scbaSetrange delID, 1, 20
 scbaSetPos delID, 15
 m3 = 15
-//作業中の表示速度
+//各フェーズ内での、作業中の表示速度
 scbaScrollbar 0, 600, 30
 workID = stat
 scbaSetrange workID, 1, 20
