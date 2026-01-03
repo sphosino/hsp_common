@@ -38,7 +38,7 @@ randomize
 
 init_memory_pool 400;プールサイズ自動拡張の確認のため小さく確保
 
-set_pixel_draw_memory_pool 0.7 //一バイト当たり0.8pxで描画
+set_pixel_draw_memory_pool 0.7 //一バイト当たり0.7pxで描画
 
 draw_posx = 50
 
@@ -55,17 +55,14 @@ repeat
 	await 2000/m1
 	
 	title"作成開始"
-	dim idlist
+	dim idx
 	repeat 10
 		
-		size2 = 20 + rnd(40)
-		t = get_new_block(size2)
+		size2 = 20 + rnd(50)
 		
-		idlist(cnt) = t
+		idlist(cnt) = get_new_block(size2)
 		debug_check_link_integrity "作成後のリンク整合性チェック"
-		
-
-		draw_memory_pool_with_labels 100, idlist: await 1000/m4
+		draw_memory_pool_with_labels 100, idx: await 1000/m4
 		
 		await 1000/m1
 	loop
@@ -74,28 +71,31 @@ repeat
 
 	// 一部を書き込みしてみる（右のスペースを使い無理なら左のスペースもみる。それでも無理なら、自動的に移動と解放が行われる。）
 	title "書き込み準備中"
-	draw_memory_pool_with_labels 100,idlist
+	draw_memory_pool_with_labels 100,idx
 	await 2000/m2
 	
 	title "書き込み開始"
 	dim idx
+	max = get_usable_blocks(a) //使用中のブロックリスト取得
+	if max{
+		repeat 20
+			
+			idx(cnt) = a(rnd(max))
+			// 拡張を引き起こすように長い文字列を書く
 	
-	repeat 20
-		
-		idx(cnt) = idlist(rnd(length(idlist)))
-		// 拡張を引き起こすように長い文字列を書く
-
-		s = ""
-		repeat 3 + rnd(3)
-		s += "abcde"
+			s = ""
+			repeat 3 + rnd(4)
+				s += "abcde"
+			loop
+			draw_memory_pool_with_labels  100, idx: await 1000/m4
+			append_str idx(cnt), s
+			draw_memory_pool_with_labels  100, idx: await 1000/m4
+			debug_check_link_integrity "拡張後のリンク整合性チェック"
+			debug_check_free_list_integrity
+			await 1000/m2
 		loop
-		draw_memory_pool_with_labels  100, idx: await 1000/m4
-		append_str idx(cnt), s
-		draw_memory_pool_with_labels  100, idx: await 1000/m4
-		debug_check_link_integrity "拡張後のリンク整合性チェック"
-		debug_check_free_list_integrity
-		await 1000/m2
-	loop
+	}
+	
 	//---------------------------------------------------
 	set_position_draw_memory_pool draw_posx, 160*3
 	title "削除準備中"
@@ -105,7 +105,6 @@ repeat
 	dim idx
 	
 	title "削除開始"
-	max = get_usable_blocks(a) //使用中のブロックリスト取得
 	delcount = 4 + rnd(5+logf(max)*1.4) //削除する数を決定
 	repeat max
 		n = rnd(max)

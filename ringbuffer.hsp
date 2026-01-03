@@ -1,5 +1,6 @@
 #ifndef ringbuffer
 #module ringbuffer max_num, size, data, count, write_index, read_index
+
 #define plus1(%1) %1 = (%1 + 1) \ max_num
 
 #modinit int _size, int _max_num
@@ -83,71 +84,78 @@
 	return size
 #global
 #endif
-
+#include "d3m.hsp" // 時間計測用（なければ gettime 等で代用してください）
 
 //以下テストコード
-#if 00
+#if 001
 #ifdef _debug
 
 #undef mes
 #define mes(%1) mes@hsp %1: logmes %1
 
-// テストコード
-mes "--- リングバッファのテストを開始します ---"
+// --- テスト開始 ---
 
-// リングバッファのインスタンスを作成
-newmod my_buffer , ringbuffer , 256, 4
 
-mes "初期化後のバッファ状態:"
-mes "最大数: " + get_ringbuffer_max_num(my_buffer)
-mes "サイズ: " + get_ringbuffer_size(my_buffer)
-mes "現在の要素数: " + get_ringbuffer_count(my_buffer)
-mes "---"
+// モジュールの初期化
+// 1スロット64バイト、初期最大数10（小さめにしてリサイズを誘発させる）
+newmod rb, ringbuffer, 64, 10
 
-// データをプッシュ
-my_data = "Apple"
-r_push my_buffer, my_data
-my_data = "Banana"
-r_push my_buffer, my_data
-my_data = "Cherry"
-r_push my_buffer, my_data
-my_data = "Date"
-r_push my_buffer, my_data
+mes "--- リングバッファ負荷テスト開始 ---"
 
-mes "4つのデータをプッシュしました。"
-mes "現在の要素数: " + get_ringbuffer_count(my_buffer)
-mes "---"
+// 1. 高速追加・リサイズテスト
+count_test = 10000
+t1 = d3timer()
 
-// リングバッファがいっぱいになったときの挙動をテスト
-my_data = "Elderberry"
-r_push my_buffer, my_data
-mes "5つ目のデータをプッシュしました（リサイズされるはず）"
-mes "現在の要素数: " + get_ringbuffer_count(my_buffer)
-mes "新しい最大数: " + get_ringbuffer_max_num(my_buffer)
-mes "---"
-
-// データを取り出す
-var_shift = ""
-mes "データをシフトアウトします:"
-repeat 5
-	if r_shift(my_buffer, var_shift) {
-		mes "取り出したデータ: " + var_shift
-	} else {
-		mes "バッファは空です。"
-	}
+repeat count_test
+    tmp = "Data No." + cnt
+    r_push rb, tmp
 loop
-mes "---"
 
-// 空になったバッファからのシフトをテスト
-if r_shift(my_buffer, var_shift) {
-	mes "追加でデータを取り出しました: " + var_shift
-} else {
-	mes "バッファは空です。"
+t2 = d3timer()
+mes "" + count_test + "件のプッシュ完了（自動リサイズ含む）"
+mes "所要時間: " + (t2 - t1) + "ms"
+mes "最終バッファサイズ: " + get_ringbuffer_max_num(rb)
+
+// 2. 整合性チェック（最初と最後のデータが正しいか）
+mes "\n--- データ整合性チェック ---"
+success = 1
+first_val = ""
+last_val = ""
+
+repeat count_test
+    sdim res, 64
+    if r_shift(rb, res) {
+        if (cnt == 0) : first_val = res
+        if (cnt == count_test - 1) : last_val = res
+    } else {
+        mes "エラー: " + cnt + "件目でデータが途切れました"
+        success = 0
+        break
+    }
+loop
+
+if success {
+    mes "全件取り出し成功！"
+    mes "最初のデータ: " + first_val + " (期待値: Data No.0)"
+    mes "最後のデータ: " + last_val + " (期待値: Data No.9999)"
 }
-mes "現在の要素数: " + get_ringbuffer_count(my_buffer)
-mes "---"
 
-mes "--- テストが完了しました ---"
+// 3. 巨大スロットでのリサイズ負荷
+mes "\n--- 巨大スロット(1MB x 100件)テスト ---"
+newmod rb_heavy, ringbuffer, 1024*1024, 2
+sdim bigdata, 1024*1024
+memset bigdata, 'A', 1024*1024
+
+t3 = d3timer()
+repeat 100
+    r_push rb_heavy, bigdata
+loop
+t4 = d3timer()
+
+mes "1MB x 100件完了: " + (t4 - t3) + "ms"
+mes "最終最大数: " + get_ringbuffer_max_num(rb_heavy)
+
+stop
 
 #undef mes
 #define global mes mes@hsp

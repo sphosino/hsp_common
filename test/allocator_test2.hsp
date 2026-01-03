@@ -1,16 +1,19 @@
 #include "../memory_allocator.hsp"
 
 test = get_new_block(8)
-test2 = get_new_block(20)
+test2 = get_new_block(10)
 
 write_mem_str test,"おはよ"
 write_mem_str test2,"こんばんわ"
+
+//　おはよ|こんばんわ
+
 
 mes get_block_offset(test)
 mes get_block_size(test)
 
 append_str test, "ABCDEFGHIJK" //確保より大きい書き込みなので、移動発生
-
+//　　[free]｜こんばんわ｜おはよABCDEFGHIJK
 mes get_block_offset(test)
 mes get_block_size(test)
 
@@ -18,3 +21,25 @@ mes
 
 mes read_mem_str(test)
 mes read_mem_str(test2)
+
+test3 = get_new_block(20) //更に右側に確保
+write_mem_str test3,"やっほー"
+//　　|[free]｜こんばんわ｜おはよABCDEFGHIJK|やっほー|
+
+free_block test2 //解放
+//　　|[free　　　　　　]｜おはよABCDEFGHIJK|やっほー|
+
+append_str test,"おやすみ---------m"
+//　　|おはよABCDEFGHIJKおやすみ-----------m|やっほー|
+//ギリギリ左に収まった。あと一文字増やして試すと
+//　　|[free　　　　　　                   ]|やっほー|おはよABCDEFGHIJKおやすみ-----------mm|
+//こうなる。
+
+mes get_block_offset(test)
+mes get_block_size(test)
+
+mes read_mem_str(test)
+mes read_mem_str(test3)
+
+mes get_block_offset(test3)
+mes get_block_size(test3)
